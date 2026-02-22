@@ -1,0 +1,314 @@
+// ============================================================================
+// Mashaweer - Inter-City Ride-Sharing Platform
+// Prisma Schema - PostgreSQL
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  DRIVER
+  PASSENGER
+}
+
+enum TripStatus {
+  SCHEDULED
+  DRIVER_CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PAYMENT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentMethod {
+  INSTAPAY
+  VODAFONE_CASH
+}
+
+enum AlertType {
+  DRIVER_NO_READY
+  DRIVER_NO_SHOW
+  TRIP_ISSUE
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  TRIP_REMINDER
+  WAITLIST_PROMOTED
+  DEPOSIT_APPROVED
+  DEPOSIT_REJECTED
+  DRIVER_ALERT
+  RATING_RECEIVED
+  ACCOUNT_BANNED
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          Role      @default(PASSENGER)
+  avatarUrl     String?
+  isBanned      Boolean   @default(false)
+  banReason     String?
+  noShowCount   Int       @default(0)
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  driverProfile   DriverProfile?
+  wallet          Wallet?
+  bookings        Booking[]
+  waitlists       Waitlist[]
+  tripsAsDriver   Trip[]            @relation("DriverTrips")
+  ratingsGiven    Rating[]          @relation("RaterRatings")
+  ratingsReceived Rating[]          @relation("RatedRatings")
+  notifications   Notification[]
+  adminAlerts     AdminAlert[]      @relation("AlertDriver")
+  depositRequests DepositRequest[]
+
+  @@index([role])
+  @@index([isBanned])
+  @@map("users")
+}
+
+model DriverProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  carModel      String
+  carColor      String?
+  carPhotoUrl   String?
+  plateNumber   String
+  licenseNumber String
+  licenseExpiry DateTime?
+  isApproved    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("driver_profiles")
+}
+
+model Trip {
+  id                  String     @id @default(uuid())
+  driverId            String
+  fromCity            String
+  toCity              String
+  fromAddress         String?
+  toAddress           String?
+  gatheringLocation   String
+  gatheringLatitude   Float?
+  gatheringLongitude  Float?
+  departureTime       DateTime
+  estimatedArrival    DateTime?
+  price               Decimal    @db.Decimal(10, 2)
+  totalSeats          Int
+  availableSeats      Int
+  status              TripStatus @default(SCHEDULED)
+  driverConfirmedAt   DateTime?
+  reminderSentAt      DateTime?
+  adminAlertSentAt    DateTime?
+  notes               String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  // Relations
+  driver      User         @relation("DriverTrips", fields: [driverId], references: [id])
+  bookings    Booking[]
+  waitlists   Waitlist[]
+  ratings     Rating[]
+  adminAlerts AdminAlert[]
+
+  @@index([departureTime])
+  @@index([status])
+  @@index([fromCity, toCity])
+  @@index([driverId])
+  @@map("trips")
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  userId    String
+  tripId    String
+  seats     Int           @default(1)
+  status    BookingStatus @default(PENDING)
+  bookedAt  DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tripId])
+  @@index([status])
+  @@index([tripId])
+  @@map("bookings")
+}
+
+model Waitlist {
+  id        String   @id @default(uuid())
+  userId    String
+  tripId    String
+  position  Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tripId])
+  @@index([tripId, position])
+  @@map("waitlists")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id        String            @id @default(uuid())
+  walletId  String
+  type      TransactionType
+  amount    Decimal           @db.Decimal(12, 2)
+  status    TransactionStatus @default(PENDING)
+  reference String?
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  // Relations
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model DepositRequest {
+  id            String        @id @default(uuid())
+  userId        String
+  amount        Decimal       @db.Decimal(12, 2)
+  paymentMethod PaymentMethod
+  receiptUrl    String
+  status        DepositStatus @default(PENDING)
+  adminNote     String?
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  createdAt     DateTime      @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([userId])
+  @@map("deposit_requests")
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  raterId   String
+  ratedId   String
+  tripId    String
+  score     Int
+  review    String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  rater User @relation("RaterRatings", fields: [raterId], references: [id])
+  rated User @relation("RatedRatings", fields: [ratedId], references: [id])
+  trip  Trip @relation(fields: [tripId], references: [id])
+
+  @@unique([raterId, ratedId, tripId])
+  @@index([ratedId])
+  @@map("ratings")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AdminAlert {
+  id         String    @id @default(uuid())
+  type       AlertType
+  tripId     String
+  driverId   String
+  message    String
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  trip   Trip @relation(fields: [tripId], references: [id])
+  driver User @relation("AlertDriver", fields: [driverId], references: [id])
+
+  @@index([isResolved])
+  @@index([type])
+  @@map("admin_alerts")
+}
