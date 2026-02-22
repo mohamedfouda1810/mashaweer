@@ -8,9 +8,15 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS
+  // Enable CORS – supports comma-separated origins in FRONTEND_URL
+  const allowedOrigins = (
+    process.env.FRONTEND_URL || 'http://localhost:3000'
+  )
+    .split(',')
+    .map((o) => o.trim());
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   });
 
