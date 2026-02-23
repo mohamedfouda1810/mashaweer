@@ -66,11 +66,42 @@ class ApiClient {
     return this.request<Trip>(`/trips/${id}`);
   }
 
-  async createTrip(data: Partial<Trip>) {
+  async createTrip(data: {
+    fromCity: string;
+    toCity: string;
+    gatheringLocation: string;
+    departureTime: string;
+    price: number;
+    totalSeats: number;
+    notes?: string;
+  }) {
     return this.request<Trip>('/trips', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async uploadFile(file: File): Promise<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(error.message || 'Upload failed');
+    }
+
+    return response.json();
   }
 
   // ─── Bookings ────────────────────────────────────────────────────

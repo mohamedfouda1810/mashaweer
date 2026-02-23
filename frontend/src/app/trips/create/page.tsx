@@ -55,7 +55,6 @@ export default function CreateTripPage() {
                 departureTime: new Date(form.departureTime).toISOString(),
                 price: Number(form.price),
                 totalSeats: Number(form.totalSeats),
-                availableSeats: Number(form.totalSeats),
                 notes: form.notes || undefined,
             });
             if (response.data) {

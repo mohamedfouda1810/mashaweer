@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
+import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { CronModule } from './cron/cron.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -11,6 +13,7 @@ import { DriverModule } from './modules/driver/driver.module';
 import { RatingModule } from './modules/rating/rating.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -37,6 +40,13 @@ import { RolesGuard } from './common/guards/roles.guard';
     RatingModule,
     AdminModule,
     NotificationModule,
+    UploadModule,
+
+    // Static files (uploads)
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   providers: [
     {
