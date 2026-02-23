@@ -72,7 +72,7 @@ export default function RegisterPage() {
         'w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
 
     return (
-        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-12">
             <div className="w-full max-w-lg">
                 {/* Header */}
                 <div className="mb-8 text-center">

@@ -63,7 +63,7 @@ export default function DriverDashboardPage() {
 
     return (
         <ProtectedRoute allowedRoles={['DRIVER', 'ADMIN']}>
-            <div className="min-h-[calc(100vh-4rem)] px-4 py-8 sm:px-6 lg:px-8">
+            <div className="min-h-[calc(100vh-3.5rem)] px-4 py-8 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl">
                     {/* Header */}
                     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

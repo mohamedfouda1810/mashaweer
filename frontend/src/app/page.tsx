@@ -3,7 +3,7 @@ import { Car, ShieldCheck, MapPin, Wallet, Star, Users, Zap } from "lucide-react
 
 export default function Home() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
       {/* Hero Section */}
       <section className="relative flex flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6 lg:px-8 overflow-hidden">
         {/* Warm gradient background */}
