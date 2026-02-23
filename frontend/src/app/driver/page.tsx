@@ -91,7 +91,7 @@ export default function DriverDashboardPage() {
 
                     {/* Stats */}
                     {isLoading ? (
-                        <div className="flex justify-center py-12 text-blue-600">
+                        <div className="flex justify-center py-12 text-amber-600">
                             <Loader2 className="h-8 w-8 animate-spin" />
                         </div>
                     ) : (
@@ -99,8 +99,8 @@ export default function DriverDashboardPage() {
                             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                     <div className="flex items-center gap-4">
-                                        <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-                                            <Route className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                        <div className="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+                                            <Route className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Trips</p>
@@ -183,9 +183,9 @@ export default function DriverDashboardPage() {
                                                     </div>
                                                     <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-2">
                                                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${trip.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                trip.status === 'DRIVER_CONFIRMED' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                                    trip.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                                                                        'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300'
+                                                            trip.status === 'DRIVER_CONFIRMED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                                                trip.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                                    'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300'
                                                             }`}>
                                                             {trip.status.replace('_', ' ')}
                                                         </span>

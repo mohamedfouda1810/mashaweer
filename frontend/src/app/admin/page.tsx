@@ -146,14 +146,14 @@ export default function AdminPage() {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
                     </div>
                 ) : (
                     <>
                         {/* OVERVIEW */}
                         {tab === 'overview' && stats && (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard icon={<Users className="h-5 w-5 text-blue-600" />} label="Total Users" value={stats.totalUsers ?? '—'} bg="bg-blue-100 dark:bg-blue-900/30" />
+                                <StatCard icon={<Users className="h-5 w-5 text-amber-600" />} label="Total Users" value={stats.totalUsers ?? '—'} bg="bg-amber-100 dark:bg-amber-900/30" />
                                 <StatCard icon={<Car className="h-5 w-5 text-emerald-600" />} label="Total Drivers" value={stats.totalDrivers ?? '—'} bg="bg-emerald-100 dark:bg-emerald-900/30" />
                                 <StatCard icon={<Ticket className="h-5 w-5 text-indigo-600" />} label="Total Trips" value={stats.totalTrips ?? '—'} bg="bg-indigo-100 dark:bg-indigo-900/30" />
                                 <StatCard icon={<AlertTriangle className="h-5 w-5 text-amber-600" />} label="Open Alerts" value={stats.openAlerts ?? '—'} bg="bg-amber-100 dark:bg-amber-900/30" />
@@ -249,7 +249,7 @@ export default function AdminPage() {
                                                         <td className="px-4 py-3">
                                                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
                                                                 u.role === 'DRIVER' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                                                 }`}>
                                                                 {u.role}
                                                             </span>
@@ -313,7 +313,7 @@ export default function AdminPage() {
                                                                 href={d.receiptUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="mt-1 inline-block text-xs text-blue-600 hover:underline"
+                                                                className="mt-1 inline-block text-xs text-amber-600 hover:underline"
                                                             >
                                                                 View Receipt
                                                             </a>

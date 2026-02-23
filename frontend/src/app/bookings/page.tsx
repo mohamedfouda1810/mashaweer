@@ -42,7 +42,7 @@ export default function BookingsPage() {
     const statusConfig: Record<string, { icon: React.ReactNode; color: string }> = {
         PENDING: { icon: <Clock className="h-4 w-4" />, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' },
         CONFIRMED: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400' },
-        COMPLETED: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' },
+        COMPLETED: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400' },
         CANCELLED: { icon: <XCircle className="h-4 w-4" />, color: 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400' },
     };
 
@@ -68,7 +68,7 @@ export default function BookingsPage() {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
                     </div>
                 ) : error ? (
                     <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/30">
@@ -81,7 +81,7 @@ export default function BookingsPage() {
                         <p className="mt-1 text-sm text-zinc-500">Browse trips and book your first ride!</p>
                         <button
                             onClick={() => router.push('/trips')}
-                            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            className="mt-4 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
                         >
                             Browse Trips
                         </button>

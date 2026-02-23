@@ -43,7 +43,7 @@ export function TripList({ onBook, onViewDetails }: TripListProps) {
             {/* Loading State */}
             {isLoading && (
                 <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                    <Loader2 className="h-10 w-10 animate-spin text-amber-600" />
                     <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Finding trips for you...
                     </p>
@@ -117,8 +117,8 @@ export function TripList({ onBook, onViewDetails }: TripListProps) {
                                     <button
                                         onClick={() => setPage(page)}
                                         className={`h-9 w-9 rounded-lg text-sm font-medium transition-all ${page === meta.page
-                                                ? 'bg-blue-600 text-white shadow-sm'
-                                                : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                                            ? 'bg-amber-600 text-white shadow-sm'
+                                            : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                                             }`}
                                     >
                                         {page}

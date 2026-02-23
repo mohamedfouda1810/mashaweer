@@ -50,7 +50,7 @@ export function WalletCard() {
             case 'PAYMENT':
                 return <ArrowUpCircle className="h-4 w-4 text-red-500" />;
             case 'REFUND':
-                return <ArrowDownCircle className="h-4 w-4 text-blue-500" />;
+                return <ArrowDownCircle className="h-4 w-4 text-amber-500" />;
             default:
                 return <CreditCard className="h-4 w-4 text-zinc-500" />;
         }
@@ -72,7 +72,7 @@ export function WalletCard() {
     return (
         <div className="space-y-4">
             {/* Balance Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-6 text-white shadow-xl">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-orange-700 p-6 text-white shadow-xl">
                 <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/10" />
                 <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
                 <div className="relative">
@@ -111,7 +111,7 @@ export function WalletCard() {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="Enter amount"
-                                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
                         </div>
 
@@ -123,8 +123,8 @@ export function WalletCard() {
                                 <button
                                     onClick={() => setPaymentMethod('INSTAPAY')}
                                     className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${paymentMethod === 'INSTAPAY'
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                                            : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
+                                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                                        : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
                                         }`}
                                 >
                                     <CreditCard className="h-4 w-4" />
@@ -133,8 +133,8 @@ export function WalletCard() {
                                 <button
                                     onClick={() => setPaymentMethod('VODAFONE_CASH')}
                                     className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${paymentMethod === 'VODAFONE_CASH'
-                                            ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                                            : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
+                                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                                        : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
                                         }`}
                                 >
                                     <Smartphone className="h-4 w-4" />
@@ -154,7 +154,7 @@ export function WalletCard() {
                                     value={receiptUrl}
                                     onChange={(e) => setReceiptUrl(e.target.value)}
                                     placeholder="Paste receipt image URL"
-                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                 />
                             </div>
                             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -172,7 +172,7 @@ export function WalletCard() {
                             <button
                                 onClick={handleDeposit}
                                 disabled={!amount || !receiptUrl || isLoading}
-                                className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50"
+                                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 disabled:opacity-50"
                             >
                                 {isLoading ? 'Submitting...' : 'Submit Deposit'}
                             </button>
@@ -212,8 +212,8 @@ export function WalletCard() {
                                 <div className="flex items-center gap-2">
                                     <span
                                         className={`text-sm font-semibold ${tx.type === 'DEPOSIT' || tx.type === 'REFUND'
-                                                ? 'text-emerald-600 dark:text-emerald-400'
-                                                : 'text-red-600 dark:text-red-400'
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-red-600 dark:text-red-400'
                                             }`}
                                     >
                                         {tx.type === 'DEPOSIT' || tx.type === 'REFUND' ? '+' : '-'}

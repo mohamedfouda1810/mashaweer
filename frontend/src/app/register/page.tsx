@@ -69,14 +69,14 @@ export default function RegisterPage() {
     };
 
     const inputClass =
-        'w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
+        'w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
 
     return (
         <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
             <div className="w-full max-w-lg">
                 {/* Header */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-xl shadow-blue-500/20">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/20">
                         <Car className="h-8 w-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -108,8 +108,8 @@ export default function RegisterPage() {
                                 type="button"
                                 onClick={() => update('role', 'PASSENGER')}
                                 className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${form.role === 'PASSENGER'
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                                        : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400'
+                                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                                    : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400'
                                     }`}
                             >
                                 <Users className="h-4 w-4" />
@@ -119,8 +119,8 @@ export default function RegisterPage() {
                                 type="button"
                                 onClick={() => update('role', 'DRIVER')}
                                 className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${form.role === 'DRIVER'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                        : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400'
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                    : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400'
                                     }`}
                             >
                                 <CarFront className="h-4 w-4" />
@@ -250,7 +250,7 @@ export default function RegisterPage() {
                                     value={form.carModel}
                                     onChange={(e) => update('carModel', e.target.value)}
                                     placeholder="e.g. Toyota Corolla 2022"
-                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                                         value={form.plateNumber}
                                         onChange={(e) => update('plateNumber', e.target.value)}
                                         placeholder="ABC 1234"
-                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                     />
                                 </div>
                                 <div>
@@ -275,7 +275,7 @@ export default function RegisterPage() {
                                         value={form.licenseNumber}
                                         onChange={(e) => update('licenseNumber', e.target.value)}
                                         placeholder="License #"
-                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                     />
                                 </div>
                             </div>
@@ -285,7 +285,7 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                     >
                         {isLoading ? (
                             <>
@@ -301,7 +301,7 @@ export default function RegisterPage() {
                         Already have an account?{' '}
                         <Link
                             href="/login"
-                            className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            className="font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400"
                         >
                             Sign in
                         </Link>

@@ -22,7 +22,7 @@ import {
 const NOTIFICATION_ICONS: Record<string, React.ReactNode> = {
     BOOKING_CONFIRMED: <Ticket className="h-4 w-4 text-emerald-500" />,
     BOOKING_CANCELLED: <Ticket className="h-4 w-4 text-red-500" />,
-    TRIP_REMINDER: <Car className="h-4 w-4 text-blue-500" />,
+    TRIP_REMINDER: <Car className="h-4 w-4 text-amber-500" />,
     WAITLIST_PROMOTED: <Ticket className="h-4 w-4 text-amber-500" />,
     DEPOSIT_APPROVED: <CreditCard className="h-4 w-4 text-emerald-500" />,
     DEPOSIT_REJECTED: <CreditCard className="h-4 w-4 text-red-500" />,
@@ -86,7 +86,7 @@ export default function NotificationsPage() {
                     {unread > 0 && (
                         <button
                             onClick={handleMarkAll}
-                            className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400"
+                            className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400"
                         >
                             <CheckCheck className="h-3.5 w-3.5" />
                             Mark all read
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
                     </div>
                 ) : notifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 py-20 dark:border-zinc-800">
@@ -112,7 +112,7 @@ export default function NotificationsPage() {
                                 onClick={() => !n.isRead && handleMarkRead(n.id)}
                                 className={`cursor-pointer rounded-xl border p-4 transition-all ${n.isRead
                                     ? 'border-zinc-100 bg-white dark:border-zinc-800 dark:bg-zinc-900'
-                                    : 'border-blue-200 bg-blue-50/50 hover:bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/20 dark:hover:bg-blue-950/30'
+                                    : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 dark:hover:bg-amber-950/30'
                                     }`}
                             >
                                 <div className="flex items-start gap-3">
@@ -131,7 +131,7 @@ export default function NotificationsPage() {
                                         <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{n.message}</p>
                                     </div>
                                     {!n.isRead && (
-                                        <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                                        <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-amber-500" />
                                     )}
                                 </div>
                             </div>

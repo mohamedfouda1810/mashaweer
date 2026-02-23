@@ -63,7 +63,7 @@ export function Navbar() {
 
     const linkClasses = (href: string) =>
         `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${isActive(href)
-            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+            ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
             : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
         }`;
 
@@ -78,7 +78,7 @@ export function Navbar() {
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/20">
                         <Car className="h-5 w-5 text-white" />
                     </div>
                     <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
@@ -105,7 +105,7 @@ export function Navbar() {
                             {/* Notifications */}
                             <Link
                                 href="/notifications"
-                                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-amber-50 hover:text-amber-700 dark:text-zinc-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400"
                             >
                                 <Bell className="h-5 w-5" />
                                 {unreadCount > 0 && (
@@ -117,7 +117,7 @@ export function Navbar() {
 
                             {/* User menu */}
                             <div className="hidden items-center gap-3 border-l border-zinc-200 pl-3 md:flex dark:border-zinc-800">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-xs font-bold text-white">
                                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </div>
                                 <div className="text-right">
@@ -158,7 +158,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 href="/register"
-                                className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-md"
+                                className="rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md"
                             >
                                 Register
                             </Link>
