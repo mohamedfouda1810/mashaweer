@@ -9,6 +9,7 @@ interface DriverReadyButtonProps {
     tripId: string;
     departureTime: string;
     isConfirmed: boolean;
+    onConfirm?: () => void | Promise<void>;
 }
 
 export function DriverReadyButton({
@@ -78,8 +79,8 @@ export function DriverReadyButton({
                 onClick={handleConfirm}
                 disabled={isLoading}
                 className={`flex w-full items-center justify-center gap-3 rounded-xl py-4 text-lg font-bold text-white shadow-lg transition-all active:scale-95 ${isUrgent
-                        ? 'animate-pulse bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'
-                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
+                    ? 'animate-pulse bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
                     }`}
             >
                 <Car className="h-6 w-6" />

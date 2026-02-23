@@ -2,11 +2,7 @@
 // Mashaweer - Shared TypeScript Types
 // ============================================================================
 
-export enum Role {
-  ADMIN = 'ADMIN',
-  DRIVER = 'DRIVER',
-  PASSENGER = 'PASSENGER',
-}
+export type Role = 'ADMIN' | 'DRIVER' | 'PASSENGER';
 
 export enum TripStatus {
   SCHEDULED = 'SCHEDULED',

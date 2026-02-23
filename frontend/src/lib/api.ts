@@ -1,4 +1,4 @@
-import { TripFilters, ApiResponse, Trip, Booking, Wallet, Notification, Rating } from '@/types';
+import { TripFilters, ApiResponse, Trip, Booking, Wallet, Notification, Rating, User } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -30,6 +30,22 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  // ─── Auth ────────────────────────────────────────────────────────
+
+  async login(email: string, password: string) {
+    return this.request<{ token: string; user: User }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async register(data: any) {
+    return this.request<{ token: string; user: User }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   //  ─── Trips ──────────────────────────────────────────────────────
@@ -71,6 +87,10 @@ class ApiClient {
       `/bookings/${bookingId}`,
       { method: 'DELETE' },
     );
+  }
+
+  async getTripBookings(tripId: string) {
+    return this.request<Booking[]>(`/bookings/trip/${tripId}`);
   }
 
   async getMyBookings() {
@@ -132,6 +152,10 @@ class ApiClient {
     return this.request(`/ratings/user/${userId}`);
   }
 
+  async getTripRatings(tripId: string) {
+    return this.request(`/ratings/trip/${tripId}`);
+  }
+
   // ─── Notifications ──────────────────────────────────────────────
 
   async getNotifications(page = 1) {
@@ -146,6 +170,10 @@ class ApiClient {
     return this.request(`/notifications/${id}/read`, { method: 'PATCH' });
   }
 
+  async markAllAsRead() {
+    return this.request(`/notifications/read-all`, { method: 'PATCH' });
+  }
+
   // ─── Admin ───────────────────────────────────────────────────────
 
   async getAdminDashboard() {
@@ -154,6 +182,28 @@ class ApiClient {
 
   async getAdminAlerts(resolved = false) {
     return this.request(`/admin/alerts?resolved=${resolved}`);
+  }
+
+  async getUsers(role?: string) {
+    const query = role ? `?role=${role}` : '';
+    return this.request(`/admin/users${query}`);
+  }
+
+  async banUser(userId: string, reason?: string) {
+    return this.request(`/admin/users/${userId}/ban`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async unbanUser(userId: string) {
+    return this.request(`/admin/users/${userId}/unban`, {
+      method: 'POST',
+    });
+  }
+
+  async getPendingDeposits() {
+    return this.request('/admin/deposits/pending');
   }
 
   async markDriverNoShow(driverId: string, tripId: string) {

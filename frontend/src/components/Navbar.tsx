@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
-import { Role } from '@/types';
+
 import {
     Car,
     MapPin,
@@ -69,8 +69,8 @@ export function Navbar() {
 
     const allNavItems = [
         ...NAV_ITEMS,
-        ...(user?.role === Role.DRIVER || user?.role === Role.ADMIN ? DRIVER_ITEMS : []),
-        ...(user?.role === Role.ADMIN ? ADMIN_ITEMS : []),
+        ...(user?.role === 'DRIVER' || user?.role === 'ADMIN' ? DRIVER_ITEMS : []),
+        ...(user?.role === 'ADMIN' ? ADMIN_ITEMS : []),
     ];
 
     return (
