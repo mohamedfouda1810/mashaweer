@@ -26,10 +26,12 @@ import {
 
 interface DashboardData {
     upcomingTrips: Trip[];
-    completedTrips: Trip[];
-    totalEarnings: number;
+    pastTrips: Trip[];
+    allTrips: Trip[];
     totalTrips: number;
-    trips: Trip[];
+    totalEarnings: number;
+    rating: { average: number; totalReviews: number };
+    walletBalance: number;
 }
 
 export default function DriverDashboardPage() {
@@ -45,7 +47,7 @@ export default function DriverDashboardPage() {
             const dashRes = await api.getDriverDashboard();
             const dashData = dashRes.data as DashboardData;
             setData(dashData);
-            setMyTrips(dashData.trips || dashData.upcomingTrips || []);
+            setMyTrips(dashData?.allTrips || dashData?.upcomingTrips || []);
         } catch {
             // Error handling
         } finally {
@@ -115,8 +117,8 @@ export default function DriverDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Earnings</p>
-                                            <p className="text-2xl font-bold text-zinc-900 dark:text-white text-emerald-600">
-                                                EGP {data?.totalEarnings ?? completed.reduce((acc, t) => acc + (t.price * (t.totalSeats - t.availableSeats)), 0)}
+                                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                                EGP {data?.totalEarnings ?? 0}
                                             </p>
                                         </div>
                                     </div>

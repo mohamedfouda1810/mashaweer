@@ -66,7 +66,11 @@ export default function TripDetailPage() {
         setBookingError(null);
         try {
             const success = await bookSeat(tripId, seats);
-            if (success) setBookingSuccess(true);
+            if (success) {
+                setBookingSuccess(true);
+                // Refresh trip data to update available seats
+                fetchTrip(tripId);
+            }
         } catch (err: any) {
             setBookingError(err.message);
         }

@@ -54,6 +54,13 @@ export default function NotificationsPage() {
         if (isAuthenticated) fetchNotifications();
     }, [isAuthenticated, fetchNotifications]);
 
+    // Auto-refresh every 30 seconds
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const interval = setInterval(() => fetchNotifications(), 30000);
+        return () => clearInterval(interval);
+    }, [isAuthenticated, fetchNotifications]);
+
     const handleMarkRead = async (id: string) => {
         await api.markAsRead(id);
         setNotifications((prev) =>

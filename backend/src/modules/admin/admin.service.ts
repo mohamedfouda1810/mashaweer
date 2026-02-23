@@ -52,7 +52,8 @@ export class AdminService {
       activeTrips,
       pendingDeposits,
       unresolvedAlerts,
-      bannedDrivers,
+      bannedUsers,
+      totalBookings,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: 'DRIVER' } }),
@@ -65,6 +66,7 @@ export class AdminService {
       this.prisma.depositRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.adminAlert.count({ where: { isResolved: false } }),
       this.prisma.user.count({ where: { isBanned: true } }),
+      this.prisma.booking.count(),
     ]);
 
     return {
@@ -74,7 +76,10 @@ export class AdminService {
       activeTrips,
       pendingDeposits,
       unresolvedAlerts,
-      bannedDrivers,
+      openAlerts: unresolvedAlerts, // alias for frontend
+      bannedDrivers: bannedUsers,
+      bannedUsers,
+      totalBookings,
     };
   }
 

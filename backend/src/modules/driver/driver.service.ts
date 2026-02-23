@@ -171,7 +171,7 @@ export class DriverService {
    * Get driver dashboard data
    */
   async getDashboard(driverId: string) {
-    const [upcomingTrips, pastTrips, ratings, wallet] = await Promise.all([
+    const [upcomingTrips, pastTrips, ratings, wallet, totalTripsCount] = await Promise.all([
       this.prisma.trip.findMany({
         where: {
           driverId,
@@ -204,11 +204,29 @@ export class DriverService {
         where: { userId: driverId },
         select: { balance: true },
       }),
+      // Count ALL trips by this driver
+      this.prisma.trip.count({ where: { driverId } }),
     ]);
+
+    // Calculate total earnings from completed trips
+    const completedTrips = await this.prisma.trip.findMany({
+      where: { driverId, status: 'COMPLETED' },
+      select: { price: true, totalSeats: true, availableSeats: true },
+    });
+    const totalEarnings = completedTrips.reduce(
+      (acc, t) => acc + Number(t.price) * (t.totalSeats - t.availableSeats),
+      0,
+    );
+
+    // Combine upcoming + past for "allTrips" view
+    const allTrips = [...upcomingTrips, ...pastTrips];
 
     return {
       upcomingTrips,
       pastTrips,
+      allTrips,
+      totalTrips: totalTripsCount,
+      totalEarnings,
       rating: {
         average: ratings._avg.score ?? 0,
         totalReviews: ratings._count.score,

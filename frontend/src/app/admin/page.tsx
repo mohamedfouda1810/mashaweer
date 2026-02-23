@@ -306,7 +306,7 @@ export default function AdminPage() {
                                                             {d.amount} EGP via {d.paymentMethod.replace('_', ' ')}
                                                         </p>
                                                         <p className="text-xs text-zinc-500">
-                                                            User: {d.userId.slice(0, 8)}... • {new Date(d.createdAt).toLocaleString()}
+                                                            User: {(d as any).user?.firstName ? `${(d as any).user.firstName} ${(d as any).user.lastName}` : d.userId.slice(0, 8) + '...'} • {new Date(d.createdAt).toLocaleString()}
                                                         </p>
                                                         {d.receiptUrl && (
                                                             <a
