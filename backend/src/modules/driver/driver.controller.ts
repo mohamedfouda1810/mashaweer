@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Param, UseGuards } from '@nestjs/common';
 import { DriverService } from './driver.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';

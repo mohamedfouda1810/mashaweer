@@ -51,7 +51,9 @@ export class BookingService {
       });
 
       if (existingBooking && existingBooking.status !== 'CANCELLED') {
-        throw new ConflictException('You already have an active booking for this trip');
+        throw new ConflictException(
+          'You already have an active booking for this trip',
+        );
       }
 
       // 2. Check seat availability
@@ -68,7 +70,7 @@ export class BookingService {
       if (!wallet || Number(wallet.balance) < totalPrice) {
         throw new BadRequestException(
           `Insufficient balance. Required: ${totalPrice} EGP. ` +
-          `Current balance: ${wallet ? Number(wallet.balance) : 0} EGP.`,
+            `Current balance: ${wallet ? Number(wallet.balance) : 0} EGP.`,
         );
       }
 
@@ -139,7 +141,9 @@ export class BookingService {
     });
 
     if (existing) {
-      throw new ConflictException('You are already on the waitlist for this trip');
+      throw new ConflictException(
+        'You are already on the waitlist for this trip',
+      );
     }
 
     // Get next position

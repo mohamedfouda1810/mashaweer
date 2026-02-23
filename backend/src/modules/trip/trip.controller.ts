@@ -14,6 +14,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('trips')
 export class TripController {
@@ -30,6 +31,7 @@ export class TripController {
     return ApiResponseDto.success(trip, 'Trip created successfully');
   }
 
+  @Public()
   @Get()
   async findAll(@Query() filters: FilterTripsDto) {
     const result = await this.tripService.findAll(filters);
@@ -41,6 +43,7 @@ export class TripController {
     );
   }
 
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const trip = await this.tripService.findOne(id);
@@ -50,10 +53,7 @@ export class TripController {
   @Delete(':id')
   @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)
-  async cancel(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-  ) {
+  async cancel(@Param('id') id: string, @CurrentUser('id') userId: string) {
     const trip = await this.tripService.cancelTrip(id, userId);
     return ApiResponseDto.success(trip, 'Trip cancelled successfully');
   }

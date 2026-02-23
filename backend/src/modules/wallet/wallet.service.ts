@@ -92,7 +92,9 @@ export class WalletService {
       }
 
       if (deposit.status !== 'PENDING') {
-        throw new BadRequestException('This deposit has already been processed');
+        throw new BadRequestException(
+          'This deposit has already been processed',
+        );
       }
 
       // Update deposit status

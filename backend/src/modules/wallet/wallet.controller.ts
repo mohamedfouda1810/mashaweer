@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -32,7 +25,8 @@ export class WalletController {
   @Post('deposit')
   async requestDeposit(
     @CurrentUser('id') userId: string,
-    @Body() body: { amount: number; paymentMethod: PaymentMethod; receiptUrl: string },
+    @Body()
+    body: { amount: number; paymentMethod: PaymentMethod; receiptUrl: string },
   ) {
     const deposit = await this.walletService.createDepositRequest(
       userId,
@@ -84,7 +78,11 @@ export class WalletController {
     @CurrentUser('id') adminId: string,
     @Body('reason') reason?: string,
   ) {
-    const result = await this.walletService.rejectDeposit(depositId, adminId, reason);
+    const result = await this.walletService.rejectDeposit(
+      depositId,
+      adminId,
+      reason,
+    );
     return ApiResponseDto.success(result, 'Deposit rejected');
   }
 }

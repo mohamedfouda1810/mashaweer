@@ -33,10 +33,7 @@ export class NotificationController {
   }
 
   @Patch(':id/read')
-  async markAsRead(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-  ) {
+  async markAsRead(@Param('id') id: string, @CurrentUser('id') userId: string) {
     await this.notificationService.markAsRead(id, userId);
     return ApiResponseDto.success(null, 'Notification marked as read');
   }

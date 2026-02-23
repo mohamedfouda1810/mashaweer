@@ -71,7 +71,7 @@ export class DriverService {
 
     this.logger.log(
       `Driver ${driverId} confirmed ready for trip ${tripId} ` +
-      `(${minutesUntilDeparture.toFixed(1)} min before departure)`,
+        `(${minutesUntilDeparture.toFixed(1)} min before departure)`,
     );
 
     // Notify all confirmed passengers
@@ -147,9 +147,7 @@ export class DriverService {
         data: {
           userId: driverId,
           type: shouldBan ? 'ACCOUNT_BANNED' : 'DRIVER_ALERT',
-          title: shouldBan
-            ? 'Account Banned ⛔'
-            : 'No-Show Warning ⚠️',
+          title: shouldBan ? 'Account Banned ⛔' : 'No-Show Warning ⚠️',
           message: shouldBan
             ? `Your account has been banned due to ${newNoShowCount} no-show events. Contact support to appeal.`
             : `You have recorded ${newNoShowCount} no-show event(s). 2 no-shows will result in an automatic ban.`,
@@ -158,7 +156,7 @@ export class DriverService {
 
       this.logger.warn(
         `Driver ${driverId} marked as no-show for trip ${tripId}. ` +
-        `Total no-shows: ${newNoShowCount}. Banned: ${shouldBan}`,
+          `Total no-shows: ${newNoShowCount}. Banned: ${shouldBan}`,
       );
 
       return {

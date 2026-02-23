@@ -9,9 +9,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Enable CORS – supports comma-separated origins in FRONTEND_URL
-  const allowedOrigins = (
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  )
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
     .split(',')
     .map((o) => o.trim());
 

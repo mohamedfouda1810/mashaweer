@@ -52,7 +52,9 @@ export class RatingService {
     }
 
     if (trip.status !== 'COMPLETED') {
-      throw new BadRequestException('You can only rate after the trip is completed');
+      throw new BadRequestException(
+        'You can only rate after the trip is completed',
+      );
     }
 
     // Verify participation
@@ -66,7 +68,9 @@ export class RatingService {
     }
 
     if (!participantIds.includes(ratedId)) {
-      throw new BadRequestException('The rated user did not participate in this trip');
+      throw new BadRequestException(
+        'The rated user did not participate in this trip',
+      );
     }
 
     // Check for duplicate rating
@@ -77,7 +81,9 @@ export class RatingService {
     });
 
     if (existing) {
-      throw new ConflictException('You have already rated this user for this trip');
+      throw new ConflictException(
+        'You have already rated this user for this trip',
+      );
     }
 
     return this.prisma.rating.create({
@@ -129,10 +135,20 @@ export class RatingService {
       where: { tripId },
       include: {
         rater: {
-          select: { firstName: true, lastName: true, avatarUrl: true, role: true },
+          select: {
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            role: true,
+          },
         },
         rated: {
-          select: { firstName: true, lastName: true, avatarUrl: true, role: true },
+          select: {
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            role: true,
+          },
         },
       },
     });

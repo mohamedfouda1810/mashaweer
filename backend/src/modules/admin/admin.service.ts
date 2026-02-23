@@ -58,7 +58,9 @@ export class AdminService {
       this.prisma.user.count({ where: { role: 'DRIVER' } }),
       this.prisma.trip.count(),
       this.prisma.trip.count({
-        where: { status: { in: ['SCHEDULED', 'DRIVER_CONFIRMED', 'IN_PROGRESS'] } },
+        where: {
+          status: { in: ['SCHEDULED', 'DRIVER_CONFIRMED', 'IN_PROGRESS'] },
+        },
       }),
       this.prisma.depositRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.adminAlert.count({ where: { isResolved: false } }),

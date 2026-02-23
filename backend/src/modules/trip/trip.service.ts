@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTripDto, FilterTripsDto } from './dto/trip.dto';
 import { Prisma, TripStatus } from '@prisma/client';
@@ -49,7 +53,15 @@ export class TripService {
    * Get all trips with filtering, sorting, and pagination
    */
   async findAll(filters: FilterTripsDto) {
-    const { fromCity, toCity, date, minPrice, maxPrice, page = 1, limit = 10 } = filters;
+    const {
+      fromCity,
+      toCity,
+      date,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 10,
+    } = filters;
 
     const where: Prisma.TripWhereInput = {
       status: { in: [TripStatus.SCHEDULED, TripStatus.DRIVER_CONFIRMED] },

@@ -49,7 +49,7 @@ export class DriverReadinessCronService {
   private async send3HourReminders(now: Date) {
     const threeHoursFromNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
     const windowStart = new Date(threeHoursFromNow.getTime() - 60 * 1000); // -1 min
-    const windowEnd = new Date(threeHoursFromNow.getTime() + 60 * 1000);   // +1 min
+    const windowEnd = new Date(threeHoursFromNow.getTime() + 60 * 1000); // +1 min
 
     const tripsNeedingReminder = await this.prisma.trip.findMany({
       where: {
@@ -101,7 +101,7 @@ export class DriverReadinessCronService {
 
         this.logger.log(
           `3hr reminder sent to driver ${trip.driver.firstName} ` +
-          `(${trip.driver.id}) for trip ${trip.id}`,
+            `(${trip.driver.id}) for trip ${trip.id}`,
         );
       } catch (error) {
         this.logger.error(
@@ -125,18 +125,16 @@ export class DriverReadinessCronService {
    * Creates an urgent AdminAlert for the admin dashboard.
    */
   private async check15MinuteReadiness(now: Date) {
-    const fifteenMinutesFromNow = new Date(
-      now.getTime() + 15 * 60 * 1000,
-    );
+    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
 
     const unconfirmedTrips = await this.prisma.trip.findMany({
       where: {
         status: TripStatus.SCHEDULED,
         driverConfirmedAt: null,
-        adminAlertSentAt: null,  // Don't send duplicate alerts
+        adminAlertSentAt: null, // Don't send duplicate alerts
         departureTime: {
-          gte: now,                     // Trip hasn't departed yet
-          lte: fifteenMinutesFromNow,   // Departing within 15 minutes
+          gte: now, // Trip hasn't departed yet
+          lte: fifteenMinutesFromNow, // Departing within 15 minutes
         },
       },
       include: {
@@ -194,8 +192,8 @@ export class DriverReadinessCronService {
 
         this.logger.warn(
           `ADMIN ALERT: Driver ${trip.driver.id} has NOT confirmed readiness ` +
-          `for trip ${trip.id} departing at ${trip.departureTime.toISOString()}. ` +
-          `${trip._count.bookings} passengers affected.`,
+            `for trip ${trip.id} departing at ${trip.departureTime.toISOString()}. ` +
+            `${trip._count.bookings} passengers affected.`,
         );
       } catch (error) {
         this.logger.error(
@@ -207,7 +205,7 @@ export class DriverReadinessCronService {
     if (unconfirmedTrips.length > 0) {
       this.logger.warn(
         `Created ${unconfirmedTrips.length} urgent admin alert(s) ` +
-        `for unconfirmed drivers`,
+          `for unconfirmed drivers`,
       );
     }
   }

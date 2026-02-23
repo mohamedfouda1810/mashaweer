@@ -10,7 +10,8 @@ export class RatingController {
   @Post()
   async create(
     @CurrentUser('id') raterId: string,
-    @Body() body: { ratedId: string; tripId: string; score: number; review?: string },
+    @Body()
+    body: { ratedId: string; tripId: string; score: number; review?: string },
   ) {
     const rating = await this.ratingService.createRating(raterId, body);
     return ApiResponseDto.success(rating, 'Rating submitted');
