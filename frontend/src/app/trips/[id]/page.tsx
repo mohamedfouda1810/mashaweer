@@ -22,6 +22,8 @@ import {
     MessageSquare,
     CheckCircle2,
     AlertTriangle,
+    Phone,
+    Flag,
 } from 'lucide-react';
 
 export default function TripDetailPage() {
@@ -64,15 +66,14 @@ export default function TripDetailPage() {
             return;
         }
         setBookingError(null);
-        try {
-            const success = await bookSeat(tripId, seats);
-            if (success) {
-                setBookingSuccess(true);
-                // Refresh trip data to update available seats
-                fetchTrip(tripId);
-            }
-        } catch (err: any) {
-            setBookingError(err.message);
+        const success = await bookSeat(tripId, seats);
+        if (success) {
+            setBookingSuccess(true);
+            fetchTrip(tripId);
+        } else {
+            // Get the error from the booking store
+            const storeError = useBookingStore.getState().error;
+            setBookingError(storeError || 'Booking failed. Please try again.');
         }
     };
 
@@ -100,7 +101,7 @@ export default function TripDetailPage() {
     if (isLoading) {
         return (
             <div className="flex min-h-[50vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
             </div>
         );
     }
@@ -112,7 +113,7 @@ export default function TripDetailPage() {
                 <h2 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                     {error || 'Trip not found'}
                 </h2>
-                <button onClick={() => router.back()} className="mt-4 text-amber-600 hover:underline">
+                <button onClick={() => router.back()} className="mt-4 text-teal-600 hover:underline">
                     Go back
                 </button>
             </div>
@@ -140,13 +141,13 @@ export default function TripDetailPage() {
                 <div className="space-y-6 lg:col-span-2">
                     {/* Route Card */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="mb-4 flex items-center justify-between">
+                        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
                                 {trip.fromCity} → {trip.toCity}
                             </h1>
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${trip.status === 'SCHEDULED' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            <span className={`self-start rounded-full px-3 py-1 text-xs font-semibold ${trip.status === 'SCHEDULED' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
                                 trip.status === 'DRIVER_CONFIRMED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                    trip.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                    trip.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
                                         trip.status === 'COMPLETED' ? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' :
                                             'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                 }`}>
@@ -157,18 +158,18 @@ export default function TripDetailPage() {
                         {/* Route */}
                         <div className="flex items-start gap-3">
                             <div className="flex flex-col items-center gap-0.5 pt-1">
-                                <div className="h-3 w-3 rounded-full border-2 border-amber-500 bg-amber-100" />
-                                <div className="h-12 w-0.5 bg-gradient-to-b from-amber-500 to-emerald-500 opacity-40" />
-                                <div className="h-3 w-3 rounded-full border-2 border-emerald-500 bg-emerald-100" />
+                                <div className="h-3 w-3 rounded-full border-2 border-teal-500 bg-teal-100" />
+                                <div className="h-12 w-0.5 bg-gradient-to-b from-teal-500 to-indigo-500 opacity-40" />
+                                <div className="h-3 w-3 rounded-full border-2 border-indigo-500 bg-indigo-100" />
                             </div>
                             <div className="flex-1 space-y-4">
                                 <div>
                                     <p className="font-medium text-zinc-900 dark:text-zinc-100">{trip.fromCity}</p>
-                                    {trip.fromAddress && <p className="text-sm text-zinc-500">{trip.fromAddress}</p>}
+                                    {trip.gatheringLocation && <p className="text-sm text-zinc-500"><Navigation className="mr-1 inline h-3 w-3" />Group Point: {trip.gatheringLocation}</p>}
                                 </div>
                                 <div>
                                     <p className="font-medium text-zinc-900 dark:text-zinc-100">{trip.toCity}</p>
-                                    {trip.toAddress && <p className="text-sm text-zinc-500">{trip.toAddress}</p>}
+                                    {trip.toAddress && <p className="text-sm text-zinc-500"><Flag className="mr-1 inline h-3 w-3" />Destination Point: {trip.toAddress}</p>}
                                 </div>
                             </div>
                         </div>
@@ -176,7 +177,7 @@ export default function TripDetailPage() {
                         {/* Details Grid */}
                         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <CalendarDays className="h-4 w-4 text-amber-500" />
+                                <CalendarDays className="h-4 w-4 text-teal-500" />
                                 <div>
                                     <p className="text-xs text-zinc-500">Date</p>
                                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -194,16 +195,16 @@ export default function TripDetailPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <Navigation className="h-4 w-4 text-pink-500" />
+                                <CreditCard className="h-4 w-4 text-cyan-500" />
                                 <div>
-                                    <p className="text-xs text-zinc-500">Meeting Point</p>
-                                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                                        {trip.gatheringLocation}
+                                    <p className="text-xs text-zinc-500">Price</p>
+                                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {Number(trip.price).toFixed(0)} EGP
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <Users className="h-4 w-4 text-amber-500" />
+                                <Users className="h-4 w-4 text-teal-500" />
                                 <div>
                                     <p className="text-xs text-zinc-500">Seats</p>
                                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -214,7 +215,7 @@ export default function TripDetailPage() {
                         </div>
 
                         {trip.notes && (
-                            <div className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+                            <div className="mt-4 rounded-lg bg-teal-50 p-3 text-sm text-teal-800 dark:bg-teal-900/20 dark:text-teal-300">
                                 <strong>Notes:</strong> {trip.notes}
                             </div>
                         )}
@@ -237,24 +238,39 @@ export default function TripDetailPage() {
                             </h2>
                             <div className="space-y-3">
                                 {bookings.map((b) => (
-                                    <div key={b.id} className="flex items-center justify-between rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                    <div key={b.id} className="flex flex-col gap-2 rounded-lg bg-zinc-50 p-3 sm:flex-row sm:items-center sm:justify-between dark:bg-zinc-800/50">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-xs font-bold text-white">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-xs font-bold text-white">
                                                 {(b as any).user?.firstName?.[0]}{(b as any).user?.lastName?.[0]}
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                                     {(b as any).user?.firstName} {(b as any).user?.lastName}
                                                 </p>
-                                                <p className="text-xs text-zinc-500">{b.seats} seat(s)</p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="text-xs text-zinc-500">{b.seats} seat(s)</p>
+                                                    {(b as any).user?.phone && (
+                                                        <p className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400">
+                                                            <Phone className="h-3 w-3" />
+                                                            {(b as any).user.phone}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <span className={`text-xs font-medium ${b.status === 'CONFIRMED' ? 'text-emerald-600' :
-                                            b.status === 'PENDING' ? 'text-amber-600' :
-                                                'text-zinc-500'
-                                            }`}>
-                                            {b.status}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className={`text-xs font-medium ${b.status === 'CONFIRMED' ? 'text-emerald-600' :
+                                                b.status === 'PENDING' ? 'text-amber-600' :
+                                                    'text-zinc-500'
+                                                }`}>
+                                                {b.status}
+                                            </span>
+                                            {b.status === 'CONFIRMED' && (
+                                                <span className={`text-xs font-semibold ${b.isReady ? 'text-emerald-500' : 'text-zinc-400'}`}>
+                                                    {b.isReady ? '✓ Ready' : '⏳ Pending Check-in'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -270,7 +286,7 @@ export default function TripDetailPage() {
                             {isCompleted && isAuthenticated && !isDriver && (
                                 <button
                                     onClick={() => setShowRating(!showRating)}
-                                    className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400"
+                                    className="flex items-center gap-1 rounded-lg bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400"
                                 >
                                     <Star className="h-3.5 w-3.5" />
                                     Rate Driver
@@ -297,12 +313,12 @@ export default function TripDetailPage() {
                                     onChange={(e) => setRatingReview(e.target.value)}
                                     placeholder="Write a review (optional)"
                                     rows={3}
-                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-amber-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
+                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
                                 />
                                 <button
                                     onClick={handleSubmitRating}
                                     disabled={submittingRating}
-                                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                                    className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
                                 >
                                     {submittingRating ? 'Submitting...' : 'Submit Rating'}
                                 </button>
@@ -341,7 +357,7 @@ export default function TripDetailPage() {
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500">Driver</h3>
                         <div className="flex items-center gap-3">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-lg font-bold text-white">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-lg font-bold text-white">
                                 {trip.driver?.firstName?.[0]}{trip.driver?.lastName?.[0]}
                             </div>
                             <div>
@@ -357,6 +373,12 @@ export default function TripDetailPage() {
                                         {trip.driver.driverProfile.plateNumber}
                                     </span>
                                 )}
+                                {trip.driver?.phone && (
+                                    <p className="mt-1 flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400">
+                                        <Phone className="h-3 w-3" />
+                                        {trip.driver.phone}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -369,6 +391,7 @@ export default function TripDetailPage() {
                                 {Number(trip.price).toFixed(0)}
                                 <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
                             </p>
+                            <p className="mt-1 text-xs text-zinc-400">Total for {seats} seat(s): {(Number(trip.price) * seats).toFixed(0)} EGP</p>
                         </div>
 
                         {bookingSuccess ? (
@@ -377,7 +400,7 @@ export default function TripDetailPage() {
                                 <p className="mt-2 font-medium text-emerald-700 dark:text-emerald-400">Booked!</p>
                                 <button
                                     onClick={() => router.push('/bookings')}
-                                    className="mt-2 text-sm text-amber-600 hover:underline"
+                                    className="mt-2 text-sm text-teal-600 hover:underline"
                                 >
                                     View my bookings
                                 </button>
@@ -395,7 +418,7 @@ export default function TripDetailPage() {
                                             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                         >
                                             {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => (
-                                                <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Number(trip.price) * n} EGP</option>
+                                                <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(Number(trip.price) * n)} EGP</option>
                                             ))}
                                         </select>
                                     </div>
@@ -409,8 +432,8 @@ export default function TripDetailPage() {
                                     onClick={handleBook}
                                     disabled={isBooking}
                                     className={`w-full rounded-lg py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] ${isFull
-                                        ? 'bg-amber-500 hover:bg-amber-600'
-                                        : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-indigo-700 shadow-sm hover:shadow-md'
+                                        ? 'bg-indigo-500 hover:bg-indigo-600'
+                                        : 'bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 shadow-sm hover:shadow-md'
                                         } disabled:opacity-50`}
                                 >
                                     {isBooking ? 'Processing...' : isFull ? 'Join Waitlist' : `Book ${seats} Seat${seats > 1 ? 's' : ''}`}
@@ -421,7 +444,7 @@ export default function TripDetailPage() {
 
                     {/* Waitlist info */}
                     {trip._count?.waitlists && trip._count.waitlists > 0 && (
-                        <div className="rounded-xl bg-amber-50 p-4 text-center text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                        <div className="rounded-xl bg-indigo-50 p-4 text-center text-sm text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
                             <Users className="mx-auto mb-1 h-5 w-5" />
                             {trip._count.waitlists} on waitlist
                         </div>

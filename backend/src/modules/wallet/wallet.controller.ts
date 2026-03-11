@@ -49,6 +49,16 @@ export class WalletController {
     return ApiResponseDto.success(transactions);
   }
 
+  // ─── Driver Endpoints ────────────────────────────────────────────────
+
+  @Get('driver-weekly-stats')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async driverWeeklyStats(@CurrentUser('id') driverId: string) {
+    const stats = await this.walletService.getDriverWeeklyStats(driverId);
+    return ApiResponseDto.success(stats);
+  }
+
   // ─── Admin Endpoints ────────────────────────────────────────────────
 
   @Get('admin/pending-deposits')

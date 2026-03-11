@@ -13,7 +13,10 @@ import {
     Loader2,
     Users,
     CarFront,
+    UploadCloud,
+    XCircle,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -29,8 +32,25 @@ export default function RegisterPage() {
         plateNumber: '',
         licenseNumber: '',
     });
+    const [files, setFiles] = useState({
+        personalPhoto: null as File | null,
+        identityPhotos: [] as File[],
+        drivingLicensePhotos: [] as File[],
+        carLicensePhotos: [] as File[],
+    });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const handleFileChange = (field: keyof typeof files, e: React.ChangeEvent<HTMLInputElement>, maxCount: number = 2) => {
+        if (e.target.files) {
+            const arr = Array.from(e.target.files);
+            if (field === 'personalPhoto') {
+                setFiles(prev => ({ ...prev, [field]: arr[0] }));
+            } else {
+                setFiles(prev => ({ ...prev, [field]: arr.slice(0, maxCount) }));
+            }
+        }
+    };
 
     const update = (field: string, value: string) =>
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -45,6 +65,24 @@ export default function RegisterPage() {
         setError(null);
 
         try {
+            let photoUrls: any = {};
+            
+            if (form.role === 'DRIVER') {
+                if (!files.personalPhoto || files.identityPhotos.length < 2 || files.drivingLicensePhotos.length < 2 || files.carLicensePhotos.length < 2) {
+                    setError('Please upload all required driver photos (2 of each required front & back)');
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Upload files first
+                const upload = async (file: File) => (await api.uploadFile(file)).url;
+                
+                photoUrls.personalPhotoUrl = await upload(files.personalPhoto);
+                photoUrls.identityPhotos = await Promise.all(files.identityPhotos.map(f => upload(f)));
+                photoUrls.drivingLicensePhotos = await Promise.all(files.drivingLicensePhotos.map(f => upload(f)));
+                photoUrls.carLicensePhotos = await Promise.all(files.carLicensePhotos.map(f => upload(f)));
+            }
+
             await api.register({
                 firstName: form.firstName,
                 lastName: form.lastName,
@@ -57,9 +95,13 @@ export default function RegisterPage() {
                         carModel: form.carModel,
                         plateNumber: form.plateNumber,
                         licenseNumber: form.licenseNumber,
+                        ...photoUrls,
                     }
                     : {}),
             });
+            toast.success(form.role === 'DRIVER' 
+                ? 'Registration submitted! Awaiting admin approval.' 
+                : 'Registration successful! Please sign in.');
             router.push('/login');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
@@ -69,14 +111,14 @@ export default function RegisterPage() {
     };
 
     const inputClass =
-        'w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
+        'w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
 
     return (
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-12">
             <div className="w-full max-w-lg">
                 {/* Header */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/20">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 shadow-xl shadow-teal-500/20">
                         <Car className="h-8 w-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -108,7 +150,7 @@ export default function RegisterPage() {
                                 type="button"
                                 onClick={() => update('role', 'PASSENGER')}
                                 className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${form.role === 'PASSENGER'
-                                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400'
                                     : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400'
                                     }`}
                             >
@@ -250,7 +292,7 @@ export default function RegisterPage() {
                                     value={form.carModel}
                                     onChange={(e) => update('carModel', e.target.value)}
                                     placeholder="e.g. Toyota Corolla 2022"
-                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -263,7 +305,7 @@ export default function RegisterPage() {
                                         value={form.plateNumber}
                                         onChange={(e) => update('plateNumber', e.target.value)}
                                         placeholder="ABC 1234"
-                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                     />
                                 </div>
                                 <div>
@@ -275,8 +317,67 @@ export default function RegisterPage() {
                                         value={form.licenseNumber}
                                         onChange={(e) => update('licenseNumber', e.target.value)}
                                         placeholder="License #"
-                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                     />
+                                </div>
+                            </div>
+                            
+                            <div className="mt-4 space-y-4">
+                                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Upload Documents</h4>
+                                
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                        Personal Photo
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange('personalPhoto', e, 1)}
+                                        className="text-xs"
+                                    />
+                                    {files.personalPhoto && <span className="text-xs text-emerald-600 ml-2">1 file loaded</span>}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                            Identity (Front & Back)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => handleFileChange('identityPhotos', e, 2)}
+                                            className="text-xs"
+                                        />
+                                        {files.identityPhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.identityPhotos.length} files loaded</span>}
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                            Driving License (Front & Back)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => handleFileChange('drivingLicensePhotos', e, 2)}
+                                            className="text-xs"
+                                        />
+                                        {files.drivingLicensePhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.drivingLicensePhotos.length} files loaded</span>}
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                            Car License (Front & Back)
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => handleFileChange('carLicensePhotos', e, 2)}
+                                            className="text-xs"
+                                        />
+                                        {files.carLicensePhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.carLicensePhotos.length} files loaded</span>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -285,7 +386,7 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                     >
                         {isLoading ? (
                             <>
@@ -301,7 +402,7 @@ export default function RegisterPage() {
                         Already have an account?{' '}
                         <Link
                             href="/login"
-                            className="font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                            className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400"
                         >
                             Sign in
                         </Link>

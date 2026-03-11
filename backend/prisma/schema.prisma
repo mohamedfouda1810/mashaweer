@@ -91,6 +91,7 @@ model User {
   role          Role      @default(PASSENGER)
   avatarUrl     String?
   isBanned      Boolean   @default(false)
+  banUntil      DateTime?
   banReason     String?
   noShowCount   Int       @default(0)
   isVerified    Boolean   @default(false)
@@ -115,15 +116,19 @@ model User {
 }
 
 model DriverProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  carModel      String
-  carColor      String?
-  carPhotoUrl   String?
-  plateNumber   String
-  licenseNumber String
-  licenseExpiry DateTime?
-  isApproved    Boolean  @default(false)
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  carModel             String
+  carColor             String?
+  carPhotoUrl          String?
+  personalPhotoUrl     String?
+  identityPhotos       String[]
+  drivingLicensePhotos String[]
+  carLicensePhotos     String[]
+  plateNumber          String
+  licenseNumber        String
+  licenseExpiry        DateTime?
+  isApproved           Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -150,6 +155,7 @@ model Trip {
   availableSeats      Int
   status              TripStatus @default(SCHEDULED)
   driverConfirmedAt   DateTime?
+  driverReadyAt       DateTime?
   reminderSentAt      DateTime?
   adminAlertSentAt    DateTime?
   notes               String?
@@ -176,6 +182,7 @@ model Booking {
   tripId    String
   seats     Int           @default(1)
   status    BookingStatus @default(PENDING)
+  isReady   Boolean       @default(false)
   bookedAt  DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 

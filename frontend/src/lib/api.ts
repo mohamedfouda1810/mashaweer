@@ -70,6 +70,7 @@ class ApiClient {
     fromCity: string;
     toCity: string;
     gatheringLocation: string;
+    toAddress?: string;
     departureTime: string;
     price: number;
     totalSeats: number;
@@ -153,6 +154,18 @@ class ApiClient {
     return this.request('/wallet/transactions');
   }
 
+  async getDriverWeeklyStats() {
+    return this.request<{
+      totalTrips: number;
+      grossIncome: number;
+      netIncome: number;
+      commission: number;
+      commissionRate: number;
+      instapayPhone: string;
+      weekStart: string;
+    }>('/wallet/driver-weekly-stats');
+  }
+
   // ─── Driver ──────────────────────────────────────────────────────
 
   async confirmReady(tripId: string) {
@@ -233,6 +246,13 @@ class ApiClient {
     });
   }
 
+  async changeUserRole(userId: string, role: string) {
+    return this.request(`/admin/users/${userId}/role`, {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    });
+  }
+
   async getPendingDeposits() {
     return this.request('/admin/deposits/pending');
   }
@@ -253,6 +273,38 @@ class ApiClient {
     return this.request(`/admin/deposits/${depositId}/reject`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
+    });
+  }
+
+  async getPendingDrivers() {
+    return this.request('/admin/drivers/pending');
+  }
+
+  async approveDriver(driverId: string) {
+    return this.request(`/admin/drivers/${driverId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async declineDriver(driverId: string) {
+    return this.request(`/admin/drivers/${driverId}/decline`, {
+      method: 'POST',
+    });
+  }
+
+  async getAllTripsAdmin(page = 1) {
+    return this.request(`/admin/trips?page=${page}`);
+  }
+
+  async cancelTripAdmin(tripId: string) {
+    return this.request(`/trips/${tripId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async confirmPassengerReady(bookingId: string) {
+    return this.request(`/bookings/${bookingId}/ready`, {
+      method: 'POST',
     });
   }
 }

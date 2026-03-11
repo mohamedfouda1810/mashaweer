@@ -232,4 +232,60 @@ export class WalletService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /**
+   * Get weekly stats for a driver (current week Mon-Sun)
+   */
+  async getDriverWeeklyStats(driverId: string) {
+    const now = new Date();
+    // Calculate start of current week (Monday)
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // Get completed trips this week
+    const completedTrips = await this.prisma.trip.findMany({
+      where: {
+        driverId,
+        status: 'COMPLETED',
+        updatedAt: { gte: startOfWeek },
+      },
+      include: {
+        bookings: {
+          where: { status: 'CONFIRMED' },
+          select: { seats: true },
+        },
+      },
+    });
+
+    const totalTrips = completedTrips.length;
+
+    // Calculate net income from completed trips (price per seat = trip.price / totalSeats)
+    let grossIncome = 0;
+    for (const trip of completedTrips) {
+      const totalBookedSeats = trip.bookings.reduce(
+        (sum, b) => sum + b.seats,
+        0,
+      );
+      const pricePerSeat = Number(trip.price) / trip.totalSeats;
+      grossIncome += pricePerSeat * totalBookedSeats;
+    }
+
+    const commissionRate = 0.15; // 15% company commission
+    const commission = Math.round(grossIncome * commissionRate * 100) / 100;
+    const netIncome = Math.round((grossIncome - commission) * 100) / 100;
+
+    return {
+      totalTrips,
+      grossIncome,
+      netIncome,
+      commission,
+      commissionRate: commissionRate * 100, // 15%
+      instapayPhone: '01012345678', // Company InstaPay phone
+      weekStart: startOfWeek.toISOString(),
+    };
+  }
 }
+

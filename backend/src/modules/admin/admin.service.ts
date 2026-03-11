@@ -97,6 +97,16 @@ export class AdminService {
   }
 
   /**
+   * Change user role
+   */
+  async changeRole(userId: string, role: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role: role as any },
+    });
+  }
+
+  /**
    * Get all users with pagination and filters
    */
   async getUsers(role?: string, page = 1, limit = 20) {
@@ -128,5 +138,83 @@ export class AdminService {
     ]);
 
     return { users, total };
+  }
+
+  /**
+   * Get pending driver profiles
+   */
+  async getPendingDrivers() {
+    return this.prisma.driverProfile.findMany({
+      where: { isApproved: false },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /**
+   * Approve a driver profile
+   */
+  async approveDriver(driverProfileId: string) {
+    return this.prisma.driverProfile.update({
+      where: { id: driverProfileId },
+      data: { isApproved: true },
+    });
+  }
+
+  /**
+   * Decline/Delete a driver profile
+   */
+  async declineDriver(driverProfileId: string) {
+    const profile = await this.prisma.driverProfile.findUnique({
+      where: { id: driverProfileId },
+      include: { user: true }
+    });
+    
+    if (profile) {
+      // Revert user role to passenger if their driver application is declined
+      if (profile.user.role === 'DRIVER') {
+        await this.prisma.user.update({
+          where: { id: profile.userId },
+          data: { role: 'PASSENGER' }
+        });
+      }
+      return this.prisma.driverProfile.delete({
+        where: { id: driverProfileId },
+      });
+    }
+  }
+
+  /**
+   * Get all trips for admin dashboard
+   */
+  async getAllTrips(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [trips, total] = await Promise.all([
+      this.prisma.trip.findMany({
+        skip,
+        take: limit,
+        orderBy: { departureTime: 'desc' },
+        include: {
+          driver: {
+            select: { firstName: true, lastName: true, phone: true },
+          },
+          _count: {
+            select: { bookings: true },
+          },
+        },
+      }),
+      this.prisma.trip.count(),
+    ]);
+
+    return { trips, total };
   }
 }

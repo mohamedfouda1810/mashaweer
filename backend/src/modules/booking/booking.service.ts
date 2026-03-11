@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationGateway } from '../notification/notification.gateway';
 import { BookingStatus } from '@prisma/client';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class BookingService {
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly notificationService: NotificationService,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   /**
@@ -62,8 +64,9 @@ export class BookingService {
         return this.addToWaitlist(tx, userId, tripId);
       }
 
-      // 3. Calculate total price
-      const totalPrice = Number(trip.price) * seats;
+      // 3. Calculate total price (trip.price is price per seat)
+      const pricePerSeat = Number(trip.price);
+      const totalPrice = pricePerSeat * seats;
 
       // 4. Verify wallet balance
       const wallet = await tx.wallet.findUnique({ where: { userId } });
@@ -113,9 +116,14 @@ export class BookingService {
       });
 
       // 8. Decrease available seats
-      await tx.trip.update({
+      const updatedTrip = await tx.trip.update({
         where: { id: tripId },
         data: { availableSeats: { decrement: seats } },
+      });
+
+      // Broadcast real-time seat update
+      this.notificationGateway.broadcastTripUpdate(tripId, {
+        availableSeats: updatedTrip.availableSeats,
       });
 
       // 9. Send confirmation notification
@@ -195,6 +203,10 @@ export class BookingService {
         throw new BadRequestException('Cannot cancel a completed booking');
       }
 
+      if (booking.isReady) {
+        throw new BadRequestException('Cannot cancel a booking after checking in as ready');
+      }
+
       // 1. Cancel the booking
       await tx.booking.update({
         where: { id: bookingId },
@@ -202,13 +214,19 @@ export class BookingService {
       });
 
       // 2. Restore available seats
-      await tx.trip.update({
+      const updatedTrip = await tx.trip.update({
         where: { id: booking.tripId },
         data: { availableSeats: { increment: booking.seats } },
       });
 
+      // Broadcast real-time seat update
+      this.notificationGateway.broadcastTripUpdate(booking.tripId, {
+        availableSeats: updatedTrip.availableSeats,
+      });
+
       // 3. Refund to wallet
-      const refundAmount = Number(booking.trip.price) * booking.seats;
+      const pricePerSeat = Number(booking.trip.price);
+      const refundAmount = pricePerSeat * booking.seats;
       const wallet = await tx.wallet.findUnique({
         where: { userId },
       });
@@ -266,6 +284,38 @@ export class BookingService {
       title: 'A seat is now available! 🎉',
       message: `A seat has opened up on your waitlisted trip. Book now before it's taken!`,
       metadata: { tripId },
+    });
+  }
+
+  /**
+   * Mark a passenger as ready for the trip
+   */
+  async markReady(userId: string, bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { trip: true },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      throw new BadRequestException('You can only update your own bookings');
+    }
+
+    // Must be close to departure time (e.g. within 60 mins)
+    const departure = new Date(booking.trip.departureTime);
+    const now = new Date();
+    const minutesUntilDeparture = (departure.getTime() - now.getTime()) / (1000 * 60);
+
+    if (minutesUntilDeparture > 60) {
+      throw new BadRequestException('You can only mark as ready 60 minutes before departure');
+    }
+
+    return this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { isReady: true },
     });
   }
 

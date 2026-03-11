@@ -9,12 +9,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { Role } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private notificationService: NotificationService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -100,6 +103,10 @@ export class AuthService {
                   carModel: dto.carModel!,
                   plateNumber: dto.plateNumber!,
                   licenseNumber: dto.licenseNumber!,
+                  personalPhotoUrl: dto.personalPhotoUrl,
+                  identityPhotos: dto.identityPhotos || [],
+                  drivingLicensePhotos: dto.drivingLicensePhotos || [],
+                  carLicensePhotos: dto.carLicensePhotos || [],
                   isApproved: false,
                 },
               },
@@ -107,6 +114,22 @@ export class AuthService {
           : {}),
       },
     });
+
+    if (dto.role === Role.DRIVER) {
+      // Notify admins
+      const admins = await this.prisma.user.findMany({
+        where: { role: Role.ADMIN },
+      });
+      for (const admin of admins) {
+        await this.notificationService.create({
+          userId: admin.id,
+          type: NotificationType.DRIVER_ALERT,
+          title: 'New Driver Application',
+          message: `${user.firstName} ${user.lastName} has applied as a Driver and needs approval.`,
+          metadata: { driverId: user.id },
+        });
+      }
+    }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = await this.jwtService.signAsync(payload);

@@ -84,7 +84,7 @@ export function WalletCard() {
             case 'PAYMENT':
                 return <ArrowUpCircle className="h-4 w-4 text-red-500" />;
             case 'REFUND':
-                return <ArrowDownCircle className="h-4 w-4 text-amber-500" />;
+                return <ArrowDownCircle className="h-4 w-4 text-teal-500" />;
             default:
                 return <CreditCard className="h-4 w-4 text-zinc-500" />;
         }
@@ -106,7 +106,7 @@ export function WalletCard() {
     return (
         <div className="space-y-4">
             {/* Balance Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-orange-700 p-6 text-white shadow-xl">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-indigo-600 p-6 text-white shadow-xl">
                 <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/10" />
                 <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
                 <div className="relative">
@@ -145,7 +145,7 @@ export function WalletCard() {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="Enter amount"
-                                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
                         </div>
 
@@ -157,7 +157,7 @@ export function WalletCard() {
                                 <button
                                     onClick={() => setPaymentMethod('INSTAPAY')}
                                     className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-all ${paymentMethod === 'INSTAPAY'
-                                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                                        ? 'border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400'
                                         : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
                                         }`}
                                 >
@@ -183,7 +183,7 @@ export function WalletCard() {
                             </label>
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 p-6 transition-colors hover:border-amber-400 hover:bg-amber-50/30 dark:border-zinc-700 dark:hover:border-amber-600 dark:hover:bg-amber-900/10"
+                                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 p-6 transition-colors hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:hover:border-teal-600 dark:hover:bg-teal-900/10"
                             >
                                 {receiptPreview ? (
                                     <img
@@ -234,7 +234,7 @@ export function WalletCard() {
                             <button
                                 onClick={handleDeposit}
                                 disabled={!amount || (!receiptUrl && !receiptFile) || isLoading || uploadingFile}
-                                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 disabled:opacity-50"
+                                className="flex-1 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 disabled:opacity-50"
                             >
                                 {uploadingFile ? 'Uploading...' : isLoading ? 'Submitting...' : 'Submit Deposit'}
                             </button>

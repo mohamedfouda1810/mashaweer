@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
+import { useSocket } from '@/providers/SocketProvider';
 
 import {
     Car,
@@ -38,6 +39,7 @@ const ADMIN_ITEMS = [
 export function Navbar() {
     const pathname = usePathname();
     const { user, isAuthenticated, logout } = useAuthStore();
+    const { socket } = useSocket();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -55,6 +57,17 @@ export function Navbar() {
         }
     }, [isAuthenticated, pathname]);
 
+    useEffect(() => {
+        if (socket) {
+            const handleNewNotification = () => setUnreadCount((prev) => prev + 1);
+            socket.on('newNotification', handleNewNotification);
+            
+            return () => {
+                socket.off('newNotification', handleNewNotification);
+            };
+        }
+    }, [socket]);
+
     // Restore token on mount
     useEffect(() => {
         const state = useAuthStore.getState();
@@ -67,7 +80,7 @@ export function Navbar() {
 
     const linkClasses = (href: string, mobile = false) =>
         `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${mobile ? 'w-full' : ''} ${isActive(href)
-            ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+            ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400'
             : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
         }`;
 
@@ -82,7 +95,7 @@ export function Navbar() {
             <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-md shadow-amber-500/20">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-indigo-600 shadow-md shadow-teal-500/20">
                         <Car className="h-4 w-4 text-white" />
                     </div>
                     <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
@@ -116,7 +129,7 @@ export function Navbar() {
                             {/* Notifications */}
                             <Link
                                 href="/notifications"
-                                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-amber-50 hover:text-amber-700 dark:text-zinc-400 dark:hover:bg-amber-900/20 dark:hover:text-amber-400"
+                                className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-teal-50 hover:text-teal-700 dark:text-zinc-400 dark:hover:bg-teal-900/20 dark:hover:text-teal-400"
                             >
                                 <Bell className="h-5 w-5" />
                                 {unreadCount > 0 && (
@@ -128,7 +141,7 @@ export function Navbar() {
 
                             {/* Desktop user info */}
                             <div className="hidden items-center gap-2 border-l border-zinc-200 pl-2 md:flex dark:border-zinc-800">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-xs font-bold text-white">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-xs font-bold text-white">
                                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                                 </div>
                                 <div className="text-right">
@@ -159,7 +172,7 @@ export function Navbar() {
                             </Link>
                             <Link
                                 href="/register"
-                                className="rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md"
+                                className="rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md"
                             >
                                 Register
                             </Link>
@@ -192,7 +205,7 @@ export function Navbar() {
                                 <hr className="my-2 border-zinc-100 dark:border-zinc-800" />
                                 {/* User info row */}
                                 <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-xs font-bold text-white">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-xs font-bold text-white">
                                         {user?.firstName?.[0]}{user?.lastName?.[0]}
                                     </div>
                                     <div className="flex-1">
@@ -228,7 +241,7 @@ export function Navbar() {
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="mt-2 flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
+                                    className="mt-2 flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
                                 >
                                     Register
                                 </Link>

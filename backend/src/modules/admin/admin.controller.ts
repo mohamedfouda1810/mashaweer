@@ -67,6 +67,15 @@ export class AdminController {
     return ApiResponseDto.success(user, 'User unbanned');
   }
 
+  @Post('users/:userId/role')
+  async changeRole(
+    @Param('userId') userId: string,
+    @Body('role') role: string,
+  ) {
+    const user = await this.adminService.changeRole(userId, role);
+    return ApiResponseDto.success(user, 'User role updated');
+  }
+
   @Get('users')
   async users(
     @Query('role') role?: string,
@@ -113,5 +122,40 @@ export class AdminController {
       reason,
     );
     return ApiResponseDto.success(result, 'Deposit rejected');
+  }
+
+  @Get('drivers/pending')
+  async pendingDrivers() {
+    const drivers = await this.adminService.getPendingDrivers();
+    return ApiResponseDto.success(drivers);
+  }
+
+  @Post('drivers/:id/approve')
+  async approveDriver(@Param('id') id: string) {
+    const result = await this.adminService.approveDriver(id);
+    return ApiResponseDto.success(result, 'Driver application approved');
+  }
+
+  @Post('drivers/:id/decline')
+  async declineDriver(@Param('id') id: string) {
+    const result = await this.adminService.declineDriver(id);
+    return ApiResponseDto.success(result, 'Driver application declined');
+  }
+
+  @Get('trips')
+  async trips(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.adminService.getAllTrips(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+    );
+    return ApiResponseDto.paginated(
+      result.trips,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+      result.total,
+    );
   }
 }

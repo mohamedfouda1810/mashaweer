@@ -6,17 +6,17 @@ export default function Home() {
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
       {/* Hero Section */}
       <section className="relative flex flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6 lg:px-8 overflow-hidden">
-        {/* Warm gradient background */}
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-100 via-orange-50 to-zinc-50 dark:from-amber-900/20 dark:via-zinc-950 dark:to-zinc-950"></div>
+        {/* Cool gradient background */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-100 via-indigo-50 to-zinc-50 dark:from-teal-900/20 dark:via-zinc-950 dark:to-zinc-950"></div>
         <div className="absolute inset-0 -z-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wMykiLz48L3N2Zz4=')] opacity-60 dark:opacity-20"></div>
 
-        <div className="animate-float mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-2xl shadow-amber-500/30">
+        <div className="animate-float animate-pulse-glow mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-teal-500 to-indigo-600 shadow-2xl shadow-teal-500/30">
           <Car className="h-10 w-10 text-white" />
         </div>
 
         <h1 className="animate-fade-in-up mx-auto max-w-4xl text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white sm:text-7xl">
           Your Premium Inter-City <br className="hidden sm:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-indigo-600">
             Ride Experience
           </span>
         </h1>
@@ -29,7 +29,7 @@ export default function Home() {
         <div className="animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row" style={{ animationDelay: "0.3s" }}>
           <Link
             href="/trips"
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-amber-500/20 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-amber-500/30 sm:w-auto"
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-indigo-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-teal-500/20 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-teal-500/30 sm:w-auto"
           >
             Find a Ride
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -76,15 +76,15 @@ export default function Home() {
                   name: 'Instant Booking',
                   description: 'Browse available trips, pick your city pair, and book your seat in seconds with our digital wallet.',
                   icon: Zap,
-                  iconColor: 'text-amber-600 dark:text-amber-400',
-                  bg: 'bg-amber-50 dark:bg-amber-900/20',
+                  iconColor: 'text-teal-600 dark:text-teal-400',
+                  bg: 'bg-teal-50 dark:bg-teal-900/20',
                 },
                 {
                   name: 'Secure Wallet',
                   description: 'Deposit funds via InstaPay or Vodafone Cash. Book instantly and get automatic refunds on cancellations.',
                   icon: Wallet,
-                  iconColor: 'text-orange-600 dark:text-orange-400',
-                  bg: 'bg-orange-50 dark:bg-orange-900/20',
+                  iconColor: 'text-indigo-600 dark:text-indigo-400',
+                  bg: 'bg-indigo-50 dark:bg-indigo-900/20',
                 },
               ].map((feature) => (
                 <div
@@ -108,18 +108,18 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative bg-gradient-to-r from-amber-500 to-orange-600 py-20">
+      <section className="relative bg-gradient-to-r from-teal-500 to-indigo-600 py-20">
         <div className="mx-auto max-w-4xl px-6 text-center lg:px-8">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Ready to hit the road?
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-amber-100">
+          <p className="mx-auto mt-4 max-w-xl text-lg text-teal-100">
             Join thousands of riders and drivers across Egypt. Your next trip is just a click away.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/register"
-              className="flex w-full items-center justify-center rounded-xl bg-white px-8 py-4 text-sm font-semibold text-amber-700 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto"
+              className="flex w-full items-center justify-center rounded-xl bg-white px-8 py-4 text-sm font-semibold text-teal-700 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto"
             >
               Get Started Free
             </Link>
@@ -137,7 +137,7 @@ export default function Home() {
       <footer className="border-t border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row lg:px-8">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-indigo-600">
               <Car className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm font-bold text-zinc-900 dark:text-white">Mashaweer</span>

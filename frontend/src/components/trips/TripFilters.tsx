@@ -45,7 +45,7 @@ export function TripFilters() {
         filters.maxPrice;
 
     const inputClass =
-        'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
+        'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
 
     return (
         <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -55,12 +55,12 @@ export function TripFilters() {
                 className="flex w-full items-center justify-between px-4 py-3 md:cursor-default"
             >
                 <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="h-4 w-4 text-amber-600" />
+                    <SlidersHorizontal className="h-4 w-4 text-teal-600" />
                     <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                         Filter Trips
                     </span>
                     {hasActiveFilters && (
-                        <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
                             !
                         </span>
                     )}
@@ -90,7 +90,7 @@ export function TripFilters() {
                     {/* From City */}
                     <div>
                         <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            <MapPin className="h-3 w-3 text-amber-500" />
+                            <MapPin className="h-3 w-3 text-teal-500" />
                             From
                         </label>
                         <select
@@ -130,7 +130,7 @@ export function TripFilters() {
                     {/* Date */}
                     <div>
                         <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            <CalendarDays className="h-3 w-3 text-amber-500" />
+                            <CalendarDays className="h-3 w-3 text-teal-500" />
                             Date
                         </label>
                         <input
@@ -145,7 +145,7 @@ export function TripFilters() {
                     <div className="flex items-end">
                         <button
                             onClick={handleApply}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-95"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-95"
                         >
                             <Search className="h-4 w-4" />
                             Search
@@ -156,7 +156,7 @@ export function TripFilters() {
                 {/* Price Toggle */}
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="mt-2 text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                    className="mt-2 text-xs text-teal-600 hover:text-teal-700 dark:text-teal-400"
                 >
                     {showAdvanced ? 'Hide' : 'Show'} Price Filters
                 </button>
@@ -166,7 +166,7 @@ export function TripFilters() {
                     <div className="mt-2 grid gap-3 border-t border-zinc-100 pt-3 sm:grid-cols-2 dark:border-zinc-800">
                         <div>
                             <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                <DollarSign className="h-3 w-3 text-amber-500" />
+                                <DollarSign className="h-3 w-3 text-teal-500" />
                                 Min Price (EGP)
                             </label>
                             <input
@@ -184,7 +184,7 @@ export function TripFilters() {
                         </div>
                         <div>
                             <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                <DollarSign className="h-3 w-3 text-amber-500" />
+                                <DollarSign className="h-3 w-3 text-teal-500" />
                                 Max Price (EGP)
                             </label>
                             <input

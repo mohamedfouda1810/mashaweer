@@ -5,6 +5,7 @@ import {
   IsString,
   MinLength,
   IsEnum,
+  IsArray,
 } from 'class-validator';
 import { Role } from '@prisma/client';
 
@@ -57,4 +58,23 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   licenseNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  personalPhotoUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  identityPhotos?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  drivingLicensePhotos?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  carLicensePhotos?: string[];
 }

@@ -27,6 +27,15 @@ export class BookingController {
     return ApiResponseDto.success(result, 'Booking processed');
   }
 
+  @Post(':id/ready')
+  async markReady(
+    @CurrentUser('id') userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    const result = await this.bookingService.markReady(userId, bookingId);
+    return ApiResponseDto.success(result, 'You are marked as ready');
+  }
+
   @Delete(':id')
   async cancel(
     @CurrentUser('id') userId: string,

@@ -38,7 +38,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
     const isConfirmed = trip.status === 'DRIVER_CONFIRMED';
 
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-amber-200 hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-amber-800">
+        <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-teal-200 hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-teal-800">
             {/* Status Badge */}
             {isConfirmed && (
                 <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
@@ -49,7 +49,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
 
             {/* Driver Section */}
             <div className="flex items-center gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white font-bold text-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
                     {trip.driver?.firstName?.[0]}
                     {trip.driver?.lastName?.[0]}
                 </div>
@@ -78,9 +78,9 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
             <div className="p-4">
                 <div className="flex items-start gap-3">
                     <div className="flex flex-col items-center gap-0.5 pt-1">
-                        <div className="h-2.5 w-2.5 rounded-full border-2 border-amber-500 bg-amber-100" />
-                        <div className="h-8 w-0.5 bg-gradient-to-b from-amber-500 to-emerald-500 opacity-40" />
-                        <div className="h-2.5 w-2.5 rounded-full border-2 border-emerald-500 bg-emerald-100" />
+                        <div className="h-2.5 w-2.5 rounded-full border-2 border-teal-500 bg-teal-100" />
+                        <div className="h-8 w-0.5 bg-gradient-to-b from-teal-500 to-indigo-500 opacity-40" />
+                        <div className="h-2.5 w-2.5 rounded-full border-2 border-indigo-500 bg-indigo-100" />
                     </div>
                     <div className="flex-1 space-y-3">
                         <div>
@@ -109,7 +109,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
                 {/* Details Grid */}
                 <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <CalendarDays className="h-4 w-4 text-amber-500" />
+                        <CalendarDays className="h-4 w-4 text-teal-500" />
                         <div>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">Date</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -138,7 +138,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <Users className="h-4 w-4 text-amber-500" />
+                        <Users className="h-4 w-4 text-teal-500" />
                         <div>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">Seats</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -163,7 +163,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
                         {Number(trip.price).toFixed(0)}
                     </span>
                     <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        EGP
+                        EGP/seat
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
                         disabled={isFull || isBooking}
                         className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
                             ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
-                            : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-sm hover:shadow-md active:scale-95'
+                            : 'bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 shadow-sm hover:shadow-md active:scale-95'
                             }`}
                     >
                         {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
@@ -188,7 +188,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
 
             {/* Waitlist indicator */}
             {trip._count?.waitlists && trip._count.waitlists > 0 && (
-                <div className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                <div className="bg-indigo-50 px-4 py-2 text-center text-xs text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
                     {trip._count.waitlists} {trip._count.waitlists === 1 ? 'person' : 'people'}{' '}
                     on waitlist
                 </div>

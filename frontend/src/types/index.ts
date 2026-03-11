@@ -103,6 +103,7 @@ export interface Booking {
   tripId: string;
   seats: number;
   status: BookingStatus;
+  isReady: boolean;
   bookedAt: string;
   trip: Trip;
 }

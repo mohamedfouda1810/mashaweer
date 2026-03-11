@@ -20,9 +20,10 @@ import {
     TrendingUp,
     Car,
     Ticket,
+    User as UserIcon,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'alerts' | 'users' | 'deposits';
+type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -40,6 +41,10 @@ export default function AdminPage() {
     const [userRole, setUserRole] = useState('');
     // Deposits
     const [deposits, setDeposits] = useState<DepositRequest[]>([]);
+    // Drivers
+    const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
+    // Trips
+    const [allTrips, setAllTrips] = useState<any[]>([]);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
@@ -57,6 +62,12 @@ export default function AdminPage() {
             } else if (tab === 'deposits') {
                 const res = await api.getPendingDeposits();
                 setDeposits((res.data as DepositRequest[]) || []);
+            } else if (tab === 'drivers') {
+                const res = await api.getPendingDrivers();
+                setPendingDrivers((res.data as any[]) || []);
+            } else if (tab === 'trips') {
+                const res = await api.getAllTripsAdmin();
+                setAllTrips((res.data as any[]) || []);
             }
         } catch {
             // ignore
@@ -107,11 +118,41 @@ export default function AdminPage() {
         setActionLoading(null);
     };
 
+    const handleApproveDriver = async (id: string) => {
+        setActionLoading(id);
+        try {
+            await api.approveDriver(id);
+            loadData();
+        } catch { }
+        setActionLoading(null);
+    };
+
+    const handleDeclineDriver = async (id: string) => {
+        if (!confirm('Are you sure you want to decline this driver application?')) return;
+        setActionLoading(id);
+        try {
+            await api.declineDriver(id);
+            loadData();
+        } catch { }
+        setActionLoading(null);
+    };
+
+    const handleChangeRole = async (userId: string, newRole: string) => {
+        setActionLoading(userId);
+        try {
+            await api.changeUserRole(userId, newRole);
+            loadData();
+        } catch { }
+        setActionLoading(null);
+    };
+
     const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
         { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
         { key: 'alerts', label: 'Alerts', icon: <AlertTriangle className="h-4 w-4" /> },
         { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
         { key: 'deposits', label: 'Deposits', icon: <CreditCard className="h-4 w-4" /> },
+        { key: 'drivers', label: 'Driver Apps', icon: <Car className="h-4 w-4" /> },
+        { key: 'trips', label: 'Trips', icon: <Ticket className="h-4 w-4" /> },
     ];
 
     return (
@@ -146,17 +187,17 @@ export default function AdminPage() {
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-amber-600" />
+                        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
                     </div>
                 ) : (
                     <>
                         {/* OVERVIEW */}
                         {tab === 'overview' && stats && (
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard icon={<Users className="h-5 w-5 text-amber-600" />} label="Total Users" value={stats.totalUsers ?? '—'} bg="bg-amber-100 dark:bg-amber-900/30" />
+                                <StatCard icon={<Users className="h-5 w-5 text-teal-600" />} label="Total Users" value={stats.totalUsers ?? '—'} bg="bg-teal-100 dark:bg-teal-900/30" />
                                 <StatCard icon={<Car className="h-5 w-5 text-emerald-600" />} label="Total Drivers" value={stats.totalDrivers ?? '—'} bg="bg-emerald-100 dark:bg-emerald-900/30" />
                                 <StatCard icon={<Ticket className="h-5 w-5 text-indigo-600" />} label="Total Trips" value={stats.totalTrips ?? '—'} bg="bg-indigo-100 dark:bg-indigo-900/30" />
-                                <StatCard icon={<AlertTriangle className="h-5 w-5 text-amber-600" />} label="Open Alerts" value={stats.openAlerts ?? '—'} bg="bg-amber-100 dark:bg-amber-900/30" />
+                                <StatCard icon={<AlertTriangle className="h-5 w-5 text-teal-600" />} label="Open Alerts" value={stats.openAlerts ?? '—'} bg="bg-teal-100 dark:bg-teal-900/30" />
                                 <StatCard icon={<TrendingUp className="h-5 w-5 text-pink-600" />} label="Active Trips" value={stats.activeTrips ?? '—'} bg="bg-pink-100 dark:bg-pink-900/30" />
                                 <StatCard icon={<CreditCard className="h-5 w-5 text-violet-600" />} label="Pending Deposits" value={stats.pendingDeposits ?? '—'} bg="bg-violet-100 dark:bg-violet-900/30" />
                                 <StatCard icon={<Ticket className="h-5 w-5 text-teal-600" />} label="Total Bookings" value={stats.totalBookings ?? '—'} bg="bg-teal-100 dark:bg-teal-900/30" />
@@ -187,7 +228,7 @@ export default function AdminPage() {
                                                 <div className="flex items-start justify-between">
                                                     <div>
                                                         <div className="flex items-center gap-2">
-                                                            <AlertTriangle className={`h-4 w-4 ${alert.isResolved ? 'text-zinc-400' : 'text-amber-500'}`} />
+                                                            <AlertTriangle className={`h-4 w-4 ${alert.isResolved ? 'text-zinc-400' : 'text-teal-500'}`} />
                                                             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                                                                 {alert.type.replace(/_/g, ' ')}
                                                             </span>
@@ -247,12 +288,19 @@ export default function AdminPage() {
                                                         </td>
                                                         <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{u.email}</td>
                                                         <td className="px-4 py-3">
-                                                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                                                u.role === 'DRIVER' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                }`}>
-                                                                {u.role}
-                                                            </span>
+                                                            <select
+                                                                value={u.role}
+                                                                onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                                                                disabled={actionLoading === u.id}
+                                                                className={`rounded-lg border px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${u.role === 'ADMIN' ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/30 dark:bg-purple-900/20 dark:text-purple-400' :
+                                                                    u.role === 'DRIVER' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400' :
+                                                                        'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900/30 dark:bg-teal-900/20 dark:text-teal-400'
+                                                                    }`}
+                                                            >
+                                                                <option value="PASSENGER">Passenger</option>
+                                                                <option value="DRIVER">Driver</option>
+                                                                <option value="ADMIN">Admin</option>
+                                                            </select>
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             {u.isBanned ? (
@@ -313,7 +361,7 @@ export default function AdminPage() {
                                                                 href={d.receiptUrl}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="mt-1 inline-block text-xs text-amber-600 hover:underline"
+                                                                className="mt-1 inline-block text-xs text-teal-600 hover:underline"
                                                             >
                                                                 View Receipt
                                                             </a>
@@ -340,6 +388,167 @@ export default function AdminPage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* DRIVERS */}
+                        {tab === 'drivers' && (
+                            <div>
+                                {pendingDrivers.length === 0 ? (
+                                    <div className="py-12 text-center text-sm text-zinc-500">No pending driver applications</div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingDrivers.map((d) => (
+                                            <div key={d.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                                <div className="p-5">
+                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                                        <div className="flex items-start gap-4">
+                                                            {d.personalPhotoUrl ? (
+                                                                <img src={d.personalPhotoUrl} alt="Driver" className="h-16 w-16 rounded-full object-cover" />
+                                                            ) : (
+                                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                                                    <UserIcon className="h-6 w-6 text-zinc-400" />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                                                                    {d.user?.firstName} {d.user?.lastName}
+                                                                </h3>
+                                                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                                                    <p>Email: {d.user?.email}</p>
+                                                                    <p>Phone: {d.user?.phone}</p>
+                                                                    <p>Vehicle: {d.carModel} ({d.plateNumber})</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleApproveDriver(d.id)}
+                                                                disabled={actionLoading === d.id}
+                                                                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                                                            >
+                                                                <CheckCircle2 className="h-4 w-4" />
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeclineDriver(d.id)}
+                                                                disabled={actionLoading === d.id}
+                                                                className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
+                                                            >
+                                                                <XCircle className="h-4 w-4" />
+                                                                Decline
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-6 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                                                        <h4 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Documents</h4>
+                                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                            {d.identityPhotos && d.identityPhotos.length > 0 && (
+                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
+                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Identity</p>
+                                                                    <div className="flex gap-2 overflow-x-auto">
+                                                                        {d.identityPhotos.map((url: string, i: number) => (
+                                                                            <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                                                                                <img src={url} alt="ID" className="h-16 w-24 rounded border object-cover" />
+                                                                            </a>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {d.drivingLicensePhotos && d.drivingLicensePhotos.length > 0 && (
+                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
+                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Driving License</p>
+                                                                    <div className="flex gap-2 overflow-x-auto">
+                                                                        {d.drivingLicensePhotos.map((url: string, i: number) => (
+                                                                            <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                                                                                <img src={url} alt="Driving License" className="h-16 w-24 rounded border object-cover" />
+                                                                            </a>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {d.carLicensePhotos && d.carLicensePhotos.length > 0 && (
+                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
+                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Car License</p>
+                                                                    <div className="flex gap-2 overflow-x-auto">
+                                                                        {d.carLicensePhotos.map((url: string, i: number) => (
+                                                                            <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                                                                                <img src={url} alt="Car License" className="h-16 w-24 rounded border object-cover" />
+                                                                            </a>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* TRIPS */}
+                        {tab === 'trips' && (
+                            <div>
+                                {allTrips.length === 0 ? (
+                                    <div className="py-12 text-center text-sm text-zinc-500">No trips found</div>
+                                ) : (
+                                    <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left font-medium text-zinc-600 dark:text-zinc-400">Route</th>
+                                                    <th className="px-4 py-3 text-left font-medium text-zinc-600 dark:text-zinc-400">Driver</th>
+                                                    <th className="px-4 py-3 text-left font-medium text-zinc-600 dark:text-zinc-400">Time</th>
+                                                    <th className="px-4 py-3 text-left font-medium text-zinc-600 dark:text-zinc-400">Status</th>
+                                                    <th className="px-4 py-3 text-right font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
+                                                {allTrips.map((t) => (
+                                                    <tr key={t.id}>
+                                                        <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                                                            {t.fromCity} → {t.toCity}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                                                            {t.driver?.firstName} {t.driver?.lastName}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                                                            {new Date(t.departureTime).toLocaleString()}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+                                                                {t.status.replace('_', ' ')}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            {(t.status === 'SCHEDULED' || t.status === 'DRIVER_CONFIRMED') && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (!confirm('Cancel this trip?')) return;
+                                                                        setActionLoading(t.id);
+                                                                        try {
+                                                                            await api.cancelTripAdmin(t.id);
+                                                                            loadData();
+                                                                        } catch {}
+                                                                        setActionLoading(null);
+                                                                    }}
+                                                                    disabled={actionLoading === t.id}
+                                                                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 )}
                             </div>

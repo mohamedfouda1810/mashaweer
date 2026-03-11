@@ -167,6 +167,7 @@ export class TripService {
                 id: true,
                 firstName: true,
                 lastName: true,
+                phone: true,
                 avatarUrl: true,
               },
             },

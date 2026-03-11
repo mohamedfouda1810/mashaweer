@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import { Car, Mail, Lock, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -24,6 +25,7 @@ export default function LoginPage() {
             const response = await api.login(email, password);
             if (response.data) {
                 login(response.data.token, response.data.user);
+                toast.success('Welcome back!');
                 router.push('/trips');
             }
         } catch (err: any) {
@@ -38,7 +40,7 @@ export default function LoginPage() {
             <div className="w-full max-w-md">
                 {/* Header */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-xl shadow-amber-500/20">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 shadow-xl shadow-teal-500/20">
                         <Car className="h-8 w-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -72,7 +74,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="you@example.com"
-                                className="w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                className="w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
                         </div>
                     </div>
@@ -89,7 +91,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                className="w-full rounded-lg border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
                         </div>
                     </div>
@@ -97,7 +99,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                     >
                         {isLoading ? (
                             <>
@@ -113,7 +115,7 @@ export default function LoginPage() {
                         Don&apos;t have an account?{' '}
                         <Link
                             href="/register"
-                            className="font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                            className="font-medium text-teal-600 hover:text-teal-700 dark:text-teal-400"
                         >
                             Register
                         </Link>

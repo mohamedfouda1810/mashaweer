@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationType, Prisma } from '@prisma/client';
+import { NotificationGateway } from './notification.gateway';
 
 interface CreateNotificationDto {
   userId: string;
@@ -12,13 +13,16 @@ interface CreateNotificationDto {
 
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: NotificationGateway,
+  ) {}
 
   /**
    * Create a notification (standalone, outside of transactions)
    */
   async create(data: CreateNotificationDto) {
-    return this.prisma.notification.create({
+    const notification = await this.prisma.notification.create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -27,6 +31,11 @@ export class NotificationService {
         metadata: data.metadata as Prisma.InputJsonValue,
       },
     });
+
+    // Broadcast in real-time
+    this.gateway.sendNotificationToUser(data.userId, notification);
+
+    return notification;
   }
 
   /**
@@ -36,7 +45,7 @@ export class NotificationService {
     tx: Prisma.TransactionClient,
     data: CreateNotificationDto,
   ) {
-    return tx.notification.create({
+    const notification = await tx.notification.create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -45,6 +54,12 @@ export class NotificationService {
         metadata: data.metadata as Prisma.InputJsonValue,
       },
     });
+
+    // Broadcast in real-time after transaction completes, but since we are inside, 
+    // it will be emitted immediately. Usually safe for notifications.
+    this.gateway.sendNotificationToUser(data.userId, notification);
+
+    return notification;
   }
 
   /**
