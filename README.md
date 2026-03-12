@@ -19,9 +19,15 @@ Mashaweer is a premium inter-city ride-sharing platform connecting passengers wi
 
 ### Backend
 1. `cd backend`
-2. Configure `.env` with your `DATABASE_URL` and `JWT_SECRET`.
-3. `npx prisma db push`
-4. `npm run start:dev`
+2. Configure `.env` with your `DATABASE_URL` (direct pg connection) and `JWT_SECRET`.
+3. Apply database schemas `npx prisma db push` (or `npx node migrate.js` for custom pg extensions).
+4. Run the development server: `npm run start:dev`
+
+### Automated Integration Tests
+To thoroughly test the backend without the frontend UI:
+1. Seed the raw Admin roles: `npx ts-node prisma/seed.ts`
+2. Execute the Deep Integration Tests simulator: `npx ts-node run-tests.ts`
+*(This will test Passenger Registration, Driver Profile Registration, Admin Approval, Trip Creation, Wallet Deposits, Booking Seat Reservations & Deductions, Waitlisting, Readiness checks, and Trip Completions).*
 
 ### Frontend
 1. `cd frontend`

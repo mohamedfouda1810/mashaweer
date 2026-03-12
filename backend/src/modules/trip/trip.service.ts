@@ -253,4 +253,43 @@ export class TripService {
       },
     });
   }
+
+  /**
+   * Mark driver as ready for the trip
+   */
+  async markDriverReady(tripId: string, driverId: string) {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.driverId !== driverId) {
+      throw new ForbiddenException('Only the driver can mark this trip as ready');
+    }
+    return this.prisma.trip.update({
+      where: { id: tripId },
+      data: { driverReadyAt: new Date(), status: TripStatus.DRIVER_CONFIRMED },
+    });
+  }
+
+  /**
+   * Complete a trip
+   */
+  async completeTrip(tripId: string, driverId: string) {
+    const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.driverId !== driverId) {
+      throw new ForbiddenException('Only the driver can complete this trip');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const updatedTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: { status: TripStatus.COMPLETED },
+      });
+      // Complete all confirmed bookings
+      await tx.booking.updateMany({
+        where: { tripId, status: 'CONFIRMED' },
+        data: { status: 'COMPLETED' },
+      });
+      return updatedTrip;
+    });
+  }
 }
+

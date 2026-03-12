@@ -1,7 +1,16 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as pg from 'pg';
+const { Pool } = pg;
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL?.split('?')[0];
+const pool = new Pool({ 
+  connectionString,
+  ssl: { rejectUnauthorized: false }
+});
+const adapter = new PrismaPg(pool as any);
+const prisma = new PrismaClient({ adapter } as any);
 
 async function main() {
   console.log('Seeding admin accounts...');

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Body,
   Query,
@@ -64,5 +65,28 @@ export class TripController {
   async myTrips(@CurrentUser('id') driverId: string) {
     const trips = await this.tripService.findByDriver(driverId);
     return ApiResponseDto.success(trips);
+  }
+
+  @Patch(':id/ready')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async markReady(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    const trip = await this.tripService.markDriverReady(id, userId);
+    return ApiResponseDto.success(trip, 'Driver marked as ready for trip');
+  }
+
+  @Patch(':id/status')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async updateStatus(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body('status') status: string
+  ) {
+    if (status === 'COMPLETED') {
+      const trip = await this.tripService.completeTrip(id, userId);
+      return ApiResponseDto.success(trip, 'Trip completed successfully');
+    }
+    return ApiResponseDto.success(null, 'Status update ignored or unsupported');
   }
 }
