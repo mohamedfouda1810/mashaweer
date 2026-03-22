@@ -24,6 +24,7 @@ export class BookingService {
    * Flow: Check availability → Create PENDING → Deduct wallet → Set CONFIRMED
    */
   async bookSeat(userId: string, tripId: string, seats: number = 1) {
+    seats = Number(seats) || 1;
     return this.prisma.$transaction(async (tx) => {
       // 1. Get the trip and verify availability
       const trip = await tx.trip.findUnique({
@@ -64,36 +65,9 @@ export class BookingService {
         return this.addToWaitlist(tx, userId, tripId);
       }
 
-      // 3. Calculate total price (trip.price is price per seat)
-      const pricePerSeat = Number(trip.price);
-      const totalPrice = pricePerSeat * seats;
-
-      // 4. Verify wallet balance
-      const wallet = await tx.wallet.findUnique({ where: { userId } });
-      if (!wallet || Number(wallet.balance) < totalPrice) {
-        throw new BadRequestException(
-          `Insufficient balance. Required: ${totalPrice} EGP. ` +
-            `Current balance: ${wallet ? Number(wallet.balance) : 0} EGP.`,
-        );
-      }
-
-      // 5. Deduct from wallet
-      await tx.wallet.update({
-        where: { userId },
-        data: { balance: { decrement: totalPrice } },
-      });
-
-      // 6. Log the transaction
-      await tx.transaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'PAYMENT',
-          amount: totalPrice,
-          status: 'COMPLETED',
-          reference: `BOOKING-${tripId}`,
-          metadata: { tripId, seats },
-        },
-      });
+      // 3. Calculate total price (for reference — payment happens after trip)
+      const pricePerSeat = Number(trip.price) / trip.totalSeats;
+      const totalPrice = Math.round(pricePerSeat * seats * 100) / 100;
 
       // 7. Create booking (directly CONFIRMED since payment succeeded)
       const booking = await tx.booking.create({
@@ -126,12 +100,22 @@ export class BookingService {
         availableSeats: updatedTrip.availableSeats,
       });
 
-      // 9. Send confirmation notification
+      // 9. Send confirmation notification to passenger
       await this.notificationService.createInTransaction(tx, {
         userId,
         type: 'BOOKING_CONFIRMED',
         title: 'Booking Confirmed! ✅',
         message: `Your booking for ${trip.fromCity} → ${trip.toCity} on ${new Date(trip.departureTime).toLocaleDateString()} is confirmed. Meet at ${trip.gatheringLocation}.`,
+        metadata: { bookingId: booking.id, tripId },
+      });
+
+      // 10. Notify the driver about new booking
+      const passenger = await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
+      await this.notificationService.createInTransaction(tx, {
+        userId: trip.driverId,
+        type: 'BOOKING_CONFIRMED',
+        title: 'New Seat Booked! 🎫',
+        message: `${passenger?.firstName || 'A passenger'} ${passenger?.lastName || ''} booked ${seats} seat(s) on your trip ${trip.fromCity} → ${trip.toCity}. ${updatedTrip.availableSeats} seats remaining.`,
         metadata: { bookingId: booking.id, tripId },
       });
 
@@ -249,7 +233,17 @@ export class BookingService {
         });
       }
 
-      // 4. Promote next waitlisted user
+      // 4. Notify the driver about cancellation
+      const passenger = await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
+      await this.notificationService.createInTransaction(tx, {
+        userId: booking.trip.driverId,
+        type: 'BOOKING_CANCELLED',
+        title: 'Booking Cancelled 🚫',
+        message: `${passenger?.firstName || 'A passenger'} ${passenger?.lastName || ''} cancelled their ${booking.seats} seat(s) on your trip ${booking.trip.fromCity} → ${booking.trip.toCity}. ${updatedTrip.availableSeats} seats now available.`,
+        metadata: { bookingId, tripId: booking.tripId },
+      });
+
+      // 5. Promote next waitlisted user
       await this.promoteFromWaitlist(tx, booking.tripId);
 
       return { cancelled: true, refundAmount };

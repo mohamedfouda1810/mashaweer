@@ -52,6 +52,10 @@ export interface DriverProfile {
   carModel: string;
   carColor?: string;
   carPhotoUrl?: string;
+  personalPhotoUrl?: string;
+  identityPhotos?: string[];
+  drivingLicensePhotos?: string[];
+  carLicensePhotos?: string[];
   plateNumber: string;
   licenseNumber: string;
   isApproved: boolean;
@@ -86,6 +90,7 @@ export interface Trip {
 }
 
 export interface TripFilters {
+  q?: string;
   fromCity?: string;
   toCity?: string;
   date?: string;
@@ -161,6 +166,7 @@ export interface Notification {
   title: string;
   message: string;
   isRead: boolean;
+  metadata?: Record<string, any>;
   createdAt: string;
 }
 

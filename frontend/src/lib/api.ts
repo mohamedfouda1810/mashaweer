@@ -2,6 +2,16 @@ import { TripFilters, ApiResponse, Trip, Booking, Wallet, Notification, Rating, 
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+/** Resolve an image path from the backend (e.g. "/uploads/x.jpg") to a full URL */
+export function getImageUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  // Already absolute
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  // Strip /api suffix to get the backend origin
+  const origin = API_BASE.replace(/\/api\/?$/, '');
+  return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 class ApiClient {
   private token: string | null = null;
 
@@ -25,8 +35,27 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({}));
+      // Extract the best error message
+      let msg = error.message || error.error || '';
+      if (Array.isArray(msg)) msg = msg.join(', ');
+      
+      switch (response.status) {
+        case 400:
+          throw new Error(msg || 'Invalid request. Please check your input.');
+        case 401:
+          throw new Error(msg || 'Session expired. Please log in again.');
+        case 403:
+          throw new Error(msg || 'You do not have permission for this action.');
+        case 404:
+          throw new Error(msg || 'The requested resource was not found.');
+        case 409:
+          throw new Error(msg || 'This action conflicts with existing data.');
+        case 500:
+          throw new Error(msg || 'Server error. Please try again later.');
+        default:
+          throw new Error(msg || `Request failed (${response.status})`);
+      }
     }
 
     return response.json();
@@ -79,6 +108,18 @@ class ApiClient {
     return this.request<Trip>('/trips', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async startTrip(tripId: string) {
+    return this.request(`/trips/${tripId}/start`, {
+      method: 'PATCH',
+    });
+  }
+
+  async completeTrip(tripId: string) {
+    return this.request(`/trips/${tripId}/complete`, {
+      method: 'PATCH',
     });
   }
 
@@ -154,18 +195,6 @@ class ApiClient {
     return this.request('/wallet/transactions');
   }
 
-  async getDriverWeeklyStats() {
-    return this.request<{
-      totalTrips: number;
-      grossIncome: number;
-      netIncome: number;
-      commission: number;
-      commissionRate: number;
-      instapayPhone: string;
-      weekStart: string;
-    }>('/wallet/driver-weekly-stats');
-  }
-
   // ─── Driver ──────────────────────────────────────────────────────
 
   async confirmReady(tripId: string) {
@@ -176,6 +205,19 @@ class ApiClient {
 
   async getDriverDashboard() {
     return this.request('/driver/dashboard');
+  }
+
+  async editTrip(tripId: string, data: any) {
+    return this.request(`/trips/${tripId}/edit`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async cancelTrip(tripId: string) {
+    return this.request(`/trips/${tripId}`, {
+      method: 'DELETE',
+    });
   }
 
   // ─── Ratings ─────────────────────────────────────────────────────
@@ -218,6 +260,10 @@ class ApiClient {
     return this.request(`/notifications/read-all`, { method: 'PATCH' });
   }
 
+  async deleteNotification(id: string) {
+    return this.request(`/notifications/${id}`, { method: 'DELETE' });
+  }
+
   // ─── Admin ───────────────────────────────────────────────────────
 
   async getAdminDashboard() {
@@ -246,10 +292,37 @@ class ApiClient {
     });
   }
 
+  async tempBanUser(userId: string, days: number, reason?: string) {
+    return this.request(`/admin/users/${userId}/temp-ban`, {
+      method: 'POST',
+      body: JSON.stringify({ days, reason }),
+    });
+  }
+
   async changeUserRole(userId: string, role: string) {
     return this.request(`/admin/users/${userId}/role`, {
       method: 'POST',
       body: JSON.stringify({ role }),
+    });
+  }
+
+  async deleteUser(userId: string) {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async createUser(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    password: string;
+    role: string;
+  }) {
+    return this.request('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 
@@ -305,6 +378,121 @@ class ApiClient {
   async confirmPassengerReady(bookingId: string) {
     return this.request(`/bookings/${bookingId}/ready`, {
       method: 'POST',
+    });
+  }
+
+  async getFinancials() {
+    return this.request('/admin/financials');
+  }
+
+  async getPlatformSettings() {
+    return this.request('/admin/platform-settings');
+  }
+
+  async updatePlatformSettings(data: {
+    instapayNumber?: string;
+    vodafoneCashNumber?: string;
+    commissionRate?: number;
+  }) {
+    return this.request('/admin/platform-settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ─── Commission System ────────────────────────────────────────────
+
+  async getDriverWallet() {
+    return this.request('/driver/wallet');
+  }
+
+  async getDriverCommissions() {
+    return this.request('/driver/commissions');
+  }
+
+  async getDriverDebtSummary() {
+    return this.request('/driver/debt-summary');
+  }
+
+  async submitCommissionPayment(data: {
+    amount: number;
+    instapayReferenceNumber: string;
+    screenshotUrl: string;
+  }) {
+    return this.request('/driver/payment-request', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDriverPaymentHistory() {
+    return this.request('/driver/payment-history');
+  }
+
+  async getAdminPaymentRequests(status?: string) {
+    const qs = status ? `?status=${status}` : '';
+    return this.request(`/admin/payment-requests${qs}`);
+  }
+
+  async approveCommissionPayment(paymentId: string) {
+    return this.request(`/admin/payment-requests/${paymentId}/approve`, {
+      method: 'PATCH',
+    });
+  }
+
+  async rejectCommissionPayment(paymentId: string, reason?: string) {
+    return this.request(`/admin/payment-requests/${paymentId}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async getDriverWeeklyStats() {
+    return this.request('/wallet/driver-weekly-stats');
+  }
+
+  async payCommission(data: { amount: number; receiptUrl: string; paymentMethod: string }) {
+    return this.request('/driver/payment-request', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: data.amount,
+        instapayReferenceNumber: data.paymentMethod,
+        screenshotUrl: data.receiptUrl,
+      }),
+    });
+  }
+
+  // ─── Admin: Transactions & User Detail ────────────────────────────
+
+  async getAllTransactionsAdmin(page = 1) {
+    return this.request(`/admin/transactions?page=${page}`);
+  }
+
+  async getUserDetailAdmin(userId: string) {
+    return this.request(`/admin/users/${userId}/detail`);
+  }
+
+  // ─── Trip Cancellation Requests ───────────────────────────────────
+
+  async requestTripCancellation(tripId: string, reason: string) {
+    return this.request(`/trips/${tripId}/request-cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async getPendingCancellations() {
+    return this.request('/admin/cancellations/pending');
+  }
+
+  async approveCancellation(id: string) {
+    return this.request(`/admin/cancellations/${id}/approve`, { method: 'POST' });
+  }
+
+  async rejectCancellation(id: string, reason?: string) {
+    return this.request(`/admin/cancellations/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   }
 }

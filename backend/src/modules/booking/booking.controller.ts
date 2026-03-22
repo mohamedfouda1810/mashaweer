@@ -21,9 +21,9 @@ export class BookingController {
   async bookSeat(
     @CurrentUser('id') userId: string,
     @Param('tripId') tripId: string,
-    @Body('seats') seats?: number,
+    @Body() body: { seats?: number },
   ) {
-    const result = await this.bookingService.bookSeat(userId, tripId, seats);
+    const result = await this.bookingService.bookSeat(userId, tripId, body?.seats);
     return ApiResponseDto.success(result, 'Booking processed');
   }
 

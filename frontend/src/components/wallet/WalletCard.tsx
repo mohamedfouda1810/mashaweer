@@ -77,7 +77,13 @@ export function WalletCard() {
         }
     };
 
-    const getTransactionIcon = (type: string) => {
+    const getTransactionIcon = (type: string, reference?: string) => {
+        if (reference?.startsWith('EARNING-')) {
+            return <ArrowDownCircle className="h-4 w-4 text-emerald-500" />;
+        }
+        if (reference?.startsWith('COMMISSION-')) {
+            return <ArrowUpCircle className="h-4 w-4 text-orange-500" />;
+        }
         switch (type) {
             case 'DEPOSIT':
                 return <ArrowDownCircle className="h-4 w-4 text-emerald-500" />;
@@ -255,16 +261,25 @@ export function WalletCard() {
                     </p>
                 ) : (
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        {transactions.map((tx) => (
+                        {transactions.map((tx) => {
+                            const isEarning = tx.reference?.startsWith('EARNING-');
+                            const isCommission = tx.reference?.startsWith('COMMISSION-');
+                            const isPositive = tx.type === 'DEPOSIT' || tx.type === 'REFUND';
+                            const label = isEarning
+                                ? 'Trip Earning'
+                                : isCommission
+                                    ? 'Commission Payment'
+                                    : tx.type.charAt(0) + tx.type.slice(1).toLowerCase();
+                            return (
                             <div
                                 key={tx.id}
                                 className="flex items-center justify-between py-3"
                             >
                                 <div className="flex items-center gap-3">
-                                    {getTransactionIcon(tx.type)}
+                                    {getTransactionIcon(tx.type, tx.reference)}
                                     <div>
                                         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                            {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
+                                            {label}
                                         </p>
                                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                             {new Date(tx.createdAt).toLocaleDateString()}
@@ -273,18 +288,19 @@ export function WalletCard() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`text-sm font-semibold ${tx.type === 'DEPOSIT' || tx.type === 'REFUND'
+                                        className={`text-sm font-semibold ${isPositive
                                             ? 'text-emerald-600 dark:text-emerald-400'
                                             : 'text-red-600 dark:text-red-400'
                                             }`}
                                     >
-                                        {tx.type === 'DEPOSIT' || tx.type === 'REFUND' ? '+' : '-'}
+                                        {isPositive ? '+' : '-'}
                                         {Number(tx.amount).toFixed(2)} EGP
                                     </span>
                                     {getStatusIcon(tx.status)}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

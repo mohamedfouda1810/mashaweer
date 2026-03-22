@@ -18,12 +18,14 @@ interface TripState {
   // Actions
   fetchTrips: () => Promise<void>;
   fetchTrip: (id: string) => Promise<void>;
+  updateTrip: (data: Partial<Trip>) => void;
   setFilters: (filters: Partial<TripFilters>) => void;
   resetFilters: () => void;
   setPage: (page: number) => void;
 }
 
 const defaultFilters: TripFilters = {
+  q: '',
   fromCity: '',
   toCity: '',
   date: '',
@@ -63,6 +65,13 @@ export const useTripStore = create<TripState>((set, get) => ({
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
     }
+  },
+
+  updateTrip: (data: Partial<Trip>) => {
+    set((state) => ({
+      selectedTrip: state.selectedTrip ? { ...state.selectedTrip, ...data } as Trip : null,
+      trips: state.trips.map(t => t.id === data.id ? { ...t, ...data } as Trip : t)
+    }));
   },
 
   setFilters: (newFilters: Partial<TripFilters>) => {

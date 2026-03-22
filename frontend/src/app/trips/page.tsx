@@ -9,8 +9,9 @@ import { MapPin } from 'lucide-react';
 
 export default function TripsPage() {
     const router = useRouter();
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
     const { bookSeat } = useBookingStore();
+    const isDriverOrAdmin = user?.role === 'DRIVER' || user?.role === 'ADMIN';
 
     const handleBook = async (tripId: string) => {
         if (!isAuthenticated) {
@@ -40,14 +41,14 @@ export default function TripsPage() {
                             Available Trips
                         </h1>
                         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                            Find and book inter-city rides
+                            {isDriverOrAdmin ? 'Browse available trips' : 'Find and book inter-city rides'}
                         </p>
                     </div>
                 </div>
             </div>
 
             {/* Trip List with Filters */}
-            <TripList onBook={handleBook} onViewDetails={handleViewDetails} />
+            <TripList onBook={handleBook} onViewDetails={handleViewDetails} hideBooking={isDriverOrAdmin} />
         </div>
     );
 }

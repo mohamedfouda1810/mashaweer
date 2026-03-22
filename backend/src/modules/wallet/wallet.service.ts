@@ -260,9 +260,16 @@ export class WalletService {
       },
     });
 
+    // Read platform settings from DB
+    const settings = await this.prisma.platformSetting.upsert({
+      where: { id: 'platform_settings' },
+      update: {},
+      create: { id: 'platform_settings' },
+    });
+
     const totalTrips = completedTrips.length;
 
-    // Calculate net income from completed trips (price per seat = trip.price / totalSeats)
+    // Calculate net income from completed trips (price is TOTAL, per seat = price / totalSeats)
     let grossIncome = 0;
     for (const trip of completedTrips) {
       const totalBookedSeats = trip.bookings.reduce(
@@ -273,7 +280,7 @@ export class WalletService {
       grossIncome += pricePerSeat * totalBookedSeats;
     }
 
-    const commissionRate = 0.15; // 15% company commission
+    const commissionRate = settings.commissionRate;
     const commission = Math.round(grossIncome * commissionRate * 100) / 100;
     const netIncome = Math.round((grossIncome - commission) * 100) / 100;
 
@@ -282,10 +289,11 @@ export class WalletService {
       grossIncome,
       netIncome,
       commission,
-      commissionRate: commissionRate * 100, // 15%
-      instapayPhone: '01012345678', // Company InstaPay phone
+      commissionRate: commissionRate * 100,
+      instapayNumber: settings.instapayNumber || '',
+      vodafoneCashNumber: settings.vodafoneCashNumber || '',
       weekStart: startOfWeek.toISOString(),
     };
   }
-}
 
+}

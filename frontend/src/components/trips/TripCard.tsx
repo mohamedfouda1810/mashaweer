@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Trip } from '@/types';
+import { getImageUrl } from '@/lib/api';
 import { useBookingStore } from '@/stores/useBookingStore';
 import {
     MapPin,
@@ -18,9 +19,10 @@ interface TripCardProps {
     trip: Trip;
     onBook?: (tripId: string) => void;
     onViewDetails?: (tripId: string) => void;
+    hideBooking?: boolean;
 }
 
-export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
+export function TripCard({ trip, onBook, onViewDetails, hideBooking }: TripCardProps) {
     const { isBooking } = useBookingStore();
 
     const departureDate = new Date(trip.departureTime);
@@ -49,10 +51,17 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
 
             {/* Driver Section */}
             <div className="flex items-center gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
-                    {trip.driver?.firstName?.[0]}
-                    {trip.driver?.lastName?.[0]}
-                </div>
+            {(() => {
+                    const photoUrl = getImageUrl(trip.driver?.driverProfile?.personalPhotoUrl);
+                    return photoUrl ? (
+                        <img src={photoUrl} alt="Driver" className="h-12 w-12 rounded-full object-cover" />
+                    ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
+                            {trip.driver?.firstName?.[0]}
+                            {trip.driver?.lastName?.[0]}
+                        </div>
+                    );
+                })()}
                 <div className="flex-1">
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {trip.driver?.firstName} {trip.driver?.lastName}
@@ -160,7 +169,7 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
             <div className="flex items-center justify-between border-t border-zinc-100 p-4 dark:border-zinc-800">
                 <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                        {Number(trip.price).toFixed(0)}
+                        {Math.round(Number(trip.price) / trip.totalSeats)}
                     </span>
                     <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                         EGP/seat
@@ -173,26 +182,22 @@ export function TripCard({ trip, onBook, onViewDetails }: TripCardProps) {
                     >
                         Details
                     </button>
-                    <button
-                        onClick={() => onBook?.(trip.id)}
-                        disabled={isFull || isBooking}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
-                            ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
-                            : 'bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 shadow-sm hover:shadow-md active:scale-95'
-                            }`}
-                    >
-                        {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
-                    </button>
+                    {!hideBooking && (
+                        <button
+                            onClick={() => onBook?.(trip.id)}
+                            disabled={isFull || isBooking}
+                            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
+                                ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
+                                : 'bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 shadow-sm hover:shadow-md active:scale-95'
+                                }`}
+                        >
+                            {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Waitlist indicator */}
-            {trip._count?.waitlists && trip._count.waitlists > 0 && (
-                <div className="bg-indigo-50 px-4 py-2 text-center text-xs text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
-                    {trip._count.waitlists} {trip._count.waitlists === 1 ? 'person' : 'people'}{' '}
-                    on waitlist
-                </div>
-            )}
+       
         </div>
     );
 }

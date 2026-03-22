@@ -59,6 +59,10 @@ export class CreateTripDto {
 export class FilterTripsDto {
   @IsOptional()
   @IsString()
+  q?: string;
+
+  @IsOptional()
+  @IsString()
   fromCity?: string;
 
   @IsOptional()

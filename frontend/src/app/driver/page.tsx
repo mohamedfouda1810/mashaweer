@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { Trip } from '@/types';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
+import toast from 'react-hot-toast';
 import {
     Gauge,
     Plus,
@@ -21,7 +22,10 @@ import {
     Route,
     Users,
     Banknote,
-    ArrowRight
+    ArrowRight,
+    Edit3,
+    Trash2,
+    X
 } from 'lucide-react';
 
 interface DashboardData {
@@ -40,6 +44,11 @@ export default function DriverDashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [myTrips, setMyTrips] = useState<Trip[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    // Edit modal state
+    const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+    const [editForm, setEditForm] = useState<any>({});
 
     const load = async () => {
         setIsLoading(true);
@@ -60,6 +69,90 @@ export default function DriverDashboardPage() {
         load();
     }, [isAuthenticated, user?.role]);
 
+    const canEditTrip = (trip: Trip) => {
+        if (trip.status !== 'SCHEDULED') return false;
+        const hoursSinceCreation = (Date.now() - new Date(trip.createdAt).getTime()) / (1000 * 60 * 60);
+        return hoursSinceCreation <= 1;
+    };
+
+    const isWithinOneHour = (trip: Trip) => {
+        const hoursSinceCreation = (Date.now() - new Date(trip.createdAt).getTime()) / (1000 * 60 * 60);
+        return hoursSinceCreation <= 1;
+    };
+
+    const canCancelTrip = (trip: Trip) => {
+        return trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED';
+    };
+
+    const handleCancelTrip = async (tripId: string) => {
+        if (!confirm('Are you sure you want to cancel this trip? All booked passengers will be notified.')) return;
+        setActionLoading(tripId);
+        try {
+            await api.cancelTrip(tripId);
+            toast.success('Trip cancelled. Passengers have been notified.');
+            load();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to cancel trip');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // Cancellation request (after 1 hour)
+    const [cancelRequestTrip, setCancelRequestTrip] = useState<Trip | null>(null);
+    const [cancelRequestReason, setCancelRequestReason] = useState('');
+
+    const handleRequestCancellation = async () => {
+        if (!cancelRequestTrip || !cancelRequestReason.trim()) {
+            toast.error('Please provide a reason for cancellation');
+            return;
+        }
+        setActionLoading(cancelRequestTrip.id);
+        try {
+            await api.requestTripCancellation(cancelRequestTrip.id, cancelRequestReason);
+            toast.success('Cancellation request submitted! Admin will review it.');
+            setCancelRequestTrip(null);
+            setCancelRequestReason('');
+            load();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to submit cancellation request');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const openEditModal = (trip: Trip) => {
+        setEditingTrip(trip);
+        setEditForm({
+            fromCity: trip.fromCity,
+            toCity: trip.toCity,
+            gatheringLocation: trip.gatheringLocation || '',
+            departureTime: new Date(trip.departureTime).toISOString().slice(0, 16),
+            price: trip.price,
+            totalSeats: trip.totalSeats,
+            notes: (trip as any).notes || '',
+        });
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editingTrip) return;
+        setActionLoading(editingTrip.id);
+        try {
+            await api.editTrip(editingTrip.id, {
+                ...editForm,
+                price: Number(editForm.price),
+                totalSeats: Number(editForm.totalSeats),
+            });
+            toast.success('Trip updated successfully!');
+            setEditingTrip(null);
+            load();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to update trip');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const upcoming = myTrips.filter((t) => t.status === 'SCHEDULED' || t.status === 'DRIVER_CONFIRMED');
     const completed = myTrips.filter((t) => t.status === 'COMPLETED');
 
@@ -78,27 +171,27 @@ export default function DriverDashboardPage() {
                                     Driver Dashboard
                                 </h1>
                                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                    Manage your upcoming trips and earnings.
+                                    Manage your trips and earnings
                                 </p>
                             </div>
                         </div>
                         <Link
                             href="/trips/create"
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-500 sm:w-auto"
+                            className="inline-flex items-center rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-[0.98]"
                         >
-                            <Plus className="h-5 w-5" />
+                            <Plus className="mr-2 h-4 w-4" />
                             Create Trip
                         </Link>
                     </div>
 
-                    {/* Stats */}
                     {isLoading ? (
-                        <div className="flex justify-center py-12 text-teal-600">
-                            <Loader2 className="h-8 w-8 animate-spin" />
+                        <div className="flex justify-center py-20">
+                            <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
                         </div>
                     ) : (
                         <>
-                            <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {/* Stats Cards */}
+                            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                     <div className="flex items-center gap-4">
                                         <div className="rounded-lg bg-teal-50 p-3 dark:bg-teal-900/20">
@@ -106,17 +199,17 @@ export default function DriverDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Trips</p>
-                                            <p className="text-2xl font-bold text-zinc-900 dark:text-white">{data?.totalTrips ?? myTrips.length}</p>
+                                            <p className="text-2xl font-bold text-zinc-900 dark:text-white">{data?.totalTrips ?? 0}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                     <div className="flex items-center gap-4">
                                         <div className="rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
-                                            <Banknote className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                                            <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Earnings</p>
+                                            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Earnings</p>
                                             <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                                                 EGP {data?.totalEarnings ?? 0}
                                             </p>
@@ -130,9 +223,7 @@ export default function DriverDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Upcoming</p>
-                                            <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                                                {upcoming.length}
-                                            </p>
+                                            <p className="text-2xl font-bold text-zinc-900 dark:text-white">{upcoming.length}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -155,7 +246,11 @@ export default function DriverDashboardPage() {
 
                                 {myTrips.length > 0 ? (
                                     <div className="flex flex-col gap-4">
-                                        {myTrips.map(trip => (
+                                        {myTrips.map(trip => {
+                                            const pricePerSeat = Number(trip.price) / trip.totalSeats;
+                                            const bookedSeats = trip.totalSeats - trip.availableSeats;
+                                            const tripEarnings = Math.round(pricePerSeat * bookedSeats * 100) / 100;
+                                            return (
                                             <div key={trip.id} className="relative block rounded-xl border border-zinc-200 bg-zinc-50 p-4 transition-all hover:bg-zinc-100 sm:p-5 dark:border-zinc-800 dark:bg-zinc-950/50 dark:hover:bg-zinc-900">
                                                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                                     <div>
@@ -182,6 +277,11 @@ export default function DriverDashboardPage() {
                                                                 {trip.gatheringLocation}
                                                             </div>
                                                         </div>
+                                                        {canEditTrip(trip) && (
+                                                            <p className="mt-1 text-xs text-teal-600 dark:text-teal-400">
+                                                                ✏️ You can edit this trip (within 1 hour of creation)
+                                                            </p>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-2">
                                                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${trip.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
@@ -191,10 +291,17 @@ export default function DriverDashboardPage() {
                                                             }`}>
                                                             {trip.status.replace('_', ' ')}
                                                         </span>
-                                                        <p className="text-lg font-bold text-zinc-900 dark:text-white">
-                                                            EGP {trip.price}
-                                                            <span className="text-sm font-normal text-zinc-500"> / seat</span>
-                                                        </p>
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                                                                EGP {Math.round(pricePerSeat)}
+                                                                <span className="text-sm font-normal text-zinc-500"> / seat</span>
+                                                            </p>
+                                                            {trip.status === 'COMPLETED' && bookedSeats > 0 && (
+                                                                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                                                    Earned: {tripEarnings} EGP
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -202,20 +309,47 @@ export default function DriverDashboardPage() {
                                                     <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                                                         <Users className="h-4 w-4" />
                                                         <span>
-                                                            <strong className="text-zinc-900 dark:text-white">
-                                                                {trip.totalSeats - trip.availableSeats}
-                                                            </strong>
+                                                            <strong className="text-zinc-900 dark:text-white">{bookedSeats}</strong>
                                                             /{trip.totalSeats} seats booked
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex gap-2">
+                                                    <div className="flex flex-wrap gap-2">
                                                         <Link
                                                             href={`/trips/${trip.id}`}
                                                             className="flex flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 sm:flex-none"
                                                         >
                                                             View Details
                                                         </Link>
+                                                        {canEditTrip(trip) && (
+                                                            <button
+                                                                onClick={() => openEditModal(trip)}
+                                                                className="flex items-center gap-1 rounded-lg bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100 dark:bg-teal-900/20 dark:text-teal-400 dark:hover:bg-teal-900/30"
+                                                            >
+                                                                <Edit3 className="h-3.5 w-3.5" />
+                                                                Edit
+                                                            </button>
+                                                        )}
+                                                        {canCancelTrip(trip) && isWithinOneHour(trip) && (
+                                                            <button
+                                                                onClick={() => handleCancelTrip(trip.id)}
+                                                                disabled={actionLoading === trip.id}
+                                                                className="flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                                {actionLoading === trip.id ? 'Cancelling...' : 'Cancel'}
+                                                            </button>
+                                                        )}
+                                                        {canCancelTrip(trip) && !isWithinOneHour(trip) && (
+                                                            <button
+                                                                onClick={() => setCancelRequestTrip(trip)}
+                                                                disabled={actionLoading === trip.id}
+                                                                className="flex items-center gap-1 rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 dark:bg-orange-900/20 dark:text-orange-400 dark:hover:bg-orange-900/30"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                                Request Cancel
+                                                            </button>
+                                                        )}
                                                         {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
                                                             <DriverReadyButton
                                                                 tripId={trip.id}
@@ -227,7 +361,8 @@ export default function DriverDashboardPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="rounded-lg border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
@@ -250,6 +385,102 @@ export default function DriverDashboardPage() {
                     )}
                 </div>
             </div>
+
+            {/* Edit Trip Modal */}
+            {editingTrip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Edit Trip</h2>
+                            <button onClick={() => setEditingTrip(null)} className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">From City</label>
+                                    <input value={editForm.fromCity || ''} onChange={(e) => setEditForm({ ...editForm, fromCity: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">To City</label>
+                                    <input value={editForm.toCity || ''} onChange={(e) => setEditForm({ ...editForm, toCity: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Gathering Location</label>
+                                <input value={editForm.gatheringLocation || ''} onChange={(e) => setEditForm({ ...editForm, gatheringLocation: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Departure Time</label>
+                                <input type="datetime-local" value={editForm.departureTime || ''} onChange={(e) => setEditForm({ ...editForm, departureTime: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Total Price (EGP)</label>
+                                    <input type="number" value={editForm.price || ''} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Total Seats</label>
+                                    <input type="number" value={editForm.totalSeats || ''} onChange={(e) => setEditForm({ ...editForm, totalSeats: e.target.value })} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Notes</label>
+                                <textarea value={editForm.notes || ''} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2} className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button onClick={() => setEditingTrip(null)} className="flex-1 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">
+                                    Cancel
+                                </button>
+                                <button onClick={handleEditSubmit} disabled={actionLoading === editingTrip.id} className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50">
+                                    {actionLoading === editingTrip.id ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CANCELLATION REQUEST MODAL */}
+            {cancelRequestTrip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setCancelRequestTrip(null)}>
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="mb-1 text-lg font-bold text-zinc-900 dark:text-white">
+                            🚨 Request Trip Cancellation
+                        </h3>
+                        <p className="mb-4 text-sm text-zinc-500">
+                            {cancelRequestTrip.fromCity} → {cancelRequestTrip.toCity} — {new Date(cancelRequestTrip.departureTime).toLocaleDateString()}
+                        </p>
+                        <p className="mb-3 text-xs text-orange-600 dark:text-orange-400">
+                            Since this trip was created more than 1 hour ago, your cancellation request will be sent to admin for review.
+                        </p>
+                        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Reason for Cancellation *</label>
+                        <textarea
+                            value={cancelRequestReason}
+                            onChange={(e) => setCancelRequestReason(e.target.value)}
+                            rows={3}
+                            placeholder="Please explain why you need to cancel this trip..."
+                            className="mb-4 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setCancelRequestTrip(null); setCancelRequestReason(''); }}
+                                className="flex-1 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRequestCancellation}
+                                disabled={!cancelRequestReason.trim() || actionLoading === cancelRequestTrip.id}
+                                className="flex-1 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-50"
+                            >
+                                {actionLoading === cancelRequestTrip.id ? 'Submitting...' : 'Submit Request'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </ProtectedRoute>
     );
 }

@@ -38,6 +38,7 @@ export function TripFilters() {
     };
 
     const hasActiveFilters =
+        filters.q ||
         filters.fromCity ||
         filters.toCity ||
         filters.date ||
@@ -86,6 +87,24 @@ export function TripFilters() {
 
             {/* Filter body — always visible on desktop, toggle on mobile */}
             <div className={`${isExpanded ? 'block' : 'hidden'} md:block border-t border-zinc-100 px-4 pb-4 pt-3 dark:border-zinc-800`}>
+                {/* Unified Search Box */}
+                <div className="mb-3">
+                    <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        <Search className="h-3 w-3 text-teal-500" />
+                        Search
+                    </label>
+                    <input
+                        type="text"
+                        value={filters.q || ''}
+                        onChange={(e) => setFilters({ q: e.target.value })}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleApply();
+                        }}
+                        placeholder="Search by city, address, meeting point, driver name..."
+                        className={inputClass}
+                    />
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {/* From City */}
                     <div>

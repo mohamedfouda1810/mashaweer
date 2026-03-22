@@ -9,9 +9,10 @@ import { Loader2, MapPinOff, ChevronLeft, ChevronRight } from 'lucide-react';
 interface TripListProps {
     onBook?: (tripId: string) => void;
     onViewDetails?: (tripId: string) => void;
+    hideBooking?: boolean;
 }
 
-export function TripList({ onBook, onViewDetails }: TripListProps) {
+export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) {
     const { trips, isLoading, error, meta, fetchTrips, setPage } = useTripStore();
 
     useEffect(() => {
@@ -85,6 +86,7 @@ export function TripList({ onBook, onViewDetails }: TripListProps) {
                             trip={trip}
                             onBook={onBook}
                             onViewDetails={onViewDetails}
+                            hideBooking={hideBooking}
                         />
                     ))}
                 </div>

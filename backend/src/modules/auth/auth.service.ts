@@ -23,6 +23,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      include: { driverProfile: true },
     });
 
     if (!user) {
@@ -39,14 +40,33 @@ export class AuthService {
     }
 
     if (user.isBanned) {
-      throw new UnauthorizedException('Your account has been banned');
+      // Check if the ban has expired (for temp bans)
+      if (user.banUntil && new Date(user.banUntil) < new Date()) {
+        // Ban expired, auto-unban
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { isBanned: false, banUntil: null, banReason: null },
+        });
+      } else {
+        const banMsg = user.banUntil
+          ? `Your account is banned until ${new Date(user.banUntil).toLocaleDateString()}. Reason: ${user.banReason || 'N/A'}`
+          : 'Your account has been banned';
+        throw new UnauthorizedException(banMsg);
+      }
+    }
+
+    // Block unapproved drivers
+    if (user.role === 'DRIVER' && user.driverProfile && !user.driverProfile.isApproved) {
+      throw new UnauthorizedException(
+        'Your driver application is pending admin approval. Please wait for an admin to review your documents.',
+      );
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = await this.jwtService.signAsync(payload);
 
-    // Remove password hash from response
-    const { passwordHash, ...userWithoutPassword } = user;
+    // Remove password hash and driverProfile from response (will be separate)
+    const { passwordHash, driverProfile, ...userWithoutPassword } = user;
 
     return {
       token,

@@ -278,11 +278,15 @@ export default function RegisterPage() {
 
                     {/* Driver Fields */}
                     {form.role === 'DRIVER' && (
-                        <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-800/50 dark:bg-emerald-950/20">
-                            <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-400">
-                                <CarFront className="h-4 w-4" />
-                                Vehicle Details
-                            </h3>
+                        <div className="space-y-5 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-800/50 dark:bg-emerald-950/20">
+                            {/* Section Header */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">1</div>
+                                <div>
+                                    <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">Vehicle Details</h3>
+                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70">Your car information for passengers</p>
+                                </div>
+                            </div>
                             <div>
                                 <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                                     Car Model
@@ -322,62 +326,109 @@ export default function RegisterPage() {
                                 </div>
                             </div>
                             
-                            <div className="mt-4 space-y-4">
-                                <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Upload Documents</h4>
-                                
-                                <div>
-                                    <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                        Personal Photo
-                                    </label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => handleFileChange('personalPhoto', e, 1)}
-                                        className="text-xs"
-                                    />
-                                    {files.personalPhoto && <span className="text-xs text-emerald-600 ml-2">1 file loaded</span>}
+                            {/* Upload Documents Section */}
+                            <div className="space-y-4 border-t border-emerald-200/60 pt-5 dark:border-emerald-800/40">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">2</div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">Upload Documents</h3>
+                                        <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70">Upload 2 photos (front & back) for each document</p>
+                                    </div>
+                                </div>
+
+                                {/* Progress Summary */}
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { label: 'Photo', done: !!files.personalPhoto },
+                                        { label: 'ID', done: files.identityPhotos.length >= 2 },
+                                        { label: 'License', done: files.drivingLicensePhotos.length >= 2 },
+                                        { label: 'Car', done: files.carLicensePhotos.length >= 2 },
+                                    ].map((item) => (
+                                        <span key={item.label} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${item.done
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500'}`}>
+                                            {item.done ? '✓' : '○'} {item.label}
+                                        </span>
+                                    ))}
                                 </div>
                                 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* Personal Photo */}
+                                <div>
+                                    <label className="mb-2 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                                        👤 Personal Photo
+                                    </label>
+                                    <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-white p-4 transition-colors hover:border-teal-400 hover:bg-teal-50/50 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-teal-600">
+                                        <UploadCloud className="h-6 w-6 text-zinc-400" />
+                                        <span className="text-xs text-zinc-500">Click to upload your photo</span>
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange('personalPhoto', e, 1)} />
+                                    </label>
+                                    {files.personalPhoto && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <img src={URL.createObjectURL(files.personalPhoto)} alt="Preview" className="h-12 w-12 rounded-lg border object-cover" />
+                                            <span className="text-xs text-emerald-600">✓ Uploaded</span>
+                                            <button type="button" onClick={() => setFiles(prev => ({ ...prev, personalPhoto: null }))} className="ml-auto text-zinc-400 hover:text-red-500"><XCircle className="h-4 w-4" /></button>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Identity Photos */}
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                            Identity (Front & Back)
+                                        <label className="mb-2 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                                            🪪 Identity (Front & Back)
                                         </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={(e) => handleFileChange('identityPhotos', e, 2)}
-                                            className="text-xs"
-                                        />
-                                        {files.identityPhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.identityPhotos.length} files loaded</span>}
+                                        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-white p-3 transition-colors hover:border-teal-400 hover:bg-teal-50/50 dark:border-zinc-700 dark:bg-zinc-800/50">
+                                            <UploadCloud className="h-5 w-5 text-zinc-400" />
+                                            <span className="text-xs text-zinc-500">Select 2 photos</span>
+                                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileChange('identityPhotos', e, 2)} />
+                                        </label>
+                                        {files.identityPhotos.length > 0 && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                {files.identityPhotos.map((f, i) => (
+                                                    <img key={i} src={URL.createObjectURL(f)} alt="ID" className="h-10 w-14 rounded border object-cover" />
+                                                ))}
+                                                <span className="text-xs text-emerald-600">{files.identityPhotos.length}/2</span>
+                                            </div>
+                                        )}
                                     </div>
+                                    {/* Driving License */}
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                            Driving License (Front & Back)
+                                        <label className="mb-2 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                                            🚗 Driving License (Front & Back)
                                         </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={(e) => handleFileChange('drivingLicensePhotos', e, 2)}
-                                            className="text-xs"
-                                        />
-                                        {files.drivingLicensePhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.drivingLicensePhotos.length} files loaded</span>}
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                            Car License (Front & Back)
+                                        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-white p-3 transition-colors hover:border-teal-400 hover:bg-teal-50/50 dark:border-zinc-700 dark:bg-zinc-800/50">
+                                            <UploadCloud className="h-5 w-5 text-zinc-400" />
+                                            <span className="text-xs text-zinc-500">Select 2 photos</span>
+                                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileChange('drivingLicensePhotos', e, 2)} />
                                         </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={(e) => handleFileChange('carLicensePhotos', e, 2)}
-                                            className="text-xs"
-                                        />
-                                        {files.carLicensePhotos.length > 0 && <span className="text-xs text-emerald-600 block mt-1">{files.carLicensePhotos.length} files loaded</span>}
+                                        {files.drivingLicensePhotos.length > 0 && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                {files.drivingLicensePhotos.map((f, i) => (
+                                                    <img key={i} src={URL.createObjectURL(f)} alt="License" className="h-10 w-14 rounded border object-cover" />
+                                                ))}
+                                                <span className="text-xs text-emerald-600">{files.drivingLicensePhotos.length}/2</span>
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
+                                {/* Car License */}
+                                <div>
+                                    <label className="mb-2 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                                        📄 Car License (Front & Back)
+                                    </label>
+                                    <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 bg-white p-4 transition-colors hover:border-teal-400 hover:bg-teal-50/50 dark:border-zinc-700 dark:bg-zinc-800/50">
+                                        <UploadCloud className="h-6 w-6 text-zinc-400" />
+                                        <span className="text-xs text-zinc-500">Select 2 photos (front & back)</span>
+                                        <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFileChange('carLicensePhotos', e, 2)} />
+                                    </label>
+                                    {files.carLicensePhotos.length > 0 && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            {files.carLicensePhotos.map((f, i) => (
+                                                <img key={i} src={URL.createObjectURL(f)} alt="Car License" className="h-10 w-14 rounded border object-cover" />
+                                            ))}
+                                            <span className="text-xs text-emerald-600">{files.carLicensePhotos.length}/2</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -386,15 +437,15 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                     >
                         {isLoading ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Creating account...
+                                {form.role === 'DRIVER' ? 'Uploading & registering...' : 'Creating account...'}
                             </>
                         ) : (
-                            'Create Account'
+                            form.role === 'DRIVER' ? 'Submit Application' : 'Create Account'
                         )}
                     </button>
 

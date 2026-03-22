@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -14,6 +16,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
+import { TripService } from '../trip/trip.service';
 
 @Controller('admin')
 @Roles('ADMIN')
@@ -23,6 +26,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly driverService: DriverService,
     private readonly walletService: WalletService,
+    private readonly tripService: TripService,
   ) {}
 
   @Get('dashboard')
@@ -67,6 +71,16 @@ export class AdminController {
     return ApiResponseDto.success(user, 'User unbanned');
   }
 
+  @Post('users/:userId/temp-ban')
+  async tempBanUser(
+    @Param('userId') userId: string,
+    @Body('days') days: number,
+    @Body('reason') reason?: string,
+  ) {
+    const user = await this.adminService.tempBanUser(userId, days || 15, reason);
+    return ApiResponseDto.success(user, `User banned for ${days || 15} days`);
+  }
+
   @Post('users/:userId/role')
   async changeRole(
     @Param('userId') userId: string,
@@ -74,6 +88,27 @@ export class AdminController {
   ) {
     const user = await this.adminService.changeRole(userId, role);
     return ApiResponseDto.success(user, 'User role updated');
+  }
+
+  @Delete('users/:userId')
+  async deleteUser(@Param('userId') userId: string) {
+    const result = await this.adminService.deleteUser(userId);
+    return ApiResponseDto.success(result, 'User deleted');
+  }
+
+  @Post('users')
+  async createUser(
+    @Body() body: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      password: string;
+      role: string;
+    },
+  ) {
+    const user = await this.adminService.createUser(body);
+    return ApiResponseDto.success(user, 'User created');
   }
 
   @Get('users')
@@ -157,5 +192,85 @@ export class AdminController {
       limit ? Number(limit) : 20,
       result.total,
     );
+  }
+
+  @Get('financials')
+  async financials() {
+    const report = await this.adminService.getFinancialReport();
+    return ApiResponseDto.success(report);
+  }
+
+  // ─── Platform Settings ─────────────────────────────────────────────
+
+  @Get('platform-settings')
+  async getPlatformSettings() {
+    const settings = await this.adminService.getPlatformSettings();
+    return ApiResponseDto.success(settings);
+  }
+
+  @Patch('platform-settings')
+  async updatePlatformSettings(
+    @Body() body: {
+      instapayNumber?: string;
+      vodafoneCashNumber?: string;
+      commissionRate?: number;
+    },
+  ) {
+    const settings = await this.adminService.updatePlatformSettings(body);
+    return ApiResponseDto.success(settings, 'Platform settings updated');
+  }
+
+  // ─── All Transactions ──────────────────────────────────────────────
+
+  @Get('transactions')
+  async allTransactions(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.adminService.getAllTransactions(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 30,
+    );
+    return ApiResponseDto.paginated(
+      result.transactions,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 30,
+      result.total,
+    );
+  }
+
+  // ─── User Detail ───────────────────────────────────────────────────
+
+  @Get('users/:userId/detail')
+  async userDetail(@Param('userId') userId: string) {
+    const user = await this.adminService.getUserDetail(userId);
+    return ApiResponseDto.success(user);
+  }
+
+  // ─── Cancellation Requests ────────────────────────────────────────────
+
+  @Get('cancellations/pending')
+  async pendingCancellations() {
+    const requests = await this.tripService.getPendingCancellations();
+    return ApiResponseDto.success(requests);
+  }
+
+  @Post('cancellations/:id/approve')
+  async approveCancellation(
+    @Param('id') id: string,
+    @CurrentUser('id') adminId: string,
+  ) {
+    const result = await this.tripService.approveCancellation(id, adminId);
+    return ApiResponseDto.success(result, 'Cancellation approved');
+  }
+
+  @Post('cancellations/:id/reject')
+  async rejectCancellation(
+    @Param('id') id: string,
+    @CurrentUser('id') adminId: string,
+    @Body('reason') reason?: string,
+  ) {
+    const result = await this.tripService.rejectCancellation(id, adminId, reason);
+    return ApiResponseDto.success(result, 'Cancellation rejected');
   }
 }

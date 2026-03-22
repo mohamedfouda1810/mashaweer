@@ -78,6 +78,21 @@ enum NotificationType {
   DRIVER_ALERT
   RATING_RECEIVED
   ACCOUNT_BANNED
+  COMMISSION_ADDED
+  COMMISSION_PAYMENT_APPROVED
+  COMMISSION_PAYMENT_REJECTED
+}
+
+enum CommissionPaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CancellationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ─── Models ─────────────────────────────────────────────────────────────────
@@ -100,16 +115,19 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  driverProfile   DriverProfile?
-  wallet          Wallet?
-  bookings        Booking[]
-  waitlists       Waitlist[]
-  tripsAsDriver   Trip[]            @relation("DriverTrips")
-  ratingsGiven    Rating[]          @relation("RaterRatings")
-  ratingsReceived Rating[]          @relation("RatedRatings")
-  notifications   Notification[]
-  adminAlerts     AdminAlert[]      @relation("AlertDriver")
-  depositRequests DepositRequest[]
+  driverProfile      DriverProfile?
+  wallet             Wallet?
+  bookings           Booking[]
+  waitlists          Waitlist[]
+  tripsAsDriver      Trip[]               @relation("DriverTrips")
+  ratingsGiven       Rating[]             @relation("RaterRatings")
+  ratingsReceived    Rating[]             @relation("RatedRatings")
+  notifications      Notification[]
+  adminAlerts        AdminAlert[]         @relation("AlertDriver")
+  depositRequests    DepositRequest[]
+  commissions        Commission[]
+  commissionPayments CommissionPayment[]
+  cancellationRequests CancellationRequest[]
 
   @@index([role])
   @@index([isBanned])
@@ -169,6 +187,8 @@ model Trip {
   waitlists   Waitlist[]
   ratings     Rating[]
   adminAlerts AdminAlert[]
+  commission  Commission?
+  cancellationRequest CancellationRequest?
 
   @@index([departureTime])
   @@index([status])
@@ -321,4 +341,77 @@ model AdminAlert {
   @@index([isResolved])
   @@index([type])
   @@map("admin_alerts")
+}
+
+model PlatformSetting {
+  id                  String   @id @default("platform_settings")
+  instapayNumber      String   @default("")
+  vodafoneCashNumber  String   @default("")
+  commissionRate      Float    @default(0.15)
+  updatedAt           DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// ─── Commission System ──────────────────────────────────────────────────────
+
+model Commission {
+  id             String   @id @default(uuid())
+  driverId       String
+  tripId         String   @unique
+  tripEarnings   Decimal  @db.Decimal(12, 2)
+  commissionRate Float
+  amount         Decimal  @db.Decimal(12, 2)
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  // Relations
+  driver User @relation(fields: [driverId], references: [id])
+  trip   Trip @relation(fields: [tripId], references: [id])
+
+  @@index([driverId])
+  @@index([isPaid])
+  @@map("commissions")
+}
+
+model CommissionPayment {
+  id                      String                  @id @default(uuid())
+  driverId                String
+  amount                  Decimal                 @db.Decimal(12, 2)
+  instapayReferenceNumber String
+  screenshotUrl           String
+  status                  CommissionPaymentStatus @default(PENDING)
+  adminNote               String?
+  reviewedBy              String?
+  reviewedAt              DateTime?
+  createdAt               DateTime                @default(now())
+
+  // Relations
+  driver User @relation(fields: [driverId], references: [id])
+
+  @@index([driverId])
+  @@index([status])
+  @@map("commission_payments")
+}
+
+// ─── Cancellation Request System ────────────────────────────────────────────
+
+model CancellationRequest {
+  id          String                    @id @default(uuid())
+  tripId      String                    @unique
+  driverId    String
+  reason      String
+  status      CancellationRequestStatus @default(PENDING)
+  adminNote   String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime                  @default(now())
+
+  // Relations
+  driver User @relation(fields: [driverId], references: [id])
+  trip   Trip @relation(fields: [tripId], references: [id])
+
+  @@index([driverId])
+  @@index([status])
+  @@map("cancellation_requests")
 }

@@ -22,7 +22,7 @@ export class TripController {
   constructor(private readonly tripService: TripService) {}
 
   @Post()
-  @Roles('DRIVER')
+  @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)
   async create(
     @CurrentUser('id') userId: string,
@@ -59,6 +59,30 @@ export class TripController {
     return ApiResponseDto.success(trip, 'Trip cancelled successfully');
   }
 
+  @Post(':id/request-cancel')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async requestCancel(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body('reason') reason: string,
+  ) {
+    const request = await this.tripService.requestCancellation(id, userId, reason);
+    return ApiResponseDto.success(request, 'Cancellation request submitted');
+  }
+
+  @Patch(':id/edit')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async editTrip(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: Partial<CreateTripDto>,
+  ) {
+    const trip = await this.tripService.updateTrip(id, userId, body);
+    return ApiResponseDto.success(trip, 'Trip updated successfully');
+  }
+
   @Get('driver/my-trips')
   @Roles('DRIVER')
   @UseGuards(RolesGuard)
@@ -75,14 +99,34 @@ export class TripController {
     return ApiResponseDto.success(trip, 'Driver marked as ready for trip');
   }
 
+  @Patch(':id/start')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async startTrip(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    const trip = await this.tripService.startTrip(id, userId);
+    return ApiResponseDto.success(trip, 'Trip started successfully');
+  }
+
+  @Patch(':id/complete')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async completeTrip(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    const trip = await this.tripService.completeTrip(id, userId);
+    return ApiResponseDto.success(trip, 'Trip completed successfully');
+  }
+
   @Patch(':id/status')
   @Roles('DRIVER')
   @UseGuards(RolesGuard)
   async updateStatus(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
-    @Body('status') status: string
+    @Body('status') status: string,
   ) {
+    if (status === 'IN_PROGRESS') {
+      const trip = await this.tripService.startTrip(id, userId);
+      return ApiResponseDto.success(trip, 'Trip started');
+    }
     if (status === 'COMPLETED') {
       const trip = await this.tripService.completeTrip(id, userId);
       return ApiResponseDto.success(trip, 'Trip completed successfully');

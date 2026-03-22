@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Query } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
@@ -42,5 +42,11 @@ export class NotificationController {
   async markAllAsRead(@CurrentUser('id') userId: string) {
     await this.notificationService.markAllAsRead(userId);
     return ApiResponseDto.success(null, 'All notifications marked as read');
+  }
+
+  @Delete(':id')
+  async deleteNotification(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    await this.notificationService.deleteNotification(id, userId);
+    return ApiResponseDto.success(null, 'Notification deleted');
   }
 }

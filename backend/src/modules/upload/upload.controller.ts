@@ -10,6 +10,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { v4 as uuid } from 'uuid';
 import { existsSync, mkdirSync } from 'fs';
+import { Public } from '../../common/decorators/public.decorator';
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
@@ -20,6 +21,7 @@ if (!existsSync(UPLOAD_DIR)) {
 
 @Controller('upload')
 export class UploadController {
+  @Public()
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {

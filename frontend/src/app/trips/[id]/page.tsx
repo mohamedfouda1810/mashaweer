@@ -5,9 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSocket } from '@/providers/SocketProvider';
 import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
-import { api } from '@/lib/api';
+import { api, getImageUrl } from '@/lib/api';
 import { Rating, Booking } from '@/types';
+import toast from 'react-hot-toast';
 import {
     MapPin,
     Clock,
@@ -30,9 +32,10 @@ export default function TripDetailPage() {
     const params = useParams();
     const router = useRouter();
     const tripId = params.id as string;
-    const { selectedTrip: trip, isLoading, error, fetchTrip } = useTripStore();
+    const { selectedTrip: trip, isLoading, error, fetchTrip, updateTrip } = useTripStore();
     const { bookSeat, isBooking } = useBookingStore();
     const { user, isAuthenticated } = useAuthStore();
+    const { socket } = useSocket();
 
     const [seats, setSeats] = useState(1);
     const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -45,6 +48,7 @@ export default function TripDetailPage() {
     const [ratingScore, setRatingScore] = useState(5);
     const [ratingReview, setRatingReview] = useState('');
     const [submittingRating, setSubmittingRating] = useState(false);
+    const [tripActionLoading, setTripActionLoading] = useState(false);
 
     useEffect(() => {
         if (tripId) {
@@ -53,12 +57,34 @@ export default function TripDetailPage() {
         }
     }, [tripId, fetchTrip]);
 
-    // Load bookings for driver/admin
-    useEffect(() => {
-        if (trip && user && (user.id === trip.driverId || user.role === 'ADMIN')) {
+    // Load bookings for all authenticated users
+    const fetchBookings = () => {
+        if (trip && user) {
             api.getTripBookings(tripId).then((res) => setBookings((res.data as Booking[]) || [])).catch(() => { });
         }
-    }, [trip, user, tripId]);
+    };
+
+    useEffect(() => {
+        fetchBookings();
+    }, [trip?.id, user, tripId]); // using trip?.id instead of trip to avoid infinite loops
+
+    useEffect(() => {
+        if (!socket || !tripId) return;
+
+        const handleTripUpdate = (data: any) => {
+            if (data.tripId === tripId) {
+                updateTrip(data);
+                // Refresh bookings if needed
+                fetchBookings();
+            }
+        };
+
+        socket.on('tripUpdate', handleTripUpdate);
+
+        return () => {
+            socket.off('tripUpdate', handleTripUpdate);
+        };
+    }, [socket, tripId, updateTrip]);
 
     const handleBook = async () => {
         if (!isAuthenticated) {
@@ -70,6 +96,7 @@ export default function TripDetailPage() {
         if (success) {
             setBookingSuccess(true);
             fetchTrip(tripId);
+            fetchBookings();
         } else {
             // Get the error from the booking store
             const storeError = useBookingStore.getState().error;
@@ -230,6 +257,64 @@ export default function TripDetailPage() {
                         />
                     )}
 
+                    {/* Driver Trip Lifecycle Controls */}
+                    {isDriver && (trip.status === 'DRIVER_CONFIRMED' || trip.status === 'IN_PROGRESS') && (
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                Trip Controls
+                            </h2>
+                            <div className="flex flex-wrap gap-3">
+                                {trip.status === 'DRIVER_CONFIRMED' && (
+                                    <button
+                                        onClick={async () => {
+                                            setTripActionLoading(true);
+                                            try {
+                                                await api.startTrip(trip.id);
+                                                toast.success('Trip started! 🚀');
+                                                fetchTrip(tripId);
+                                            } catch (err: any) {
+                                                toast.error(err.message || 'Failed to start trip');
+                                            } finally {
+                                                setTripActionLoading(false);
+                                            }
+                                        }}
+                                        disabled={tripActionLoading}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-indigo-700 hover:to-teal-700 hover:shadow-md disabled:opacity-50"
+                                    >
+                                        {tripActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                                        Start Trip
+                                    </button>
+                                )}
+                                {trip.status === 'IN_PROGRESS' && (
+                                    <button
+                                        onClick={async () => {
+                                            if (!confirm('Mark this trip as completed?')) return;
+                                            setTripActionLoading(true);
+                                            try {
+                                                await api.completeTrip(trip.id);
+                                                toast.success('Trip completed! ✅');
+                                                fetchTrip(tripId);
+                                            } catch (err: any) {
+                                                toast.error(err.message || 'Failed to complete trip');
+                                            } finally {
+                                                setTripActionLoading(false);
+                                            }
+                                        }}
+                                        disabled={tripActionLoading}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-emerald-700 hover:to-teal-700 hover:shadow-md disabled:opacity-50"
+                                    >
+                                        {tripActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                                        Complete Trip
+                                    </button>
+                                )}
+                            </div>
+                            <p className="mt-3 text-xs text-zinc-500">
+                                {trip.status === 'DRIVER_CONFIRMED' && 'Start the trip when you begin driving. Passengers will be notified.'}
+                                {trip.status === 'IN_PROGRESS' && 'Mark as complete when you arrive at the destination. All bookings will be finalized.'}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Passengers (Driver/Admin only) */}
                     {bookings.length > 0 && (
                         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -357,9 +442,16 @@ export default function TripDetailPage() {
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500">Driver</h3>
                         <div className="flex items-center gap-3">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-lg font-bold text-white">
-                                {trip.driver?.firstName?.[0]}{trip.driver?.lastName?.[0]}
-                            </div>
+                            {(() => {
+                                const photoUrl = getImageUrl(trip.driver?.driverProfile?.personalPhotoUrl);
+                                return photoUrl ? (
+                                    <img src={photoUrl} alt="Driver" className="h-14 w-14 rounded-full object-cover" />
+                                ) : (
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-lg font-bold text-white">
+                                        {trip.driver?.firstName?.[0]}{trip.driver?.lastName?.[0]}
+                                    </div>
+                                );
+                            })()}
                             <div>
                                 <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                                     {trip.driver?.firstName} {trip.driver?.lastName}
@@ -383,15 +475,31 @@ export default function TripDetailPage() {
                         </div>
                     </div>
 
-                    {/* Price & Booking */}
+                    {/* Price & Booking (hide for drivers/admins) */}
+                    {!isDriver && user?.role !== 'ADMIN' && (
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <div className="mb-4 text-center">
                             <p className="text-sm text-zinc-500">Price per seat</p>
                             <p className="text-4xl font-bold text-zinc-900 dark:text-white">
-                                {Number(trip.price).toFixed(0)}
+                                {Math.round(Number(trip.price) / trip.totalSeats)}
                                 <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
                             </p>
-                            <p className="mt-1 text-xs text-zinc-400">Total for {seats} seat(s): {(Number(trip.price) * seats).toFixed(0)} EGP</p>
+                            <p className="mt-1 text-xs text-zinc-400">Total trip price: {Number(trip.price).toFixed(0)} EGP</p>
+                        </div>
+                        {/* Total Price Breakdown */}
+                        <div className="mb-4 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-zinc-500">{Math.round(Number(trip.price) / trip.totalSeats)} EGP × {seats} seat{seats > 1 ? 's' : ''}</span>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                    {Math.round(Number(trip.price) / trip.totalSeats * seats)} EGP
+                                </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
+                                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Total</span>
+                                <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                                    {Math.round(Number(trip.price) / trip.totalSeats * seats)} EGP
+                                </span>
+                            </div>
                         </div>
 
                         {bookingSuccess ? (
@@ -418,7 +526,7 @@ export default function TripDetailPage() {
                                             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                         >
                                             {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => (
-                                                <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(Number(trip.price) * n)} EGP</option>
+                                                <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(Number(trip.price) / trip.totalSeats * n)} EGP</option>
                                             ))}
                                         </select>
                                     </div>
@@ -441,6 +549,7 @@ export default function TripDetailPage() {
                             </div>
                         ) : null}
                     </div>
+                    )}
 
                     {/* Waitlist info */}
                     {trip._count?.waitlists && trip._count.waitlists > 0 && (

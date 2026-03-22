@@ -50,3 +50,9 @@ lerna-debug.log*
 
 # Secrets
 secrets.json
+
+# Uploaded files
+/uploads
+
+# TypeScript build info
+*.tsbuildinfo
