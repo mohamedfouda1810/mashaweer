@@ -14,7 +14,12 @@ async function bootstrap() {
     .map((o) => o.trim());
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
+      callback(null, false);
+    },
     credentials: true,
   });
 
