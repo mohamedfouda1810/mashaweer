@@ -10,7 +10,7 @@ async function bootstrap() {
   if (cachedServer) return cachedServer;
 
   // Lazy require to execute the perfectly compiled Nestjs output
-  const { AppModule } = require('../dist/app.module');
+  const { AppModule } = require('../dist/src/app.module');
 
   const expressApp = express();
   const nestApp = await NestFactory.create(
