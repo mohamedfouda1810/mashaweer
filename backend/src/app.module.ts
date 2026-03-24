@@ -44,11 +44,13 @@ import { RolesGuard } from './common/guards/roles.guard';
     UploadModule,
     CommissionModule,
 
-    // Static files (uploads)
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-    }),
+    // Static files (uploads) - Local only, Vercel Serverless crashes if the directory is missing
+    ...(process.env.VERCEL ? [] : [
+      ServeStaticModule.forRoot({
+        rootPath: join(process.cwd(), 'uploads'),
+        serveRoot: '/uploads',
+      })
+    ]),
   ],
   providers: [
     {
