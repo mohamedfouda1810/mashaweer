@@ -52,14 +52,14 @@ async function bootstrap() {
 
   await nestApp.init();
 
-  cachedServer = serverlessExpress({ app: expressApp });
+  cachedServer = expressApp;
   return cachedServer;
 }
 
 export default async function handler(req: any, res: any) {
   try {
-    const server = await bootstrap();
-    return server(req, res);
+    const handleRequest = await bootstrap();
+    return handleRequest(req, res);
   } catch (error: any) {
     console.error('Vercel Bootstrap Error:', error);
     res.status(500).json({
