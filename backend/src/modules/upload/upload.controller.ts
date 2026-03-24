@@ -45,8 +45,11 @@ export class UploadController {
       const result = await this.cloudinaryService.uploadFile(file);
       // Return the public Cloudinary URL for the file
       return { url: result.secure_url, filename: result.public_id, size: file.size };
-    } catch (error) {
-      throw new BadRequestException('Failed to upload file to Cloudinary');
+    } catch (error: any) {
+      console.error('Upload Error:', error);
+      throw new BadRequestException(
+        error.message || 'Failed to upload file to Cloudinary'
+      );
     }
   }
 }

@@ -5,7 +5,11 @@ import * as streamifier from 'streamifier';
 @Injectable()
 export class CloudinaryService {
   constructor() {
-    // Requires CLOUDINARY_URL in .env, e.g. cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+    if (process.env.CLOUDINARY_URL) {
+      cloudinary.config({
+        url: process.env.CLOUDINARY_URL,
+      });
+    }
   }
 
   uploadFile(file: Express.Multer.File): Promise<any> {
@@ -13,7 +17,10 @@ export class CloudinaryService {
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder: 'mashaweer/uploads' },
         (error, result) => {
-          if (error) return reject(new BadRequestException('Cloudinary upload failed'));
+          if (error) {
+            console.error('Cloudinary internal error:', error);
+            return reject(error);
+          }
           resolve(result);
         },
       );
