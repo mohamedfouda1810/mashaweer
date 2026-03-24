@@ -4,14 +4,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import serverlessExpress from '@vendia/serverless-express';
 import express from 'express';
+import { AppModule } from '../src/app.module';
 
 let cachedServer: any;
 
 async function bootstrap() {
   if (cachedServer) return cachedServer;
-
-  // Dynamically load AppModule to catch top-level module crash errors!
-  const { AppModule } = await import('../src/app.module');
 
   const expressApp = express();
   const nestApp = await NestFactory.create(
