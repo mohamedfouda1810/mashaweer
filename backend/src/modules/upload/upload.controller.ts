@@ -8,7 +8,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import { existsSync, mkdirSync } from 'fs';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -28,7 +28,7 @@ export class UploadController {
       storage: diskStorage({
         destination: UPLOAD_DIR,
         filename: (_req, file, cb) => {
-          const uniqueName = `${uuid()}${extname(file.originalname)}`;
+          const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
           cb(null, uniqueName);
         },
       }),
