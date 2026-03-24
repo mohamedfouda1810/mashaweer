@@ -22,7 +22,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuthStore();
 
   useEffect(() => {
-    if (!user?.id) {
+    // If we're not logged in, or if we're in Vercel production where sockets are disabled, skip connection
+    if (!user?.id || process.env.NODE_ENV === 'production') {
       if (socket) {
         socket.disconnect();
         setSocket(null);

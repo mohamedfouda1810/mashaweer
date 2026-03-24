@@ -6,32 +6,20 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomUUID } from 'crypto';
-import { existsSync, mkdirSync } from 'fs';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { Public } from '../../common/decorators/public.decorator';
-
-const UPLOAD_DIR = process.env.VERCEL ? '/tmp' : join(process.cwd(), 'uploads');
-
-// Ensure the upload directory exists
-if (!existsSync(UPLOAD_DIR)) {
-  mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+import { CloudinaryService } from './cloudinary.service';
 
 @Controller('upload')
 export class UploadController {
+  constructor(private readonly cloudinaryService: CloudinaryService) {}
+
   @Public()
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: UPLOAD_DIR,
-        filename: (_req, file, cb) => {
-          const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
       fileFilter: (_req, file, cb) => {
         const allowed = /\.(jpg|jpeg|png|webp|gif|pdf)$/i;
@@ -48,15 +36,17 @@ export class UploadController {
       },
     }),
   )
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
 
-    // Return the public URL for the file
-    // In production, you'd use a CDN or cloud storage URL
-    const url = `/uploads/${file.filename}`;
-
-    return { url, filename: file.filename, size: file.size };
+    try {
+      const result = await this.cloudinaryService.uploadFile(file);
+      // Return the public Cloudinary URL for the file
+      return { url: result.secure_url, filename: result.public_id, size: file.size };
+    } catch (error) {
+      throw new BadRequestException('Failed to upload file to Cloudinary');
+    }
   }
 }
