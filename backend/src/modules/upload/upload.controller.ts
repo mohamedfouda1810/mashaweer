@@ -14,9 +14,15 @@ import { Public } from '../../common/decorators/public.decorator';
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
-// Ensure the upload directory exists
-if (!existsSync(UPLOAD_DIR)) {
-  mkdirSync(UPLOAD_DIR, { recursive: true });
+// Ensure the upload directory exists (skip on Vercel – read-only filesystem)
+if (!process.env.VERCEL) {
+  try {
+    if (!existsSync(UPLOAD_DIR)) {
+      mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+  } catch {
+    // Ignore – serverless environments have read-only filesystems
+  }
 }
 
 @Controller('upload')
