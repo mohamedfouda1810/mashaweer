@@ -1,0 +1,14 @@
+node_modules
+logs
+*.log
+.DS_Store
+/coverage
+/.nyc_output
+/.idea
+.vscode/*
+.env
+.vercel
+/prisma/data.db*
+secrets.json
+/uploads
+*.tsbuildinfo
