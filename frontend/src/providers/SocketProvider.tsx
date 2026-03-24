@@ -35,6 +35,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     
     const socketInstance = io(API_URL, {
       query: { userId: user.id },
+      transports: ['polling'],
     });
 
     socketInstance.on('connect', () => {
