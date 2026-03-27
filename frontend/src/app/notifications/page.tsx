@@ -170,18 +170,9 @@ export default function NotificationsPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Notifications</h1>
-                            <div className="flex items-center gap-2">
                                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                                     {unread > 0 ? `${unread} unread` : 'All caught up!'}
                                 </p>
-                                <span className="inline-flex items-center gap-1 text-xs">
-                                    {isConnected ? (
-                                        <><Wifi className="h-3 w-3 text-emerald-500" /><span className="text-emerald-500">Live</span></>
-                                    ) : (
-                                        <><WifiOff className="h-3 w-3 text-zinc-400" /><span className="text-zinc-400">Offline</span></>
-                                    )}
-                                </span>
-                            </div>
                         </div>
                     </div>
                     {unread > 0 && (

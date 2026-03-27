@@ -52,17 +52,22 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
 
             {/* Driver Section */}
             <div className="flex items-center gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800">
-            {(() => {
-                    const photoUrl = getImageUrl(trip.driver?.driverProfile?.personalPhotoUrl);
-                    return photoUrl ? (
-                        <img src={photoUrl} alt="Driver" className="h-12 w-12 rounded-full object-cover" />
-                    ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
-                            {trip.driver?.firstName?.[0]}
-                            {trip.driver?.lastName?.[0]}
-                        </div>
-                    );
-                })()}
+                <div className="relative h-12 w-12 flex-shrink-0">
+                    {/* Initials fallback (always rendered behind the image) */}
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
+                        {trip.driver?.firstName?.[0]}
+                        {trip.driver?.lastName?.[0]}
+                    </div>
+                    {/* Driver photo (on top, hides on error to reveal initials) */}
+                    {getImageUrl(trip.driver?.driverProfile?.personalPhotoUrl) && (
+                        <img
+                            src={getImageUrl(trip.driver?.driverProfile?.personalPhotoUrl)}
+                            alt="Driver"
+                            className="absolute inset-0 h-12 w-12 rounded-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                    )}
+                </div>
                 <div className="flex-1">
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
                         {trip.driver?.firstName} {trip.driver?.lastName}
