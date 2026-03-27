@@ -89,6 +89,28 @@ export default function TripDetailPage() {
         };
     }, [socket, tripId, updateTrip]);
 
+    // Auto-show ReviewModal for passengers on completed trips
+    // Must be before early returns to maintain consistent hook order
+    useEffect(() => {
+        const isCompleted = trip?.status === 'COMPLETED';
+        const isDriver = user?.id === trip?.driverId;
+        const userAlreadyBooked = bookings.some(
+            (b) => b.userId === user?.id && b.status !== 'CANCELLED'
+        );
+        const userHasRated = ratings.some((r) => r.raterId === user?.id);
+
+        if (
+            isCompleted &&
+            isAuthenticated &&
+            !isDriver &&
+            userAlreadyBooked &&
+            !userHasRated
+        ) {
+            const timer = setTimeout(() => setShowReviewModal(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [trip?.status, trip?.driverId, isAuthenticated, user?.id, bookings, ratings]);
+
     const handleBook = async () => {
         if (!isAuthenticated) {
             router.push('/login');
@@ -158,22 +180,6 @@ export default function TripDetailPage() {
         (b) => b.userId === user?.id && b.status !== 'CANCELLED'
     );
     const userHasRated = ratings.some((r) => r.raterId === user?.id);
-
-    // Auto-show ReviewModal for passengers on completed trips
-    useEffect(() => {
-        if (
-            isCompleted &&
-            isAuthenticated &&
-            !isDriver &&
-            userAlreadyBooked &&
-            !userHasRated &&
-            ratings.length >= 0
-        ) {
-            // Small delay so the page loads first
-            const timer = setTimeout(() => setShowReviewModal(true), 800);
-            return () => clearTimeout(timer);
-        }
-    }, [isCompleted, isAuthenticated, isDriver, userAlreadyBooked, userHasRated]);
 
     return (
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
