@@ -246,6 +246,13 @@ export class AdminController {
     const user = await this.adminService.getUserDetail(userId);
     return ApiResponseDto.success(user);
   }
+  // ─── Driver Documents Gallery ─────────────────────────────────────
+
+  @Get('drivers/:userId/documents')
+  async driverDocuments(@Param('userId') userId: string) {
+    const docs = await this.adminService.getDriverDocuments(userId);
+    return ApiResponseDto.success(docs);
+  }
 
   // ─── Cancellation Requests ────────────────────────────────────────────
 

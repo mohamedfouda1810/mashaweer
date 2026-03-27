@@ -7,7 +7,9 @@ import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocket } from '@/providers/SocketProvider';
 import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
+import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
+import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
 import { Rating, Booking } from '@/types';
 import toast from 'react-hot-toast';
 import {
@@ -49,6 +51,7 @@ export default function TripDetailPage() {
     const [ratingReview, setRatingReview] = useState('');
     const [submittingRating, setSubmittingRating] = useState(false);
     const [tripActionLoading, setTripActionLoading] = useState(false);
+    const [showReviewModal, setShowReviewModal] = useState(false);
 
     useEffect(() => {
         if (tripId) {
@@ -151,6 +154,26 @@ export default function TripDetailPage() {
     const isFull = trip.availableSeats <= 0;
     const isDriver = user?.id === trip.driverId;
     const isCompleted = trip.status === 'COMPLETED';
+    const userAlreadyBooked = bookings.some(
+        (b) => b.userId === user?.id && b.status !== 'CANCELLED'
+    );
+    const userHasRated = ratings.some((r) => r.raterId === user?.id);
+
+    // Auto-show ReviewModal for passengers on completed trips
+    useEffect(() => {
+        if (
+            isCompleted &&
+            isAuthenticated &&
+            !isDriver &&
+            userAlreadyBooked &&
+            !userHasRated &&
+            ratings.length >= 0
+        ) {
+            // Small delay so the page loads first
+            const timer = setTimeout(() => setShowReviewModal(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isCompleted, isAuthenticated, isDriver, userAlreadyBooked, userHasRated]);
 
     return (
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -293,6 +316,7 @@ export default function TripDetailPage() {
                                             try {
                                                 await api.completeTrip(trip.id);
                                                 toast.success('Trip completed! ✅');
+                                                trackTripCompleted(trip.id, trip.fromCity, trip.toCity);
                                                 fetchTrip(tripId);
                                             } catch (err: any) {
                                                 toast.error(err.message || 'Failed to complete trip');
@@ -502,13 +526,15 @@ export default function TripDetailPage() {
                             </div>
                         </div>
 
-                        {bookingSuccess ? (
-                            <div className="rounded-lg bg-emerald-50 p-4 text-center dark:bg-emerald-900/20">
-                                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
-                                <p className="mt-2 font-medium text-emerald-700 dark:text-emerald-400">Booked!</p>
+                        {bookingSuccess || userAlreadyBooked ? (
+                            <div className="rounded-lg bg-mint/10 p-4 text-center dark:bg-mint/20">
+                                <CheckCircle2 className="mx-auto h-8 w-8 text-mint" />
+                                <p className="mt-2 font-medium text-mint-dark dark:text-mint-light">
+                                    {bookingSuccess ? 'Booked!' : '✓ Already Booked'}
+                                </p>
                                 <button
                                     onClick={() => router.push('/bookings')}
-                                    className="mt-2 text-sm text-teal-600 hover:underline"
+                                    className="mt-2 text-sm text-navy hover:underline dark:text-mint"
                                 >
                                     View my bookings
                                 </button>
@@ -540,8 +566,8 @@ export default function TripDetailPage() {
                                     onClick={handleBook}
                                     disabled={isBooking}
                                     className={`w-full rounded-lg py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] ${isFull
-                                        ? 'bg-indigo-500 hover:bg-indigo-600'
-                                        : 'bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 shadow-sm hover:shadow-md'
+                                        ? 'bg-navy-light hover:bg-navy'
+                                        : 'bg-gradient-to-r from-navy to-mint hover:from-navy-light hover:to-mint-light shadow-sm hover:shadow-md'
                                         } disabled:opacity-50`}
                                 >
                                     {isBooking ? 'Processing...' : isFull ? 'Join Waitlist' : `Book ${seats} Seat${seats > 1 ? 's' : ''}`}
@@ -560,6 +586,23 @@ export default function TripDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Auto-triggered Review Modal for passengers */}
+            {trip && (
+                <ReviewModal
+                    isOpen={showReviewModal}
+                    onClose={() => setShowReviewModal(false)}
+                    tripId={trip.id}
+                    driverId={trip.driverId}
+                    driverName={`${trip.driver?.firstName || ''} ${trip.driver?.lastName || ''}`}
+                    onSuccess={() => {
+                        // Refresh ratings
+                        api.getTripRatings(tripId)
+                            .then((res) => setRatings((res.data as Rating[]) || []))
+                            .catch(() => {});
+                    }}
+                />
+            )}
         </div>
     );
 }

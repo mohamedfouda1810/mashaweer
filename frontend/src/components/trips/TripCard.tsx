@@ -20,9 +20,10 @@ interface TripCardProps {
     onBook?: (tripId: string) => void;
     onViewDetails?: (tripId: string) => void;
     hideBooking?: boolean;
+    isBooked?: boolean;
 }
 
-export function TripCard({ trip, onBook, onViewDetails, hideBooking }: TripCardProps) {
+export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }: TripCardProps) {
     const { isBooking } = useBookingStore();
 
     const departureDate = new Date(trip.departureTime);
@@ -183,16 +184,22 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking }: TripCardP
                         Details
                     </button>
                     {!hideBooking && (
-                        <button
-                            onClick={() => onBook?.(trip.id)}
-                            disabled={isFull || isBooking}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
-                                ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
-                                : 'bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 shadow-sm hover:shadow-md active:scale-95'
-                                }`}
-                        >
-                            {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
-                        </button>
+                        isBooked ? (
+                            <span className="rounded-lg bg-mint/10 px-4 py-2 text-sm font-semibold text-mint dark:bg-mint/20">
+                                ✓ Already Booked
+                            </span>
+                        ) : (
+                            <button
+                                onClick={() => onBook?.(trip.id)}
+                                disabled={isFull || isBooking}
+                                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
+                                    ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
+                                    : 'bg-gradient-to-r from-navy to-mint hover:from-navy-light hover:to-mint-light shadow-sm hover:shadow-md active:scale-95'
+                                    }`}
+                            >
+                                {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
+                            </button>
+                        )
                     )}
                 </div>
             </div>

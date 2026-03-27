@@ -36,6 +36,8 @@ import {
     FileText,
     Eye,
     ArrowUpDown,
+    Image,
+    ZoomIn,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 'financials' | 'transactions' | 'commissionPayments' | 'cancellations' | 'settings';
@@ -79,6 +81,10 @@ export default function AdminPage() {
     const [detailLoading, setDetailLoading] = useState(false);
     // Cancellation Requests
     const [cancellationRequests, setCancellationRequests] = useState<any[]>([]);
+    // Driver Documents Gallery
+    const [docGallery, setDocGallery] = useState<any>(null);
+    const [docGalleryLoading, setDocGalleryLoading] = useState(false);
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -481,6 +487,24 @@ export default function AdminPage() {
                                                                     <Eye className="h-3 w-3" />
                                                                     Detail
                                                                 </button>
+                                                                {u.role === 'DRIVER' && (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            setDocGalleryLoading(true);
+                                                                            try {
+                                                                                const res = await api.getDriverDocuments(u.id);
+                                                                                setDocGallery(res.data);
+                                                                            } catch (err: any) { toast.error(err.message || 'Failed to load documents'); }
+                                                                            setDocGalleryLoading(false);
+                                                                        }}
+                                                                        disabled={docGalleryLoading}
+                                                                        className="flex items-center gap-1 rounded-lg bg-navy/10 px-2.5 py-1 text-xs font-medium text-navy hover:bg-navy/20 dark:bg-mint/10 dark:text-mint dark:hover:bg-mint/20"
+                                                                        title="View driver documents"
+                                                                    >
+                                                                        <Image className="h-3 w-3" />
+                                                                        Docs
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1392,6 +1416,100 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
+
+            {/* ─── Driver Documents Gallery Modal ──────────────────── */}
+            {docGallery && (
+                <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
+                        <button
+                            onClick={() => setDocGallery(null)}
+                            className="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy/10 dark:bg-mint/10">
+                                <Image className="h-5 w-5 text-navy dark:text-mint" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                                    Driver Documents
+                                </h2>
+                                <p className="text-sm text-zinc-500">
+                                    {docGallery.profile?.driver?.firstName} {docGallery.profile?.driver?.lastName} — {docGallery.profile?.carModel} ({docGallery.profile?.plateNumber})
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            {docGallery.documents?.map((cat: any) => (
+                                <div key={cat.category}>
+                                    <h3 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                                        {cat.category}
+                                    </h3>
+                                    {cat.urls.length === 0 ? (
+                                        <p className="text-xs text-zinc-400 italic">No documents uploaded</p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                            {cat.urls.map((url: string, i: number) => (
+                                                <div
+                                                    key={i}
+                                                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-700"
+                                                    onClick={() => setLightboxUrl(getImageUrl(url) || url)}
+                                                >
+                                                    <img
+                                                        src={getImageUrl(url) || url}
+                                                        alt={`${cat.category} ${i + 1}`}
+                                                        loading="lazy"
+                                                        className="h-40 w-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/30">
+                                                        <ZoomIn className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-6 flex items-center justify-between border-t pt-4 dark:border-zinc-800">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                docGallery.profile?.isApproved
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            }`}>
+                                {docGallery.profile?.isApproved ? 'Approved ✓' : 'Pending Approval'}
+                            </span>
+                            <p className="text-xs text-zinc-400">
+                                License: {docGallery.profile?.licenseNumber}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Fullscreen Image Lightbox ───────────────────────── */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+                    onClick={() => setLightboxUrl(null)}
+                >
+                    <button
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Full size document"
+                        className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </ProtectedRoute>
     );
 }

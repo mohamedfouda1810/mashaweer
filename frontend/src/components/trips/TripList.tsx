@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTripStore } from '@/stores/useTripStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { api } from '@/lib/api';
 import { TripCard } from './TripCard';
 import { TripFilters } from './TripFilters';
+import { Booking } from '@/types';
 import { Loader2, MapPinOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TripListProps {
@@ -14,10 +17,29 @@ interface TripListProps {
 
 export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) {
     const { trips, isLoading, error, meta, fetchTrips, setPage } = useTripStore();
+    const { isAuthenticated } = useAuthStore();
+    const [bookedTripIds, setBookedTripIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         fetchTrips();
     }, [fetchTrips]);
+
+    // Fetch user's bookings to determine which trips are already booked
+    useEffect(() => {
+        if (isAuthenticated && !hideBooking) {
+            api.getMyBookings()
+                .then((res) => {
+                    const bookings = (res.data || []) as Booking[];
+                    const ids = new Set<string>(
+                        bookings
+                            .filter((b) => b.status !== 'CANCELLED')
+                            .map((b) => b.tripId)
+                    );
+                    setBookedTripIds(ids);
+                })
+                .catch(() => {});
+        }
+    }, [isAuthenticated, hideBooking]);
 
     return (
         <div className="space-y-6">
@@ -44,7 +66,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             {/* Loading State */}
             {isLoading && (
                 <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+                    <Loader2 className="h-10 w-10 animate-spin text-navy" />
                     <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
                         Finding trips for you...
                     </p>
@@ -87,6 +109,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
                             onBook={onBook}
                             onViewDetails={onViewDetails}
                             hideBooking={hideBooking}
+                            isBooked={bookedTripIds.has(trip.id)}
                         />
                     ))}
                 </div>
@@ -119,7 +142,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
                                     <button
                                         onClick={() => setPage(page)}
                                         className={`h-9 w-9 rounded-lg text-sm font-medium transition-all ${page === meta.page
-                                            ? 'bg-teal-600 text-white shadow-sm'
+                                            ? 'bg-navy text-white shadow-sm'
                                             : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                                             }`}
                                     >

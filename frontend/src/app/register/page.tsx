@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { TermsModal } from '@/components/TermsModal';
 import {
     Car,
     Mail,
@@ -40,6 +41,8 @@ export default function RegisterPage() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
 
     const handleFileChange = (field: keyof typeof files, e: React.ChangeEvent<HTMLInputElement>, maxCount: number = 2) => {
         if (e.target.files) {
@@ -434,10 +437,32 @@ export default function RegisterPage() {
                         </div>
                     )}
 
+                    {/* Terms & Conditions */}
+                    <div className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+                        <input
+                            id="terms-checkbox"
+                            type="checkbox"
+                            checked={agreedToTerms}
+                            onChange={(e) => setAgreedToTerms(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 shrink-0 rounded border-zinc-300 text-navy accent-navy focus:ring-navy"
+                        />
+                        <label htmlFor="terms-checkbox" className="text-sm text-zinc-600 dark:text-zinc-400">
+                            أوافق على{' '}
+                            <button
+                                type="button"
+                                onClick={() => setShowTerms(true)}
+                                className="font-semibold text-navy underline hover:text-navy-light dark:text-mint"
+                            >
+                                الشروط والأحكام
+                            </button>
+                            {' '}الخاصة بمنصة مشاوير
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                        disabled={isLoading || !agreedToTerms}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-navy to-mint py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-navy-light hover:to-mint-light hover:shadow-md active:scale-[0.98] disabled:opacity-60"
                     >
                         {isLoading ? (
                             <>
@@ -448,6 +473,13 @@ export default function RegisterPage() {
                             form.role === 'DRIVER' ? 'Submit Application' : 'Create Account'
                         )}
                     </button>
+
+                    {/* Terms Modal */}
+                    <TermsModal
+                        isOpen={showTerms}
+                        onClose={() => setShowTerms(false)}
+                        role={form.role}
+                    />
 
                     <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
                         Already have an account?{' '}

@@ -495,6 +495,28 @@ class ApiClient {
       body: JSON.stringify({ reason }),
     });
   }
+
+  // ─── Admin: Driver Documents Gallery ──────────────────────────────
+
+  async getDriverDocuments(userId: string) {
+    return this.request(`/admin/drivers/${userId}/documents`);
+  }
+
+  // ─── Push Notifications ───────────────────────────────────────────
+
+  async subscribePush(subscription: { endpoint: string; p256dh: string; auth: string }) {
+    return this.request('/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    });
+  }
+
+  async unsubscribePush(endpoint: string) {
+    return this.request('/push/unsubscribe', {
+      method: 'DELETE',
+      body: JSON.stringify({ endpoint }),
+    });
+  }
 }
 
 export const api = new ApiClient();

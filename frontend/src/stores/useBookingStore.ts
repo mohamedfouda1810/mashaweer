@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Booking } from '@/types';
 import { api } from '@/lib/api';
+import { trackTripBooked } from '@/lib/analytics';
 
 interface BookingState {
   bookings: Booking[];
@@ -35,6 +36,8 @@ export const useBookingStore = create<BookingState>((set) => ({
     try {
       await api.bookSeat(tripId, seats);
       set({ isBooking: false });
+      // Fire GA4 analytics event
+      trackTripBooked(tripId, '', '', seats, 0);
       return true;
     } catch (error: any) {
       set({ error: error.message, isBooking: false });

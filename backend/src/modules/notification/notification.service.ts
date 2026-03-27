@@ -1,7 +1,8 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationType, Prisma } from '@prisma/client';
 import { NotificationGateway } from './notification.gateway';
+import { PushService } from '../push/push.service';
 
 interface CreateNotificationDto {
   userId: string;
@@ -11,15 +12,48 @@ interface CreateNotificationDto {
   metadata?: Record<string, any>;
 }
 
+/**
+ * Map notification types to deep-link URLs for push notification click handling.
+ */
+function getNotificationUrl(type: NotificationType, metadata?: Record<string, any>): string {
+  const tripId = metadata?.tripId;
+  const bookingId = metadata?.bookingId;
+
+  switch (type) {
+    case 'BOOKING_CONFIRMED':
+    case 'BOOKING_CANCELLED':
+    case 'WAITLIST_PROMOTED':
+      return tripId ? `/trips/${tripId}` : '/bookings';
+    case 'TRIP_REMINDER':
+      return tripId ? `/trips/${tripId}` : '/trips';
+    case 'DEPOSIT_APPROVED':
+    case 'DEPOSIT_REJECTED':
+    case 'COMMISSION_ADDED':
+    case 'COMMISSION_PAYMENT_APPROVED':
+    case 'COMMISSION_PAYMENT_REJECTED':
+      return '/wallet';
+    case 'RATING_RECEIVED':
+      return tripId ? `/trips/${tripId}` : '/';
+    case 'DRIVER_ALERT':
+      return '/driver';
+    case 'ACCOUNT_BANNED':
+      return '/';
+    default:
+      return tripId ? `/trips/${tripId}` : '/notifications';
+  }
+}
+
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationGateway,
+    @Optional() private readonly pushService?: PushService,
   ) {}
 
   /**
-   * Create a notification (standalone, outside of transactions)
+   * Create a notification (standalone, outside of transactions).
+   * Saves to DB → broadcasts via WebSocket → sends web push.
    */
   async create(data: CreateNotificationDto) {
     const notification = await this.prisma.notification.create({
@@ -32,14 +66,17 @@ export class NotificationService {
       },
     });
 
-    // Broadcast in real-time
+    // Broadcast in real-time via WebSocket
     this.gateway.sendNotificationToUser(data.userId, notification);
+
+    // Send Web Push notification (non-blocking)
+    this.sendPush(data).catch(() => {});
 
     return notification;
   }
 
   /**
-   * Create a notification inside an existing Prisma transaction
+   * Create a notification inside an existing Prisma transaction.
    */
   async createInTransaction(
     tx: Prisma.TransactionClient,
@@ -55,11 +92,26 @@ export class NotificationService {
       },
     });
 
-    // Broadcast in real-time after transaction completes, but since we are inside, 
-    // it will be emitted immediately. Usually safe for notifications.
+    // Broadcast in real-time
     this.gateway.sendNotificationToUser(data.userId, notification);
 
+    // Send Web Push notification (non-blocking)
+    this.sendPush(data).catch(() => {});
+
     return notification;
+  }
+
+  /**
+   * Internal helper: send web push with deep-link URL.
+   */
+  private async sendPush(data: CreateNotificationDto) {
+    if (!this.pushService) return;
+    const url = getNotificationUrl(data.type, data.metadata);
+    await this.pushService.sendPushToUser(data.userId, {
+      title: data.title,
+      body: data.message,
+      url,
+    });
   }
 
   /**

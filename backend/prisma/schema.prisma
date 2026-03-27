@@ -128,6 +128,7 @@ model User {
   commissions        Commission[]
   commissionPayments CommissionPayment[]
   cancellationRequests CancellationRequest[]
+  pushSubscriptions  PushSubscription[]
 
   @@index([role])
   @@index([isBanned])
@@ -414,4 +415,21 @@ model CancellationRequest {
   @@index([driverId])
   @@index([status])
   @@map("cancellation_requests")
+}
+
+// ─── Web Push Notifications ─────────────────────────────────────────────────
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

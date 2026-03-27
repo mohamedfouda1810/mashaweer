@@ -617,4 +617,73 @@ export class AdminService {
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
+
+  // ─── Driver Documents Gallery ──────────────────────────────────────
+
+  /**
+   * Get all driver photos/documents for admin verification.
+   * Returns categorized URLs for identity, driving license, car license, etc.
+   */
+  async getDriverDocuments(userId: string) {
+    const profile = await this.prisma.driverProfile.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        personalPhotoUrl: true,
+        carPhotoUrl: true,
+        identityPhotos: true,
+        drivingLicensePhotos: true,
+        carLicensePhotos: true,
+        carModel: true,
+        plateNumber: true,
+        licenseNumber: true,
+        licenseExpiry: true,
+        isApproved: true,
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!profile) throw new NotFoundException('Driver profile not found');
+
+    return {
+      profile: {
+        id: profile.id,
+        carModel: profile.carModel,
+        plateNumber: profile.plateNumber,
+        licenseNumber: profile.licenseNumber,
+        licenseExpiry: profile.licenseExpiry,
+        isApproved: profile.isApproved,
+        driver: profile.user,
+      },
+      documents: [
+        {
+          category: 'Personal Photo',
+          urls: profile.personalPhotoUrl ? [profile.personalPhotoUrl] : [],
+        },
+        {
+          category: 'Car Photo',
+          urls: profile.carPhotoUrl ? [profile.carPhotoUrl] : [],
+        },
+        {
+          category: 'Identity Documents',
+          urls: profile.identityPhotos || [],
+        },
+        {
+          category: 'Driving License',
+          urls: profile.drivingLicensePhotos || [],
+        },
+        {
+          category: 'Car License',
+          urls: profile.carLicensePhotos || [],
+        },
+      ],
+    };
+  }
 }

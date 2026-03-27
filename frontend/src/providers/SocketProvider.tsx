@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { subscribeToPush, isPushSupported } from '@/lib/pushNotifications';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -54,6 +55,19 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       socketInstance.disconnect();
     };
+  }, [user?.id]);
+
+  // Auto-subscribe to Web Push Notifications on login
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!isPushSupported()) return;
+
+    // Delay slightly to avoid blocking initial render
+    const timer = setTimeout(() => {
+      subscribeToPush().catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [user?.id]);
 
   return (
