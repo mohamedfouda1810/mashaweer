@@ -296,4 +296,20 @@ export class WalletService {
     };
   }
 
+  /**
+   * Get payment info (Instapay & Vodafone Cash numbers) for clients/drivers
+   */
+  async getPaymentInfo() {
+    const settings = await this.prisma.platformSetting.upsert({
+      where: { id: 'platform_settings' },
+      update: {},
+      create: { id: 'platform_settings' },
+    });
+
+    return {
+      instapayNumber: settings.instapayNumber || '',
+      vodafoneCashNumber: settings.vodafoneCashNumber || '',
+    };
+  }
+
 }

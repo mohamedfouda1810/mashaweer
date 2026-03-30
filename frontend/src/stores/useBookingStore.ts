@@ -15,7 +15,7 @@ interface BookingState {
   cancelBooking: (bookingId: string) => Promise<{ refundAmount: number } | null>;
 }
 
-export const useBookingStore = create<BookingState>((set) => ({
+export const useBookingStore = create<BookingState>((set, get) => ({
   bookings: [],
   isLoading: false,
   isBooking: false,
@@ -38,6 +38,8 @@ export const useBookingStore = create<BookingState>((set) => ({
       set({ isBooking: false });
       // Fire GA4 analytics event
       trackTripBooked(tripId, '', '', seats, 0);
+      // Auto-refresh bookings list
+      get().fetchBookings();
       return true;
     } catch (error: any) {
       set({ error: error.message, isBooking: false });
@@ -50,6 +52,8 @@ export const useBookingStore = create<BookingState>((set) => ({
     try {
       const response = await api.cancelBooking(bookingId);
       set({ isLoading: false });
+      // Auto-refresh bookings list
+      get().fetchBookings();
       return response.data || null;
     } catch (error: any) {
       set({ error: error.message, isLoading: false });

@@ -95,4 +95,14 @@ export class WalletController {
     );
     return ApiResponseDto.success(result, 'Deposit rejected');
   }
+
+  /**
+   * GET /api/wallet/payment-info
+   * Returns the admin-configured Instapay & Vodafone Cash numbers for deposits.
+   */
+  @Get('payment-info')
+  async getPaymentInfo() {
+    const info = await this.walletService.getPaymentInfo();
+    return ApiResponseDto.success(info);
+  }
 }

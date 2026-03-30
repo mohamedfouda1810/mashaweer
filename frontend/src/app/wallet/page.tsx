@@ -21,6 +21,8 @@ import {
     Receipt,
     AlertTriangle,
     CreditCard,
+    Smartphone,
+    Copy,
 } from 'lucide-react';
 
 interface DebtSummary {
@@ -76,6 +78,8 @@ export default function WalletPage() {
     const [payRef, setPayRef] = useState('');
     const [payScreenshot, setPayScreenshot] = useState('');
     const [payLoading, setPayLoading] = useState(false);
+    const [paymentInfo, setPaymentInfo] = useState<{ instapayNumber: string; vodafoneCashNumber: string } | null>(null);
+    const [copiedField, setCopiedField] = useState<string | null>(null);
 
     const loadWalletData = useCallback(async () => {
         if (user?.role !== 'DRIVER') return;
@@ -92,7 +96,17 @@ export default function WalletPage() {
 
     useEffect(() => {
         loadWalletData();
+        api.getPaymentInfo()
+            .then((res) => setPaymentInfo(res.data as any))
+            .catch(() => {});
     }, [loadWalletData]);
+
+    const copyToClipboard = (text: string, field: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedField(field);
+            setTimeout(() => setCopiedField(null), 2000);
+        });
+    };
 
     const handleSubmitPayment = async () => {
         if (!payAmount || !payRef || !payScreenshot) {
@@ -211,6 +225,68 @@ export default function WalletPage() {
                                         <CreditCard className="h-5 w-5" />
                                         {showPaymentForm ? 'Cancel Payment' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
                                     </button>
+                                </div>
+                            )}
+
+                            {/* ─── Payment Numbers Info ─── */}
+                            {paymentInfo && (paymentInfo.instapayNumber || paymentInfo.vodafoneCashNumber) && (
+                                <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                                        💳 Payment Accounts
+                                    </h3>
+                                    <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+                                        Send your commission payment to one of these accounts:
+                                    </p>
+                                    <div className="space-y-2">
+                                        {paymentInfo.instapayNumber && (
+                                            <div className="flex items-center justify-between rounded-lg bg-teal-50 p-3 dark:bg-teal-900/20">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCard className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                    <div>
+                                                        <p className="text-xs font-medium text-teal-700 dark:text-teal-300">InstaPay</p>
+                                                        <p className="font-mono text-sm font-semibold text-teal-900 dark:text-teal-100">
+                                                            {paymentInfo.instapayNumber}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => copyToClipboard(paymentInfo.instapayNumber, 'instapay')}
+                                                    className="rounded-md p-1.5 text-teal-600 transition-colors hover:bg-teal-100 dark:text-teal-400 dark:hover:bg-teal-800/30"
+                                                    title="Copy"
+                                                >
+                                                    {copiedField === 'instapay' ? (
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                                    ) : (
+                                                        <Copy className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                        {paymentInfo.vodafoneCashNumber && (
+                                            <div className="flex items-center justify-between rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+                                                <div className="flex items-center gap-2">
+                                                    <Smartphone className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                    <div>
+                                                        <p className="text-xs font-medium text-red-700 dark:text-red-300">Vodafone Cash</p>
+                                                        <p className="font-mono text-sm font-semibold text-red-900 dark:text-red-100">
+                                                            {paymentInfo.vodafoneCashNumber}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => copyToClipboard(paymentInfo.vodafoneCashNumber, 'vodafone')}
+                                                    className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-800/30"
+                                                    title="Copy"
+                                                >
+                                                    {copiedField === 'vodafone' ? (
+                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                                    ) : (
+                                                        <Copy className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

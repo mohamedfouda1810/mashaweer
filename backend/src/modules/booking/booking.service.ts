@@ -69,25 +69,50 @@ export class BookingService {
       const pricePerSeat = Number(trip.price) / trip.totalSeats;
       const totalPrice = Math.round(pricePerSeat * seats * 100) / 100;
 
-      // 7. Create booking (directly CONFIRMED since payment succeeded)
-      const booking = await tx.booking.create({
-        data: {
-          userId,
-          tripId,
-          seats,
-          status: BookingStatus.CONFIRMED,
-        },
-        include: {
-          trip: {
-            select: {
-              fromCity: true,
-              toCity: true,
-              departureTime: true,
-              gatheringLocation: true,
+      // 7. Create or re-activate booking (directly CONFIRMED)
+      let booking;
+      if (existingBooking && existingBooking.status === 'CANCELLED') {
+        // Re-activate the previously cancelled booking
+        booking = await tx.booking.update({
+          where: { id: existingBooking.id },
+          data: {
+            seats,
+            status: BookingStatus.CONFIRMED,
+            isReady: false,
+            bookedAt: new Date(),
+          },
+          include: {
+            trip: {
+              select: {
+                fromCity: true,
+                toCity: true,
+                departureTime: true,
+                gatheringLocation: true,
+              },
             },
           },
-        },
-      });
+        });
+      } else {
+        // First-time booking
+        booking = await tx.booking.create({
+          data: {
+            userId,
+            tripId,
+            seats,
+            status: BookingStatus.CONFIRMED,
+          },
+          include: {
+            trip: {
+              select: {
+                fromCity: true,
+                toCity: true,
+                departureTime: true,
+                gatheringLocation: true,
+              },
+            },
+          },
+        });
+      }
 
       // 8. Decrease available seats
       const updatedTrip = await tx.trip.update({

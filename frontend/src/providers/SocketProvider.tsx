@@ -22,6 +22,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuthStore();
 
+  // Auto-subscribe to Web Push Notifications on login
+  // This must run regardless of socket connections (works in production too)
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!isPushSupported()) return;
+
+    // Delay slightly to avoid blocking initial render
+    const timer = setTimeout(() => {
+      subscribeToPush().catch(() => {});
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [user?.id]);
+
   useEffect(() => {
     // If we're not logged in, or if we're in Vercel production where sockets are disabled, skip connection
     if (!user?.id || process.env.NODE_ENV === 'production') {
@@ -55,19 +69,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       socketInstance.disconnect();
     };
-  }, [user?.id]);
-
-  // Auto-subscribe to Web Push Notifications on login
-  useEffect(() => {
-    if (!user?.id) return;
-    if (!isPushSupported()) return;
-
-    // Delay slightly to avoid blocking initial render
-    const timer = setTimeout(() => {
-      subscribeToPush().catch(() => {});
-    }, 3000);
-
-    return () => clearTimeout(timer);
   }, [user?.id]);
 
   return (

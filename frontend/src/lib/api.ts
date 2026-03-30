@@ -195,6 +195,10 @@ class ApiClient {
     return this.request('/wallet/transactions');
   }
 
+  async getPaymentInfo() {
+    return this.request<{ instapayNumber: string; vodafoneCashNumber: string }>('/wallet/payment-info');
+  }
+
   // ─── Driver ──────────────────────────────────────────────────────
 
   async confirmReady(tripId: string) {
