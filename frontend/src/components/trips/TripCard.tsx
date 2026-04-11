@@ -59,8 +59,10 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                     destinationLat={trip.destinationLatitude}
                     destinationLng={trip.destinationLongitude}
                     distanceKm={trip.distanceKm}
-                    height="140px"
+                    height="130px"
                     compact={true}
+                    fromLabel={trip.fromCity}
+                    toLabel={trip.toCity}
                 />
             )}
 

@@ -224,6 +224,8 @@ export default function TripDetailPage() {
                                 distanceKm={trip.distanceKm}
                                 height="250px"
                                 compact={false}
+                                fromLabel={trip.gatheringLocation || trip.fromCity}
+                                toLabel={trip.toAddress || trip.toCity}
                             />
                         </div>
                     )}

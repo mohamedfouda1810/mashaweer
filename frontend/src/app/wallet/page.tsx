@@ -7,7 +7,6 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { api, getImageUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
-    TrendingUp,
     TrendingDown,
     DollarSign,
     Clock,
@@ -77,7 +76,9 @@ export default function WalletPage() {
     const [payAmount, setPayAmount] = useState('');
     const [payRef, setPayRef] = useState('');
     const [payScreenshot, setPayScreenshot] = useState('');
+    const [payScreenshotPreview, setPayScreenshotPreview] = useState<string | null>(null);
     const [payLoading, setPayLoading] = useState(false);
+    const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
     const [paymentInfo, setPaymentInfo] = useState<{ instapayNumber: string; vodafoneCashNumber: string } | null>(null);
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -108,6 +109,23 @@ export default function WalletPage() {
         });
     };
 
+    const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setPayScreenshotPreview(URL.createObjectURL(file));
+        setUploadingScreenshot(true);
+        try {
+            const res = await api.uploadFile(file);
+            setPayScreenshot(res.url);
+            toast.success('Screenshot uploaded');
+        } catch {
+            toast.error('Failed to upload screenshot');
+            setPayScreenshotPreview(null);
+        } finally {
+            setUploadingScreenshot(false);
+        }
+    };
+
     const handleSubmitPayment = async () => {
         if (!payAmount || !payRef || !payScreenshot) {
             toast.error('Please fill all fields and upload a screenshot');
@@ -125,6 +143,7 @@ export default function WalletPage() {
             setPayAmount('');
             setPayRef('');
             setPayScreenshot('');
+            setPayScreenshotPreview(null);
             loadWalletData();
         } catch (err: any) {
             toast.error(err.message || 'Failed to submit payment');
@@ -137,9 +156,9 @@ export default function WalletPage() {
     if (user?.role !== 'DRIVER') {
         return (
             <ProtectedRoute>
-                <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center py-8 px-4 sm:py-12 sm:px-6">
-                    <div className="w-full max-w-2xl">
-                        <h1 className="mb-4 text-2xl font-bold text-zinc-900 dark:text-white">My Wallet</h1>
+                <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center py-6 px-3 sm:py-10 sm:px-6">
+                    <div className="w-full max-w-lg">
+                        <h1 className="mb-3 text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl">My Wallet</h1>
                         <WalletCard />
                     </div>
                 </div>
@@ -153,136 +172,123 @@ export default function WalletPage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center py-8 px-4 sm:py-12 sm:px-6">
-                <div className="w-full max-w-3xl">
+            <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center py-4 px-3 sm:py-8 sm:px-6">
+                <div className="w-full max-w-2xl">
                     {/* Header */}
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
-                            💰 Driver Commission Wallet
+                    <div className="mb-5">
+                        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-2xl">
+                            💰 Commission Wallet
                         </h1>
-                        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                            Track your commission debt and submit payments.
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            Track commission debt and submit payments
                         </p>
                     </div>
 
                     {loading ? (
-                        <div className="flex justify-center py-20">
-                            <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+                        <div className="flex justify-center py-16">
+                            <Loader2 className="h-7 w-7 animate-spin text-teal-500" />
                         </div>
                     ) : (
                         <>
                             {/* ─── Debt Summary Cards ─── */}
-                            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <div className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 p-5 shadow-sm dark:border-red-900/30 dark:from-red-900/20 dark:to-red-900/10">
-                                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span className="text-xs font-semibold uppercase tracking-wide">Remaining Debt</span>
+                            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                                <div className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 p-3 sm:p-4 shadow-sm dark:border-red-900/30 dark:from-red-900/20 dark:to-red-900/10">
+                                    <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Remaining</span>
                                     </div>
-                                    <p className="mt-2 text-3xl font-bold text-red-700 dark:text-red-300">
+                                    <p className="mt-1.5 text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300">
                                         {debt?.remainingDebt?.toFixed(0) || 0}
-                                        <span className="ml-1 text-sm font-normal text-red-500 dark:text-red-400">EGP</span>
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-red-500">EGP</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <div className="flex items-center gap-2 text-zinc-500">
-                                        <DollarSign className="h-4 w-4 text-indigo-500" />
-                                        <span className="text-xs font-semibold uppercase tracking-wide">Total Debt</span>
+                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="flex items-center gap-1.5 text-zinc-500">
+                                        <DollarSign className="h-3.5 w-3.5 text-indigo-500" />
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Total Debt</span>
                                     </div>
-                                    <p className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">
+                                    <p className="mt-1.5 text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
                                         {debt?.totalDebt?.toFixed(0) || 0}
-                                        <span className="ml-1 text-sm font-normal text-zinc-500">EGP</span>
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <div className="flex items-center gap-2 text-zinc-500">
-                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                        <span className="text-xs font-semibold uppercase tracking-wide">Total Paid</span>
+                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="flex items-center gap-1.5 text-zinc-500">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Paid</span>
                                     </div>
-                                    <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                    <p className="mt-1.5 text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400">
                                         {debt?.totalPaid?.toFixed(0) || 0}
-                                        <span className="ml-1 text-sm font-normal text-zinc-500">EGP</span>
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <div className="flex items-center gap-2 text-zinc-500">
-                                        <Clock className="h-4 w-4 text-amber-500" />
-                                        <span className="text-xs font-semibold uppercase tracking-wide">Pending</span>
+                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="flex items-center gap-1.5 text-zinc-500">
+                                        <Clock className="h-3.5 w-3.5 text-amber-500" />
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Pending</span>
                                     </div>
-                                    <p className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">
+                                    <p className="mt-1.5 text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400">
                                         {debt?.totalPending?.toFixed(0) || 0}
-                                        <span className="ml-1 text-sm font-normal text-zinc-500">EGP</span>
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
                                     </p>
                                 </div>
                             </div>
 
                             {/* ─── Pay Commission Button ─── */}
                             {(debt?.remainingDebt ?? 0) > 0 && (
-                                <div className="mb-6">
+                                <div className="mb-4">
                                     <button
                                         onClick={() => setShowPaymentForm((v) => !v)}
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-xl"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-lg active:scale-[0.98]"
                                     >
-                                        <CreditCard className="h-5 w-5" />
-                                        {showPaymentForm ? 'Cancel Payment' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
+                                        <CreditCard className="h-4 w-4" />
+                                        {showPaymentForm ? 'Cancel' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
                                     </button>
                                 </div>
                             )}
 
                             {/* ─── Payment Numbers Info ─── */}
                             {paymentInfo && (paymentInfo.instapayNumber || paymentInfo.vodafoneCashNumber) && (
-                                <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                                <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                                         💳 Payment Accounts
                                     </h3>
-                                    <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                        Send your commission payment to one of these accounts:
-                                    </p>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         {paymentInfo.instapayNumber && (
-                                            <div className="flex items-center justify-between rounded-lg bg-teal-50 p-3 dark:bg-teal-900/20">
+                                            <div className="flex items-center justify-between rounded-lg bg-teal-50 px-3 py-2 dark:bg-teal-900/20">
                                                 <div className="flex items-center gap-2">
-                                                    <CreditCard className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                    <CreditCard className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
                                                     <div>
-                                                        <p className="text-xs font-medium text-teal-700 dark:text-teal-300">InstaPay</p>
-                                                        <p className="font-mono text-sm font-semibold text-teal-900 dark:text-teal-100">
+                                                        <p className="text-[10px] font-medium text-teal-700 dark:text-teal-300">InstaPay</p>
+                                                        <p className="font-mono text-xs font-semibold text-teal-900 dark:text-teal-100">
                                                             {paymentInfo.instapayNumber}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => copyToClipboard(paymentInfo.instapayNumber, 'instapay')}
-                                                    className="rounded-md p-1.5 text-teal-600 transition-colors hover:bg-teal-100 dark:text-teal-400 dark:hover:bg-teal-800/30"
-                                                    title="Copy"
+                                                    className="rounded-md p-1 text-teal-600 transition-colors hover:bg-teal-100 dark:text-teal-400"
                                                 >
-                                                    {copiedField === 'instapay' ? (
-                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                                    ) : (
-                                                        <Copy className="h-4 w-4" />
-                                                    )}
+                                                    {copiedField === 'instapay' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                                                 </button>
                                             </div>
                                         )}
                                         {paymentInfo.vodafoneCashNumber && (
-                                            <div className="flex items-center justify-between rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+                                            <div className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
                                                 <div className="flex items-center gap-2">
-                                                    <Smartphone className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                                    <Smartphone className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                                                     <div>
-                                                        <p className="text-xs font-medium text-red-700 dark:text-red-300">Vodafone Cash</p>
-                                                        <p className="font-mono text-sm font-semibold text-red-900 dark:text-red-100">
+                                                        <p className="text-[10px] font-medium text-red-700 dark:text-red-300">Vodafone Cash</p>
+                                                        <p className="font-mono text-xs font-semibold text-red-900 dark:text-red-100">
                                                             {paymentInfo.vodafoneCashNumber}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => copyToClipboard(paymentInfo.vodafoneCashNumber, 'vodafone')}
-                                                    className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-800/30"
-                                                    title="Copy"
+                                                    className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-100 dark:text-red-400"
                                                 >
-                                                    {copiedField === 'vodafone' ? (
-                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                                    ) : (
-                                                        <Copy className="h-4 w-4" />
-                                                    )}
+                                                    {copiedField === 'vodafone' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                                                 </button>
                                             </div>
                                         )}
@@ -292,99 +298,90 @@ export default function WalletPage() {
 
                             {/* ─── Payment Form ─── */}
                             {showPaymentForm && (
-                                <div className="mb-6 rounded-xl border-2 border-teal-200 bg-teal-50/50 p-6 dark:border-teal-800 dark:bg-teal-900/20">
-                                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-teal-800 dark:text-teal-300">
-                                        <Send className="h-5 w-5" />
-                                        Submit InstaPay Payment
+                                <div className="mb-4 rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4 dark:border-teal-800 dark:bg-teal-900/20">
+                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-300">
+                                        <Send className="h-4 w-4" />
+                                        Submit Payment
                                     </h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                                Amount (EGP)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={payAmount}
-                                                onChange={(e) => setPayAmount(e.target.value)}
-                                                placeholder={`Max: ${debt?.remainingDebt?.toFixed(0)} EGP`}
-                                                max={debt?.remainingDebt || 0}
-                                                min={1}
-                                                className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                                            />
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                                    Amount (EGP)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={payAmount}
+                                                    onChange={(e) => setPayAmount(e.target.value)}
+                                                    placeholder={`Max: ${debt?.remainingDebt?.toFixed(0)}`}
+                                                    max={debt?.remainingDebt || 0}
+                                                    min={1}
+                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                                    Reference Number
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={payRef}
+                                                    onChange={(e) => setPayRef(e.target.value)}
+                                                    placeholder="IP-1234567890"
+                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                                />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                                InstaPay Reference Number
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={payRef}
-                                                onChange={(e) => setPayRef(e.target.value)}
-                                                placeholder="e.g., IP-1234567890"
-                                                className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                            <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                                                 Payment Screenshot
                                             </label>
-                                            <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed border-zinc-300 bg-white px-4 py-3 text-sm transition-all hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-teal-600">
-                                                <Upload className="h-5 w-5 text-zinc-400" />
-                                                <span className="text-zinc-500 dark:text-zinc-400">
-                                                    {payScreenshot ? '✅ Screenshot uploaded' : 'Click to upload screenshot'}
+                                            <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-white px-3 py-2.5 text-sm transition-all hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-teal-600">
+                                                {uploadingScreenshot ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
+                                                ) : (
+                                                    <Upload className="h-4 w-4 text-zinc-400" />
+                                                )}
+                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                    {uploadingScreenshot ? 'Uploading...' : payScreenshot ? '✅ Uploaded' : 'Upload screenshot'}
                                                 </span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
                                                     className="hidden"
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) {
-                                                            try {
-                                                                const res = await api.uploadFile(file);
-                                                                setPayScreenshot(res.url);
-                                                                toast.success('Screenshot uploaded');
-                                                            } catch {
-                                                                toast.error('Failed to upload');
-                                                            }
-                                                        }
-                                                    }}
+                                                    onChange={handleScreenshotUpload}
                                                 />
                                             </label>
-                                            {payScreenshot && (
+                                            {payScreenshotPreview && (
                                                 <img
-                                                    src={getImageUrl(payScreenshot) || payScreenshot}
+                                                    src={payScreenshotPreview}
                                                     alt="Receipt"
-                                                    className="mt-2 h-32 rounded-lg border object-cover"
+                                                    className="mt-2 h-20 rounded-lg border object-cover"
                                                 />
                                             )}
                                         </div>
                                         <button
                                             onClick={handleSubmitPayment}
                                             disabled={!payAmount || !payRef || !payScreenshot || payLoading}
-                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50 active:scale-[0.98]"
                                         >
-                                            {payLoading ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Send className="h-4 w-4" />
-                                            )}
-                                            {payLoading ? 'Submitting...' : 'Submit Payment for Review'}
+                                            {payLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                            {payLoading ? 'Submitting...' : 'Submit Payment'}
                                         </button>
                                     </div>
                                 </div>
                             )}
 
                             {/* ─── Tabs ─── */}
-                            <div className="mb-6 flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800/60">
+                            <div className="mb-4 flex gap-0.5 rounded-xl bg-zinc-100 p-0.5 dark:bg-zinc-800/60">
                                 {(['overview', 'commissions', 'payments'] as const).map((t) => (
                                     <button
                                         key={t}
                                         onClick={() => setTab(t)}
-                                        className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
+                                        className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
                                             tab === t
                                                 ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                                                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                                                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
                                         }`}
                                     >
                                         {t === 'overview' ? '📊 Overview' : t === 'commissions' ? '📋 Commissions' : '💳 Payments'}
@@ -394,37 +391,37 @@ export default function WalletPage() {
 
                             {/* ─── Tab: Overview ─── */}
                             {tab === 'overview' && (
-                                <div className="space-y-4">
-                                    <h3 className="font-semibold text-zinc-900 dark:text-white">Recent Commissions</h3>
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Recent Commissions</h3>
                                     {commissions.length === 0 ? (
-                                        <p className="rounded-xl bg-zinc-50 py-8 text-center text-sm text-zinc-500 dark:bg-zinc-800/50">
+                                        <p className="rounded-xl bg-zinc-50 py-6 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
                                             No commissions yet. Complete trips to see them here.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {commissions.slice(0, 5).map((c) => (
                                                 <div
                                                     key={c.id}
-                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${c.isPaid ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                            {c.isPaid ? <CheckCircle2 className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${c.isPaid ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                            {c.isPaid ? <CheckCircle2 className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+                                                            <p className="text-xs font-semibold text-zinc-900 dark:text-white">
                                                                 {c.trip?.fromCity} → {c.trip?.toCity}
                                                             </p>
-                                                            <p className="text-xs text-zinc-500">
-                                                                {new Date(c.createdAt).toLocaleDateString()} • {(c.commissionRate * 100).toFixed(0)}% rate
+                                                            <p className="text-[10px] text-zinc-500">
+                                                                {new Date(c.createdAt).toLocaleDateString()} • {(c.commissionRate * 100).toFixed(0)}%
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                                                        <p className="text-xs font-bold text-red-600 dark:text-red-400">
                                                             {Number(c.amount).toFixed(0)} EGP
                                                         </p>
-                                                        <span className={`text-xs font-medium ${c.isPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                                                        <span className={`text-[10px] font-medium ${c.isPaid ? 'text-emerald-600' : 'text-red-500'}`}>
                                                             {c.isPaid ? 'Paid' : 'Unpaid'}
                                                         </span>
                                                     </div>
@@ -433,43 +430,43 @@ export default function WalletPage() {
                                         </div>
                                     )}
 
-                                    <h3 className="mt-6 font-semibold text-zinc-900 dark:text-white">Recent Payments</h3>
+                                    <h3 className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">Recent Payments</h3>
                                     {payments.length === 0 ? (
-                                        <p className="rounded-xl bg-zinc-50 py-8 text-center text-sm text-zinc-500 dark:bg-zinc-800/50">
-                                            No payments yet. Submit a payment to clear your debt.
+                                        <p className="rounded-xl bg-zinc-50 py-6 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
+                                            No payments yet.
                                         </p>
                                     ) : (
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {payments.slice(0, 5).map((p) => (
                                                 <div
                                                     key={p.id}
-                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
                                                             p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' :
                                                             p.status === 'REJECTED' ? 'bg-red-100 text-red-600' :
                                                             'bg-amber-100 text-amber-600'
                                                         } dark:bg-opacity-20`}>
-                                                            {p.status === 'APPROVED' ? <CheckCircle2 className="h-5 w-5" /> :
-                                                             p.status === 'REJECTED' ? <XCircle className="h-5 w-5" /> :
-                                                             <Clock className="h-5 w-5" />}
+                                                            {p.status === 'APPROVED' ? <CheckCircle2 className="h-4 w-4" /> :
+                                                             p.status === 'REJECTED' ? <XCircle className="h-4 w-4" /> :
+                                                             <Clock className="h-4 w-4" />}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                                                                InstaPay: {p.instapayReferenceNumber}
+                                                            <p className="text-xs font-semibold text-zinc-900 dark:text-white">
+                                                                Ref: {p.instapayReferenceNumber}
                                                             </p>
-                                                            <p className="text-xs text-zinc-500">
+                                                            <p className="text-[10px] text-zinc-500">
                                                                 {new Date(p.createdAt).toLocaleDateString()}
                                                                 {p.adminNote && ` • ${p.adminNote}`}
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-sm font-bold text-zinc-900 dark:text-white">
+                                                        <p className="text-xs font-bold text-zinc-900 dark:text-white">
                                                             {Number(p.amount).toFixed(0)} EGP
                                                         </p>
-                                                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                                                             p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                                                             p.status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                                                             'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
@@ -486,42 +483,42 @@ export default function WalletPage() {
 
                             {/* ─── Tab: All Commissions ─── */}
                             {tab === 'commissions' && (
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                     {commissions.length === 0 ? (
-                                        <p className="rounded-xl bg-zinc-50 py-12 text-center text-sm text-zinc-500 dark:bg-zinc-800/50">
+                                        <p className="rounded-xl bg-zinc-50 py-8 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
                                             No commissions recorded yet.
                                         </p>
                                     ) : (
                                         commissions.map((c) => (
                                             <div
                                                 key={c.id}
-                                                className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="font-semibold text-zinc-900 dark:text-white">
-                                                            <MapPin className="mr-1 inline h-4 w-4 text-teal-500" />
+                                                        <p className="text-xs font-semibold text-zinc-900 dark:text-white">
+                                                            <MapPin className="mr-1 inline h-3 w-3 text-teal-500" />
                                                             {c.trip?.fromCity} → {c.trip?.toCity}
                                                         </p>
-                                                        <p className="mt-1 text-xs text-zinc-500">
-                                                            <Calendar className="mr-1 inline h-3 w-3" />
+                                                        <p className="mt-0.5 text-[10px] text-zinc-500">
+                                                            <Calendar className="mr-0.5 inline h-2.5 w-2.5" />
                                                             {c.trip?.departureTime ? new Date(c.trip.departureTime).toLocaleString() : 'N/A'}
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                                                        <p className="text-sm font-bold text-red-600 dark:text-red-400">
                                                             {Number(c.amount).toFixed(0)} EGP
                                                         </p>
-                                                        <p className="text-xs text-zinc-500">
-                                                            Earnings: {Number(c.tripEarnings).toFixed(0)} EGP
+                                                        <p className="text-[10px] text-zinc-500">
+                                                            Earned: {Number(c.tripEarnings).toFixed(0)} EGP
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="mt-2 flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                                                    <span className="text-xs text-zinc-500">
+                                                <div className="mt-1.5 flex items-center justify-between border-t border-zinc-100 pt-1.5 dark:border-zinc-800">
+                                                    <span className="text-[10px] text-zinc-500">
                                                         Rate: {(c.commissionRate * 100).toFixed(0)}%
                                                     </span>
-                                                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${c.isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${c.isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                                         {c.isPaid ? '✅ Paid' : '❌ Unpaid'}
                                                     </span>
                                                 </div>
@@ -533,36 +530,36 @@ export default function WalletPage() {
 
                             {/* ─── Tab: Payment History ─── */}
                             {tab === 'payments' && (
-                                <div className="space-y-3">
+                                <div className="space-y-1.5">
                                     {payments.length === 0 ? (
-                                        <p className="rounded-xl bg-zinc-50 py-12 text-center text-sm text-zinc-500 dark:bg-zinc-800/50">
+                                        <p className="rounded-xl bg-zinc-50 py-8 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
                                             No payment requests yet.
                                         </p>
                                     ) : (
                                         payments.map((p) => (
                                             <div
                                                 key={p.id}
-                                                className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
                                             >
                                                 <div className="flex items-start justify-between">
                                                     <div>
-                                                        <p className="font-semibold text-zinc-900 dark:text-white">
-                                                            <Receipt className="mr-1 inline h-4 w-4 text-indigo-500" />
+                                                        <p className="text-xs font-semibold text-zinc-900 dark:text-white">
+                                                            <Receipt className="mr-1 inline h-3 w-3 text-indigo-500" />
                                                             Payment: {Number(p.amount).toFixed(0)} EGP
                                                         </p>
-                                                        <p className="mt-1 text-xs text-zinc-500">
+                                                        <p className="mt-0.5 text-[10px] text-zinc-500">
                                                             Ref: {p.instapayReferenceNumber}
                                                         </p>
-                                                        <p className="text-xs text-zinc-500">
+                                                        <p className="text-[10px] text-zinc-500">
                                                             {new Date(p.createdAt).toLocaleString()}
                                                         </p>
                                                         {p.adminNote && (
-                                                            <p className="mt-1 text-xs text-red-500">
-                                                                Admin note: {p.adminNote}
+                                                            <p className="mt-0.5 text-[10px] text-red-500">
+                                                                Note: {p.adminNote}
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                                         p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                                                         p.status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                                                         'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
@@ -571,12 +568,12 @@ export default function WalletPage() {
                                                     </span>
                                                 </div>
                                                 {p.screenshotUrl && (
-                                                    <div className="mt-3">
+                                                    <div className="mt-2">
                                                         <a href={getImageUrl(p.screenshotUrl) || p.screenshotUrl} target="_blank" rel="noreferrer">
                                                             <img
                                                                 src={getImageUrl(p.screenshotUrl) || p.screenshotUrl}
                                                                 alt="Receipt"
-                                                                className="h-20 rounded-lg border object-cover hover:opacity-80"
+                                                                className="h-16 rounded-lg border object-cover hover:opacity-80"
                                                             />
                                                         </a>
                                                     </div>
