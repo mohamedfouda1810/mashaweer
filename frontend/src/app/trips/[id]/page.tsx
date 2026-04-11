@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useTripStore } from '@/stores/useTripStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -12,6 +13,11 @@ import { api, getImageUrl } from '@/lib/api';
 import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
 import { Rating, Booking } from '@/types';
 import toast from 'react-hot-toast';
+
+const TripMap = dynamic(() => import('@/components/TripMap'), {
+    ssr: false,
+    loading: () => <div className="h-[250px] rounded-xl bg-zinc-100 animate-pulse dark:bg-zinc-800" />,
+});
 import {
     MapPin,
     Clock,
@@ -207,6 +213,21 @@ export default function TripDetailPage() {
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Main Content */}
                 <div className="space-y-6 lg:col-span-2">
+                    {/* Route Map */}
+                    {((trip.gatheringLatitude && trip.gatheringLongitude) || (trip.destinationLatitude && trip.destinationLongitude)) && (
+                        <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <TripMap
+                                gatheringLat={trip.gatheringLatitude}
+                                gatheringLng={trip.gatheringLongitude}
+                                destinationLat={trip.destinationLatitude}
+                                destinationLng={trip.destinationLongitude}
+                                distanceKm={trip.distanceKm}
+                                height="250px"
+                                compact={false}
+                            />
+                        </div>
+                    )}
+
                     {/* Route Card */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

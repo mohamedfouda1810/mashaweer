@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Trip } from '@/types';
 import { getImageUrl } from '@/lib/api';
 import { useBookingStore } from '@/stores/useBookingStore';
@@ -14,6 +15,11 @@ import {
     Navigation,
     CalendarDays,
 } from 'lucide-react';
+
+const TripMap = dynamic(() => import('@/components/TripMap'), {
+    ssr: false,
+    loading: () => <div className="h-[140px] rounded-xl bg-zinc-100 animate-pulse dark:bg-zinc-800" />,
+});
 
 interface TripCardProps {
     trip: Trip;
@@ -40,8 +46,24 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
     const isFull = trip.availableSeats <= 0;
     const isConfirmed = trip.status === 'DRIVER_CONFIRMED';
 
+    const hasMapData = (trip.gatheringLatitude && trip.gatheringLongitude) ||
+        (trip.destinationLatitude && trip.destinationLongitude);
+
     return (
         <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-teal-200 hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-teal-800">
+            {/* Mini Map */}
+            {hasMapData && (
+                <TripMap
+                    gatheringLat={trip.gatheringLatitude}
+                    gatheringLng={trip.gatheringLongitude}
+                    destinationLat={trip.destinationLatitude}
+                    destinationLng={trip.destinationLongitude}
+                    distanceKm={trip.distanceKm}
+                    height="140px"
+                    compact={true}
+                />
+            )}
+
             {/* Status Badge */}
             {isConfirmed && (
                 <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">

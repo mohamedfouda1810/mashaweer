@@ -79,9 +79,12 @@ model Trip {
   fromAddress         String?
   toAddress           String?
   gatheringLocation   String
-  gatheringLatitude   Float?
-  gatheringLongitude  Float?
-  departureTime       DateTime
+  gatheringLatitude    Float?
+  gatheringLongitude   Float?
+  destinationLatitude  Float?
+  destinationLongitude Float?
+  distanceKm           Float?
+  departureTime        DateTime
   estimatedArrival    DateTime?
   price               Decimal              @db.Decimal(10, 2)
   totalSeats          Int

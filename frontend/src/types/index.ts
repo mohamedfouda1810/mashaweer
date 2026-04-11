@@ -73,6 +73,9 @@ export interface Trip {
   gatheringLocation: string;
   gatheringLatitude?: number;
   gatheringLongitude?: number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
+  distanceKm?: number;
   departureTime: string;
   estimatedArrival?: string;
   price: number;

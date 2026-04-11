@@ -35,6 +35,14 @@ export class CreateTripDto {
   @IsNumber()
   gatheringLongitude?: number;
 
+  @IsOptional()
+  @IsNumber()
+  destinationLatitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  destinationLongitude?: number;
+
   @IsDateString()
   departureTime: string;
 

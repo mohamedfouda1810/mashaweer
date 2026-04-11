@@ -129,6 +129,10 @@ class ApiClient {
     price: number;
     totalSeats: number;
     notes?: string;
+    gatheringLatitude?: number;
+    gatheringLongitude?: number;
+    destinationLatitude?: number;
+    destinationLongitude?: number;
   }) {
     return this.request<Trip>('/trips', {
       method: 'POST',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
 import {
     MapPin,
     Clock,
@@ -16,7 +17,21 @@ import {
     Loader2,
     StickyNote,
     Flag,
+    Map,
 } from 'lucide-react';
+
+// Dynamic import for Leaflet (SSR-incompatible)
+const MapPicker = dynamic(() => import('@/components/MapPicker'), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-[320px] items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+            <div className="flex flex-col items-center gap-2 text-zinc-400">
+                <Map className="h-8 w-8 animate-pulse" />
+                <span className="text-sm">Loading map...</span>
+            </div>
+        </div>
+    ),
+});
 
 export default function CreateTripPage() {
     const router = useRouter();
@@ -33,10 +48,32 @@ export default function CreateTripPage() {
         price: '',
         totalSeats: '4',
         notes: '',
+        gatheringLatitude: undefined as number | undefined,
+        gatheringLongitude: undefined as number | undefined,
+        destinationLatitude: undefined as number | undefined,
+        destinationLongitude: undefined as number | undefined,
     });
 
-    const update = (field: string, value: string) =>
+    const update = (field: string, value: any) =>
         setForm((prev) => ({ ...prev, [field]: value }));
+
+    const handleGatheringChange = (lat: number, lng: number, address?: string) => {
+        setForm((prev) => ({
+            ...prev,
+            gatheringLatitude: lat,
+            gatheringLongitude: lng,
+            gatheringLocation: address || prev.gatheringLocation,
+        }));
+    };
+
+    const handleDestinationChange = (lat: number, lng: number, address?: string) => {
+        setForm((prev) => ({
+            ...prev,
+            destinationLatitude: lat,
+            destinationLongitude: lng,
+            toAddress: address || prev.toAddress,
+        }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,6 +90,10 @@ export default function CreateTripPage() {
                 price: Number(form.price),
                 totalSeats: Number(form.totalSeats),
                 notes: form.notes || undefined,
+                gatheringLatitude: form.gatheringLatitude,
+                gatheringLongitude: form.gatheringLongitude,
+                destinationLatitude: form.destinationLatitude,
+                destinationLongitude: form.destinationLongitude,
             });
             if (response.data) {
                 router.push(`/trips/${response.data.id}`);
@@ -123,6 +164,21 @@ export default function CreateTripPage() {
                         </div>
                     </div>
 
+                    {/* Interactive Map */}
+                    <div>
+                        <label className="mb-2 flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            <Map className="h-3.5 w-3.5 text-indigo-500" /> Pick Locations on Map
+                        </label>
+                        <MapPicker
+                            gatheringLat={form.gatheringLatitude}
+                            gatheringLng={form.gatheringLongitude}
+                            destinationLat={form.destinationLatitude}
+                            destinationLng={form.destinationLongitude}
+                            onGatheringChange={handleGatheringChange}
+                            onDestinationChange={handleDestinationChange}
+                        />
+                    </div>
+
                     {/* Group Point & Destination Point */}
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
@@ -136,6 +192,11 @@ export default function CreateTripPage() {
                                 placeholder="e.g. Ramsis Station, Gate 5"
                                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
+                            {form.gatheringLatitude && (
+                                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                    📍 Coordinates set from map
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -147,6 +208,11 @@ export default function CreateTripPage() {
                                 placeholder="e.g. Sidi Gaber Station"
                                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                             />
+                            {form.destinationLatitude && (
+                                <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                                    📍 Coordinates set from map
+                                </p>
+                            )}
                         </div>
                     </div>
 

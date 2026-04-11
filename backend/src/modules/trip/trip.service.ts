@@ -21,9 +21,40 @@ export class TripService {
   ) {}
 
   /**
+   * Calculate distance between two GPS points using Haversine formula
+   */
+  private calculateDistance(
+    lat1: number, lng1: number,
+    lat2: number, lng2: number,
+  ): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10; // Round to 1 decimal
+  }
+
+  /**
    * Create a new trip (Driver only)
    */
   async create(driverId: string, dto: CreateTripDto) {
+    // Auto-calculate distance if both coordinates are provided
+    let distanceKm: number | undefined;
+    if (
+      dto.gatheringLatitude && dto.gatheringLongitude &&
+      dto.destinationLatitude && dto.destinationLongitude
+    ) {
+      distanceKm = this.calculateDistance(
+        dto.gatheringLatitude, dto.gatheringLongitude,
+        dto.destinationLatitude, dto.destinationLongitude,
+      );
+    }
+
     return this.prisma.trip.create({
       data: {
         driverId,
@@ -34,6 +65,9 @@ export class TripService {
         gatheringLocation: dto.gatheringLocation,
         gatheringLatitude: dto.gatheringLatitude,
         gatheringLongitude: dto.gatheringLongitude,
+        destinationLatitude: dto.destinationLatitude,
+        destinationLongitude: dto.destinationLongitude,
+        distanceKm,
         departureTime: new Date(dto.departureTime),
         estimatedArrival: dto.estimatedArrival
           ? new Date(dto.estimatedArrival)
@@ -236,10 +270,21 @@ export class TripService {
     if (dto.gatheringLocation !== undefined) updateData.gatheringLocation = dto.gatheringLocation;
     if (dto.gatheringLatitude !== undefined) updateData.gatheringLatitude = dto.gatheringLatitude;
     if (dto.gatheringLongitude !== undefined) updateData.gatheringLongitude = dto.gatheringLongitude;
+    if (dto.destinationLatitude !== undefined) updateData.destinationLatitude = dto.destinationLatitude;
+    if (dto.destinationLongitude !== undefined) updateData.destinationLongitude = dto.destinationLongitude;
     if (dto.departureTime !== undefined) updateData.departureTime = new Date(dto.departureTime);
     if (dto.estimatedArrival !== undefined) updateData.estimatedArrival = new Date(dto.estimatedArrival);
     if (dto.price !== undefined) updateData.price = dto.price;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
+
+    // Recalculate distance if coordinates changed
+    const gLat = updateData.gatheringLatitude ?? trip.gatheringLatitude;
+    const gLng = updateData.gatheringLongitude ?? trip.gatheringLongitude;
+    const dLat = updateData.destinationLatitude ?? trip.destinationLatitude;
+    const dLng = updateData.destinationLongitude ?? trip.destinationLongitude;
+    if (gLat && gLng && dLat && dLng) {
+      updateData.distanceKm = this.calculateDistance(gLat, gLng, dLat, dLng);
+    }
     if (dto.totalSeats !== undefined) {
       const bookedSeats = trip.totalSeats - trip.availableSeats;
       if (dto.totalSeats < bookedSeats) {
