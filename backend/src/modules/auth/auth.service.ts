@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ResendVerificationDto } from './dto/auth.dto';
 import { Role } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
@@ -113,7 +113,7 @@ export class AuthService {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
-    const verificationToken = uuidv4();
+    const verificationToken = randomUUID();
 
     const user = await this.prisma.user.create({
       data: {
@@ -222,7 +222,7 @@ export class AuthService {
       return { message: 'Email is already verified. You can sign in.' };
     }
 
-    const newToken = uuidv4();
+    const newToken = randomUUID();
     await this.prisma.user.update({
       where: { id: user.id },
       data: { emailVerificationToken: newToken },
@@ -246,7 +246,7 @@ export class AuthService {
       return { message: 'If an account exists with this email, a password reset link has been sent.' };
     }
 
-    const resetToken = uuidv4();
+    const resetToken = randomUUID();
     const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.prisma.user.update({
