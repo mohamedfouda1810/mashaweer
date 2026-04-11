@@ -79,6 +79,7 @@ export default function WalletPage() {
     const [payScreenshotPreview, setPayScreenshotPreview] = useState<string | null>(null);
     const [payLoading, setPayLoading] = useState(false);
     const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'INSTAPAY' | 'VODAFONE_CASH'>('INSTAPAY');
     const [paymentInfo, setPaymentInfo] = useState<{ instapayNumber: string; vodafoneCashNumber: string } | null>(null);
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -234,7 +235,7 @@ export default function WalletPage() {
                                 </div>
                             </div>
 
-                            {/* ─── Pay Commission Button ─── */}
+                            {/* ─── Pay Commission Section ─── */}
                             {(debt?.remainingDebt ?? 0) > 0 && (
                                 <div className="mb-4">
                                     <button
@@ -242,68 +243,85 @@ export default function WalletPage() {
                                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-lg active:scale-[0.98]"
                                     >
                                         <CreditCard className="h-4 w-4" />
-                                        {showPaymentForm ? 'Cancel' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
+                                        {showPaymentForm ? 'Cancel Payment' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
                                     </button>
                                 </div>
                             )}
 
-                            {/* ─── Payment Numbers Info ─── */}
-                            {paymentInfo && (paymentInfo.instapayNumber || paymentInfo.vodafoneCashNumber) && (
-                                <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                        💳 Payment Accounts
-                                    </h3>
-                                    <div className="space-y-1.5">
-                                        {paymentInfo.instapayNumber && (
-                                            <div className="flex items-center justify-between rounded-lg bg-teal-50 px-3 py-2 dark:bg-teal-900/20">
-                                                <div className="flex items-center gap-2">
-                                                    <CreditCard className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                                                    <div>
-                                                        <p className="text-[10px] font-medium text-teal-700 dark:text-teal-300">InstaPay</p>
-                                                        <p className="font-mono text-xs font-semibold text-teal-900 dark:text-teal-100">
-                                                            {paymentInfo.instapayNumber}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => copyToClipboard(paymentInfo.instapayNumber, 'instapay')}
-                                                    className="rounded-md p-1 text-teal-600 transition-colors hover:bg-teal-100 dark:text-teal-400"
-                                                >
-                                                    {copiedField === 'instapay' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                                                </button>
-                                            </div>
-                                        )}
-                                        {paymentInfo.vodafoneCashNumber && (
-                                            <div className="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
-                                                <div className="flex items-center gap-2">
-                                                    <Smartphone className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-                                                    <div>
-                                                        <p className="text-[10px] font-medium text-red-700 dark:text-red-300">Vodafone Cash</p>
-                                                        <p className="font-mono text-xs font-semibold text-red-900 dark:text-red-100">
-                                                            {paymentInfo.vodafoneCashNumber}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => copyToClipboard(paymentInfo.vodafoneCashNumber, 'vodafone')}
-                                                    className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-100 dark:text-red-400"
-                                                >
-                                                    {copiedField === 'vodafone' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ─── Payment Form ─── */}
+                            {/* ─── Payment Form (like passenger deposit) ─── */}
                             {showPaymentForm && (
-                                <div className="mb-4 rounded-xl border-2 border-teal-200 bg-teal-50/50 p-4 dark:border-teal-800 dark:bg-teal-900/20">
-                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-teal-800 dark:text-teal-300">
-                                        <Send className="h-4 w-4" />
-                                        Submit Payment
+                                <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-white">
+                                        <Send className="h-4 w-4 text-teal-500" />
+                                        Submit Commission Payment
                                     </h3>
+
+                                    {/* Payment Accounts Info */}
+                                    {paymentInfo && (paymentInfo.instapayNumber || paymentInfo.vodafoneCashNumber) && (
+                                        <div className="mb-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Send payment to:</p>
+                                            <div className="space-y-1.5">
+                                                {paymentInfo.instapayNumber && (
+                                                    <div className="flex items-center justify-between rounded-md bg-teal-50 px-2.5 py-1.5 dark:bg-teal-900/20">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <CreditCard className="h-3 w-3 text-teal-600" />
+                                                            <span className="text-[10px] text-teal-700 dark:text-teal-300">InstaPay:</span>
+                                                            <span className="font-mono text-xs font-bold text-teal-900 dark:text-teal-100">{paymentInfo.instapayNumber}</span>
+                                                        </div>
+                                                        <button onClick={() => copyToClipboard(paymentInfo.instapayNumber, 'instapay')} className="p-0.5">
+                                                            {copiedField === 'instapay' ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-teal-400" />}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {paymentInfo.vodafoneCashNumber && (
+                                                    <div className="flex items-center justify-between rounded-md bg-red-50 px-2.5 py-1.5 dark:bg-red-900/20">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Smartphone className="h-3 w-3 text-red-600" />
+                                                            <span className="text-[10px] text-red-700 dark:text-red-300">Vodafone:</span>
+                                                            <span className="font-mono text-xs font-bold text-red-900 dark:text-red-100">{paymentInfo.vodafoneCashNumber}</span>
+                                                        </div>
+                                                        <button onClick={() => copyToClipboard(paymentInfo.vodafoneCashNumber, 'vodafone')} className="p-0.5">
+                                                            {copiedField === 'vodafone' ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-red-400" />}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-3">
+                                        {/* Payment Method */}
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                                Payment Method
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod('INSTAPAY')}
+                                                    className={`flex items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${paymentMethod === 'INSTAPAY'
+                                                        ? 'border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400'
+                                                        : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
+                                                    }`}
+                                                >
+                                                    <CreditCard className="h-3.5 w-3.5" />
+                                                    InstaPay
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod('VODAFONE_CASH')}
+                                                    className={`flex items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${paymentMethod === 'VODAFONE_CASH'
+                                                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                                                        : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
+                                                    }`}
+                                                >
+                                                    <Smartphone className="h-3.5 w-3.5" />
+                                                    Vodafone Cash
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Amount + Ref */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
@@ -332,19 +350,33 @@ export default function WalletPage() {
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* Screenshot Upload - Large Area */}
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                                                 Payment Screenshot
                                             </label>
-                                            <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-white px-3 py-2.5 text-sm transition-all hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-teal-600">
-                                                {uploadingScreenshot ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
+                                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-5 transition-all hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-teal-600">
+                                                {payScreenshotPreview ? (
+                                                    <img
+                                                        src={payScreenshotPreview}
+                                                        alt="Receipt"
+                                                        className="max-h-28 rounded-lg object-contain"
+                                                    />
+                                                ) : uploadingScreenshot ? (
+                                                    <>
+                                                        <Loader2 className="h-7 w-7 animate-spin text-teal-500" />
+                                                        <p className="text-xs text-teal-600">Uploading...</p>
+                                                    </>
                                                 ) : (
-                                                    <Upload className="h-4 w-4 text-zinc-400" />
+                                                    <>
+                                                        <Upload className="h-7 w-7 text-zinc-400" />
+                                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                            Click to upload payment screenshot
+                                                        </p>
+                                                        <p className="text-[10px] text-zinc-400">JPG, PNG up to 5MB</p>
+                                                    </>
                                                 )}
-                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                    {uploadingScreenshot ? 'Uploading...' : payScreenshot ? '✅ Uploaded' : 'Upload screenshot'}
-                                                </span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
@@ -353,20 +385,26 @@ export default function WalletPage() {
                                                 />
                                             </label>
                                             {payScreenshotPreview && (
-                                                <img
-                                                    src={payScreenshotPreview}
-                                                    alt="Receipt"
-                                                    className="mt-2 h-20 rounded-lg border object-cover"
-                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setPayScreenshot('');
+                                                        setPayScreenshotPreview(null);
+                                                    }}
+                                                    className="mt-1 text-[10px] text-red-500 hover:text-red-600"
+                                                >
+                                                    Remove screenshot
+                                                </button>
                                             )}
                                         </div>
+
+                                        {/* Submit */}
                                         <button
                                             onClick={handleSubmitPayment}
                                             disabled={!payAmount || !payRef || !payScreenshot || payLoading}
-                                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50 active:scale-[0.98]"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 active:scale-[0.98]"
                                         >
                                             {payLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                            {payLoading ? 'Submitting...' : 'Submit Payment'}
+                                            {payLoading ? 'Submitting...' : 'Submit Payment for Review'}
                                         </button>
                                     </div>
                                 </div>

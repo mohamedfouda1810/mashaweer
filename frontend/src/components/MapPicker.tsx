@@ -11,28 +11,14 @@ const createCircleIcon = (color: string, size: number = 18) => L.divIcon({
     width:${size}px;height:${size}px;border-radius:50%;
     background:${color};border:3px solid white;
     box-shadow:0 2px 8px rgba(0,0,0,0.35);
-    transition: transform 0.2s;
   "></div>`,
   className: '',
   iconSize: [size, size],
   iconAnchor: [size / 2, size / 2],
 });
 
-const gatheringMarker = createCircleIcon('#10b981', 20); // emerald
-const destinationMarker = createCircleIcon('#ef4444', 20); // red
-
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-}
+const gatheringMarker = createCircleIcon('#10b981', 20);
+const destinationMarker = createCircleIcon('#ef4444', 20);
 
 // Reverse geocode using Nominatim
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -50,25 +36,37 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
-// Generate curved Bezier path
-function getCurvedPath(start: [number, number], end: [number, number], n: number = 30): [number, number][] {
-  const midLat = (start[0] + end[0]) / 2;
-  const midLng = (start[1] + end[1]) / 2;
-  const dLat = end[0] - start[0];
-  const dLng = end[1] - start[1];
-  const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-  const offset = dist * 0.15;
-  const cLat = midLat + (dLng / dist) * offset;
-  const cLng = midLng - (dLat / dist) * offset;
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    pts.push([
-      (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * cLat + t * t * end[0],
-      (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * cLng + t * t * end[1],
-    ]);
+// Fetch real road route + distance from OSRM (free, no API key)
+async function fetchRoute(
+  start: [number, number],
+  end: [number, number],
+): Promise<{ points: [number, number][]; distanceKm: number }> {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      const route = data.routes[0];
+      const coords = route.geometry.coordinates.map(
+        (c: [number, number]) => [c[1], c[0]] as [number, number]
+      );
+      const distKm = Math.round((route.distance / 1000) * 10) / 10;
+      return { points: coords, distanceKm: distKm };
+    }
+  } catch {
+    // fallback
   }
-  return pts;
+  // Fallback: straight line + Haversine
+  const R = 6371;
+  const dLat = ((end[0] - start[0]) * Math.PI) / 180;
+  const dLng = ((end[1] - start[1]) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((start[0] * Math.PI) / 180) *
+    Math.cos((end[0] * Math.PI) / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return { points: [start, end], distanceKm: Math.round(R * c * 10) / 10 };
 }
 
 interface MapPickerProps {
@@ -126,6 +124,9 @@ export default function MapPicker({
   onDestinationChange,
 }: MapPickerProps) {
   const [mode, setMode] = useState<'gathering' | 'destination'>('gathering');
+  const [routeData, setRouteData] = useState<{ points: [number, number][]; distanceKm: number } | null>(null);
+  const [loadingRoute, setLoadingRoute] = useState(false);
+
   const defaultCenter: [number, number] = [30.04, 31.24];
 
   const gatheringPos: [number, number] | undefined =
@@ -133,14 +134,22 @@ export default function MapPicker({
   const destinationPos: [number, number] | undefined =
     destinationLat && destinationLng ? [destinationLat, destinationLng] : undefined;
 
-  const distance =
-    gatheringPos && destinationPos
-      ? calculateDistance(gatheringPos[0], gatheringPos[1], destinationPos[0], destinationPos[1])
-      : null;
-
-  const curvedPath = gatheringPos && destinationPos
-    ? getCurvedPath(gatheringPos, destinationPos)
-    : null;
+  // Fetch route when both points are set
+  useEffect(() => {
+    if (gatheringPos && destinationPos) {
+      let cancelled = false;
+      setLoadingRoute(true);
+      fetchRoute(gatheringPos, destinationPos).then((data) => {
+        if (!cancelled) {
+          setRouteData(data);
+          setLoadingRoute(false);
+        }
+      });
+      return () => { cancelled = true; };
+    } else {
+      setRouteData(null);
+    }
+  }, [gatheringLat, gatheringLng, destinationLat, destinationLng]);
 
   return (
     <div className="space-y-2">
@@ -170,9 +179,12 @@ export default function MapPicker({
           <span className="h-2 w-2 rounded-full bg-red-500" />
           Destination
         </button>
-        {distance !== null && (
+        {loadingRoute && (
+          <span className="ml-auto text-[10px] text-zinc-400 animate-pulse">Calculating route...</span>
+        )}
+        {routeData && !loadingRoute && (
           <span className="ml-auto flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-            📏 {distance} km
+            🛣️ {routeData.distanceKm} km (road)
           </span>
         )}
       </div>
@@ -197,10 +209,10 @@ export default function MapPicker({
           <FitBounds gathering={gatheringPos} destination={destinationPos} />
           {gatheringPos && <Marker position={gatheringPos} icon={gatheringMarker} />}
           {destinationPos && <Marker position={destinationPos} icon={destinationMarker} />}
-          {curvedPath && (
+          {routeData && routeData.points.length > 0 && (
             <>
-              <Polyline positions={curvedPath} pathOptions={{ color: '#000', weight: 5, opacity: 0.08 }} />
-              <Polyline positions={curvedPath} pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.8 }} />
+              <Polyline positions={routeData.points} pathOptions={{ color: '#000', weight: 6, opacity: 0.06 }} />
+              <Polyline positions={routeData.points} pathOptions={{ color: '#4f46e5', weight: 4, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }} />
             </>
           )}
         </MapContainer>
@@ -212,6 +224,7 @@ export default function MapPicker({
         <span className={mode === 'gathering' ? 'font-bold text-emerald-600' : 'font-bold text-red-600'}>
           {mode === 'gathering' ? 'gathering point' : 'destination'}
         </span>
+        {' '}— route follows actual roads
       </p>
     </div>
   );

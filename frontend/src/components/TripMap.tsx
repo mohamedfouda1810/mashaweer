@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Custom circle markers instead of default pins — cleaner look
+// Custom circle markers
 const createCircleIcon = (color: string, size: number = 14) => L.divIcon({
   html: `<div style="
     width:${size}px;height:${size}px;border-radius:50%;
@@ -17,13 +17,34 @@ const createCircleIcon = (color: string, size: number = 14) => L.divIcon({
   iconAnchor: [size / 2, size / 2],
 });
 
-const gatheringIcon = createCircleIcon('#10b981', 16); // emerald
-const destinationIcon = createCircleIcon('#ef4444', 16); // red
+const gatheringIcon = createCircleIcon('#10b981', 16);
+const destinationIcon = createCircleIcon('#ef4444', 16);
+
+// Fetch real road route from OSRM (free, no API key)
+async function fetchRoute(
+  start: [number, number],
+  end: [number, number],
+): Promise<[number, number][]> {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+      // OSRM returns [lng, lat], we need [lat, lng]
+      return data.routes[0].geometry.coordinates.map(
+        (c: [number, number]) => [c[1], c[0]] as [number, number]
+      );
+    }
+  } catch {
+    // Fallback to straight line
+  }
+  return [start, end];
+}
 
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
-    if (points.length === 2) {
+    if (points.length >= 2) {
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     } else if (points.length === 1) {
@@ -33,36 +54,34 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
-// Generate a curved path between two points for a nicer visual
-function getCurvedPath(
-  start: [number, number],
-  end: [number, number],
-  numPoints: number = 30,
-): [number, number][] {
-  const midLat = (start[0] + end[0]) / 2;
-  const midLng = (start[1] + end[1]) / 2;
-  // Offset perpendicular to the line for curve
-  const dLat = end[0] - start[0];
-  const dLng = end[1] - start[1];
-  const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-  const offset = dist * 0.15; // 15% curve
-  const controlLat = midLat + (dLng / dist) * offset;
-  const controlLng = midLng - (dLat / dist) * offset;
+// Component to fetch and display the road route
+function RoadRoute({ start, end }: { start: [number, number]; end: [number, number] }) {
+  const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
 
-  const points: [number, number][] = [];
-  for (let i = 0; i <= numPoints; i++) {
-    const t = i / numPoints;
-    const lat =
-      (1 - t) * (1 - t) * start[0] +
-      2 * (1 - t) * t * controlLat +
-      t * t * end[0];
-    const lng =
-      (1 - t) * (1 - t) * start[1] +
-      2 * (1 - t) * t * controlLng +
-      t * t * end[1];
-    points.push([lat, lng]);
-  }
-  return points;
+  useEffect(() => {
+    let cancelled = false;
+    fetchRoute(start, end).then((pts) => {
+      if (!cancelled) setRoutePoints(pts);
+    });
+    return () => { cancelled = true; };
+  }, [start[0], start[1], end[0], end[1]]);
+
+  if (routePoints.length === 0) return null;
+
+  return (
+    <>
+      {/* Shadow */}
+      <Polyline
+        positions={routePoints}
+        pathOptions={{ color: '#000', weight: 6, opacity: 0.06 }}
+      />
+      {/* Main route */}
+      <Polyline
+        positions={routePoints}
+        pathOptions={{ color: '#4f46e5', weight: 4, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }}
+      />
+    </>
+  );
 }
 
 interface TripMapProps {
@@ -103,10 +122,6 @@ export default function TripMap({
   const points = [gatheringPos, destinationPos].filter(Boolean) as [number, number][];
   const center = points[0] || [30.04, 31.24];
 
-  const curvedPath = gatheringPos && destinationPos
-    ? getCurvedPath(gatheringPos, destinationPos)
-    : null;
-
   return (
     <div className="relative overflow-hidden rounded-xl" style={{ height }}>
       <MapContainer
@@ -124,20 +139,9 @@ export default function TripMap({
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <FitBounds points={points} />
         
-        {/* Route line — curved for visual appeal */}
-        {curvedPath && (
-          <>
-            {/* Shadow line */}
-            <Polyline
-              positions={curvedPath}
-              pathOptions={{ color: '#000', weight: 5, opacity: 0.08 }}
-            />
-            {/* Main gradient-like line */}
-            <Polyline
-              positions={curvedPath}
-              pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.8 }}
-            />
-          </>
+        {/* Road route following streets */}
+        {gatheringPos && destinationPos && (
+          <RoadRoute start={gatheringPos} end={destinationPos} />
         )}
         
         {/* Markers */}
@@ -153,7 +157,7 @@ export default function TripMap({
         )}
       </MapContainer>
 
-      {/* Distance Badge — improved design */}
+      {/* Distance Badge */}
       {distanceKm && (
         <div className="absolute bottom-2 right-2 z-[1000] flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-lg ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/95 dark:ring-white/10">
           <div className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/40">
