@@ -45,6 +45,9 @@ export default function TripDetailPage() {
     const [ratings, setRatings] = useState<Rating[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
 
+    // Driver ratings (all-time from all trips)
+    const [driverRatings, setDriverRatings] = useState<{ averageScore: number; totalRatings: number; recentReviews: any[] } | null>(null);
+
     // Rating form
     const [showRating, setShowRating] = useState(false);
     const [ratingScore, setRatingScore] = useState(5);
@@ -59,6 +62,15 @@ export default function TripDetailPage() {
             api.getTripRatings(tripId).then((res) => setRatings((res.data as Rating[]) || [])).catch(() => { });
         }
     }, [tripId, fetchTrip]);
+
+    // Fetch all-time driver ratings when trip loads
+    useEffect(() => {
+        if (trip?.driverId) {
+            api.getDriverRatings(trip.driverId)
+                .then((res) => setDriverRatings(res.data as any))
+                .catch(() => { });
+        }
+    }, [trip?.driverId]);
 
     // Load bookings for all authenticated users
     const fetchBookings = () => {
@@ -392,11 +404,11 @@ export default function TripDetailPage() {
                         </div>
                     )}
 
-                    {/* Ratings Section */}
+                    {/* Ratings Section — This Trip */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Ratings & Reviews
+                                Trip Ratings
                             </h2>
                             {isCompleted && isAuthenticated && !isDriver && (
                                 <button
@@ -441,7 +453,7 @@ export default function TripDetailPage() {
                         )}
 
                         {ratings.length === 0 ? (
-                            <p className="py-6 text-center text-sm text-zinc-500">No ratings yet</p>
+                            <p className="py-6 text-center text-sm text-zinc-500">No ratings for this trip yet</p>
                         ) : (
                             <div className="space-y-3">
                                 {ratings.map((r) => (
@@ -464,6 +476,57 @@ export default function TripDetailPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* All-Time Driver Reviews */}
+                    {driverRatings && driverRatings.totalRatings > 0 && (
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                        Driver Reviews
+                                    </h2>
+                                    <div className="flex items-center gap-1.5">
+                                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                                        <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                                            {driverRatings.averageScore?.toFixed(1)}
+                                        </span>
+                                        <span className="text-xs text-zinc-500">
+                                            ({driverRatings.totalRatings} review{driverRatings.totalRatings !== 1 ? 's' : ''})
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="mt-1 text-xs text-zinc-500">All reviews from previous passengers</p>
+                            </div>
+
+                            <div className="space-y-3">
+                                {(driverRatings.recentReviews || []).map((r: any, i: number) => (
+                                    <div key={r.id || i} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-[10px] font-bold text-white">
+                                                    {r.rater?.firstName?.[0] || '?'}
+                                                </div>
+                                                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                                    {r.rater?.firstName || 'Anonymous'}
+                                                </span>
+                                                <div className="flex">
+                                                    {[1, 2, 3, 4, 5].map((s) => (
+                                                        <Star key={s} className={`h-3 w-3 ${s <= r.score ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'}`} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-400">
+                                                {new Date(r.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        {r.review && (
+                                            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">{r.review}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}

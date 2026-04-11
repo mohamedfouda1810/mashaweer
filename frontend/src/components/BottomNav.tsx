@@ -4,13 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Home, MapPin, HelpCircle, User } from 'lucide-react';
+import { MapPin, HelpCircle, Wallet, Ticket } from 'lucide-react';
 
 const BOTTOM_ITEMS = [
-    { href: '/', label: 'Home', icon: Home },
     { href: '/trips', label: 'Trips', icon: MapPin },
+    { href: '/bookings', label: 'Bookings', icon: Ticket },
+    { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/help', label: 'Help', icon: HelpCircle },
-    { href: '/bookings', label: 'Profile', icon: User },
 ];
 
 export function BottomNav() {
@@ -34,7 +34,7 @@ export function BottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-all duration-200 ${
+                            className={`relative flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-all duration-200 ${
                                 active
                                     ? 'text-mint'
                                     : 'text-slate hover:text-navy dark:text-zinc-500 dark:hover:text-zinc-300'

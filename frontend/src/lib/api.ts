@@ -71,9 +71,34 @@ class ApiClient {
   }
 
   async register(data: any) {
-    return this.request<{ token: string; user: User }>('/auth/register', {
+    return this.request<{ message: string; user: User }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async forgotPassword(email: string) {
+    return this.request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    return this.request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async verifyEmail(token: string) {
+    return this.request<{ message: string }>(`/auth/verify-email?token=${token}`);
+  }
+
+  async resendVerification(email: string) {
+    return this.request<{ message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   }
 
@@ -244,6 +269,10 @@ class ApiClient {
 
   async getTripRatings(tripId: string) {
     return this.request(`/ratings/trip/${tripId}`);
+  }
+
+  async getDriverRatings(driverId: string) {
+    return this.request<{ averageScore: number; totalRatings: number; recentReviews: any[] }>(`/ratings/user/${driverId}`);
   }
 
   // ─── Notifications ──────────────────────────────────────────────
