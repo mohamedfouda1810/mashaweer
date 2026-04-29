@@ -127,6 +127,7 @@ class ApiClient {
     toAddress?: string;
     departureTime: string;
     price: number;
+    pricePerSeat?: number;
     totalSeats: number;
     notes?: string;
     gatheringLatitude?: number;
@@ -177,10 +178,10 @@ class ApiClient {
 
   // ─── Bookings ────────────────────────────────────────────────────
 
-  async bookSeat(tripId: string, seats = 1) {
-    return this.request<Booking>(`/bookings/trip/${tripId}`, {
+  async bookSeat(tripId: string, seats = 1, paymentMethod: 'WALLET' | 'CASH' = 'CASH') {
+    return this.request<Booking>(`/bookings/trips/${tripId}`, {
       method: 'POST',
-      body: JSON.stringify({ seats }),
+      body: JSON.stringify({ seats, paymentMethod }),
     });
   }
 
@@ -412,11 +413,7 @@ class ApiClient {
     });
   }
 
-  async confirmPassengerReady(bookingId: string) {
-    return this.request(`/bookings/${bookingId}/ready`, {
-      method: 'POST',
-    });
-  }
+
 
   async getFinancials() {
     return this.request('/admin/financials');

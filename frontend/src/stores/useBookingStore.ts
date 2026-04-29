@@ -11,7 +11,7 @@ interface BookingState {
 
   // Actions
   fetchBookings: () => Promise<void>;
-  bookSeat: (tripId: string, seats?: number) => Promise<boolean>;
+  bookSeat: (tripId: string, seats?: number, paymentMethod?: 'WALLET' | 'CASH') => Promise<boolean>;
   cancelBooking: (bookingId: string) => Promise<{ refundAmount: number } | null>;
 }
 
@@ -31,10 +31,10 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  bookSeat: async (tripId: string, seats = 1) => {
+  bookSeat: async (tripId: string, seats = 1, paymentMethod: 'WALLET' | 'CASH' = 'CASH') => {
     set({ isBooking: true, error: null });
     try {
-      await api.bookSeat(tripId, seats);
+      await api.bookSeat(tripId, seats, paymentMethod);
       set({ isBooking: false });
       // Fire GA4 analytics event
       trackTripBooked(tripId, '', '', seats, 0);

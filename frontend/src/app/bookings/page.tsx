@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { PassengerReadyButton } from '@/components/passenger/PassengerReadyButton';
+
 import {
     Ticket,
     Calendar,
@@ -128,15 +128,7 @@ export default function BookingsPage() {
                                                 </span>
                                             </div>
 
-                                            {/* Ready Button */}
-                                            {booking.status === 'CONFIRMED' && (
-                                                <PassengerReadyButton
-                                                    bookingId={booking.id}
-                                                    departureTime={trip.departureTime.toString()}
-                                                    isReady={booking.isReady || false}
-                                                    onReady={fetchBookings}
-                                                />
-                                            )}
+
 
                                             <div className="mt-4 text-sm">
                                                 <span className="text-zinc-500">{booking.seats} seat(s) • </span>

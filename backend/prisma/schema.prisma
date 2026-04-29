@@ -87,6 +87,8 @@ model Trip {
   departureTime        DateTime
   estimatedArrival    DateTime?
   price               Decimal              @db.Decimal(10, 2)
+  pricePerSeat        Decimal              @db.Decimal(10, 2) @default(0)
+  suggestedPricePerSeat Decimal?           @db.Decimal(10, 2)
   totalSeats          Int
   availableSeats      Int
   status              TripStatus           @default(SCHEDULED)
@@ -118,10 +120,11 @@ model Booking {
   tripId    String
   seats     Int           @default(1)
   status    BookingStatus @default(PENDING)
-  bookedAt  DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  isReady   Boolean       @default(false)
-  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  bookedAt       DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  paymentMethod  String?       @default("CASH")
+  amountPaid     Decimal?      @db.Decimal(10, 2)
+  trip           Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   user      User          @relation(fields: [userId], references: [id])
 
   @@unique([userId, tripId])

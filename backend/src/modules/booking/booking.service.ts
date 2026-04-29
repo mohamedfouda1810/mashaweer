@@ -21,9 +21,11 @@ export class BookingService {
 
   /**
    * Book a seat on a trip
-   * Flow: Check availability → Create PENDING → Deduct wallet → Set CONFIRMED
+   * Flow: Check availability → Validate payment → Create CONFIRMED booking
+   * If wallet: atomic deduction inside transaction
+   * If cash: booking confirmed, pay driver at trip time
    */
-  async bookSeat(userId: string, tripId: string, seats: number = 1) {
+  async bookSeat(userId: string, tripId: string, seats: number = 1, paymentMethod: 'WALLET' | 'CASH' = 'CASH') {
     seats = Number(seats) || 1;
     return this.prisma.$transaction(async (tx) => {
       // 1. Get the trip and verify availability
@@ -65,21 +67,54 @@ export class BookingService {
         return this.addToWaitlist(tx, userId, tripId);
       }
 
-      // 3. Calculate total price (for reference — payment happens after trip)
-      const pricePerSeat = Number(trip.price) / trip.totalSeats;
-      const totalPrice = Math.round(pricePerSeat * seats * 100) / 100;
+      // 3. Calculate total price
+      const perSeat = Number(trip.pricePerSeat) > 0
+        ? Number(trip.pricePerSeat)
+        : Number(trip.price) / trip.totalSeats;
+      const totalPrice = Math.round(perSeat * seats * 100) / 100;
 
-      // 7. Create or re-activate booking (directly CONFIRMED)
+      // 4. Handle wallet payment — atomic deduction
+      let amountPaid = 0;
+      if (paymentMethod === 'WALLET') {
+        const wallet = await tx.wallet.findUnique({ where: { userId } });
+        if (!wallet || Number(wallet.balance) < totalPrice) {
+          throw new BadRequestException(
+            `Insufficient wallet balance. Required: ${totalPrice} EGP, Available: ${wallet ? Number(wallet.balance) : 0} EGP`,
+          );
+        }
+
+        // Atomic deduction
+        await tx.wallet.update({
+          where: { userId },
+          data: { balance: { decrement: totalPrice } },
+        });
+
+        // Create PAYMENT transaction record
+        await tx.transaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'PAYMENT',
+            amount: totalPrice,
+            status: 'COMPLETED',
+            reference: `BOOKING-${tripId}-${Date.now()}`,
+            metadata: { tripId, seats, pricePerSeat: perSeat },
+          },
+        });
+
+        amountPaid = totalPrice;
+      }
+
+      // 5. Create or re-activate booking (directly CONFIRMED)
       let booking;
       if (existingBooking && existingBooking.status === 'CANCELLED') {
-        // Re-activate the previously cancelled booking
         booking = await tx.booking.update({
           where: { id: existingBooking.id },
           data: {
             seats,
             status: BookingStatus.CONFIRMED,
-            isReady: false,
             bookedAt: new Date(),
+            paymentMethod,
+            amountPaid: amountPaid > 0 ? amountPaid : null,
           },
           include: {
             trip: {
@@ -93,13 +128,14 @@ export class BookingService {
           },
         });
       } else {
-        // First-time booking
         booking = await tx.booking.create({
           data: {
             userId,
             tripId,
             seats,
             status: BookingStatus.CONFIRMED,
+            paymentMethod,
+            amountPaid: amountPaid > 0 ? amountPaid : null,
           },
           include: {
             trip: {
@@ -114,7 +150,7 @@ export class BookingService {
         });
       }
 
-      // 8. Decrease available seats
+      // 6. Decrease available seats
       const updatedTrip = await tx.trip.update({
         where: { id: tripId },
         data: { availableSeats: { decrement: seats } },
@@ -125,16 +161,19 @@ export class BookingService {
         availableSeats: updatedTrip.availableSeats,
       });
 
-      // 9. Send confirmation notification to passenger
+      // 7. Send confirmation notification to passenger
+      const confirmMsg = paymentMethod === 'WALLET'
+        ? `تم حجز مقعدك بنجاح! تم خصم ${totalPrice} جنيه من المحفظة. نقطة التجمع: ${trip.gatheringLocation}`
+        : `تم تأكيد الرحلة بنجاح! المبلغ المطلوب دفعه للسائق: ${totalPrice} جنيه. نقطة التجمع: ${trip.gatheringLocation}`;
       await this.notificationService.createInTransaction(tx, {
         userId,
         type: 'BOOKING_CONFIRMED',
         title: 'Booking Confirmed! ✅',
-        message: `Your booking for ${trip.fromCity} → ${trip.toCity} on ${new Date(trip.departureTime).toLocaleDateString()} is confirmed. Meet at ${trip.gatheringLocation}.`,
-        metadata: { bookingId: booking.id, tripId },
+        message: confirmMsg,
+        metadata: { bookingId: booking.id, tripId, paymentMethod, amountPaid },
       });
 
-      // 10. Notify the driver about new booking
+      // 8. Notify the driver about new booking
       const passenger = await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
       await this.notificationService.createInTransaction(tx, {
         userId: trip.driverId,
@@ -144,7 +183,7 @@ export class BookingService {
         metadata: { bookingId: booking.id, tripId },
       });
 
-      return booking;
+      return { ...booking, paymentMethod, amountPaid, totalPrice };
     });
   }
 
@@ -187,7 +226,8 @@ export class BookingService {
   }
 
   /**
-   * Cancel a booking and promote the next waitlisted user
+   * Cancel a booking — allowed until 8 hours before departure
+   * Refunds to wallet only if original payment was via wallet
    */
   async cancelBooking(userId: string, bookingId: string) {
     return this.prisma.$transaction(async (tx) => {
@@ -212,8 +252,15 @@ export class BookingService {
         throw new BadRequestException('Cannot cancel a completed booking');
       }
 
-      if (booking.isReady) {
-        throw new BadRequestException('Cannot cancel a booking after checking in as ready');
+      // 8-hour cancellation policy
+      const departure = new Date(booking.trip.departureTime);
+      const now = new Date();
+      const hoursUntilDeparture = (departure.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (hoursUntilDeparture < 8) {
+        throw new BadRequestException(
+          'لا يمكن إلغاء الحجز قبل موعد الرحلة بأقل من 8 ساعات. Cannot cancel less than 8 hours before departure.',
+        );
       }
 
       // 1. Cancel the booking
@@ -233,29 +280,29 @@ export class BookingService {
         availableSeats: updatedTrip.availableSeats,
       });
 
-      // 3. Refund to wallet
-      const pricePerSeat = Number(booking.trip.price);
-      const refundAmount = pricePerSeat * booking.seats;
-      const wallet = await tx.wallet.findUnique({
-        where: { userId },
-      });
+      // 3. Refund to wallet only if paid via wallet
+      let refundAmount = 0;
+      if (booking.paymentMethod === 'WALLET' && booking.amountPaid) {
+        refundAmount = Number(booking.amountPaid);
+        const wallet = await tx.wallet.findUnique({ where: { userId } });
 
-      if (wallet) {
-        await tx.wallet.update({
-          where: { userId },
-          data: { balance: { increment: refundAmount } },
-        });
+        if (wallet) {
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { increment: refundAmount } },
+          });
 
-        await tx.transaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'REFUND',
-            amount: refundAmount,
-            status: 'COMPLETED',
-            reference: `REFUND-${bookingId}`,
-            metadata: { bookingId, tripId: booking.tripId },
-          },
-        });
+          await tx.transaction.create({
+            data: {
+              walletId: wallet.id,
+              type: 'REFUND',
+              amount: refundAmount,
+              status: 'COMPLETED',
+              reference: `REFUND-${bookingId}`,
+              metadata: { bookingId, tripId: booking.tripId },
+            },
+          });
+        }
       }
 
       // 4. Notify the driver about cancellation
@@ -306,37 +353,7 @@ export class BookingService {
     });
   }
 
-  /**
-   * Mark a passenger as ready for the trip
-   */
-  async markReady(userId: string, bookingId: string) {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: { trip: true },
-    });
 
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
-    }
-
-    if (booking.userId !== userId) {
-      throw new BadRequestException('You can only update your own bookings');
-    }
-
-    // Must be close to departure time (e.g. within 60 mins)
-    const departure = new Date(booking.trip.departureTime);
-    const now = new Date();
-    const minutesUntilDeparture = (departure.getTime() - now.getTime()) / (1000 * 60);
-
-    if (minutesUntilDeparture > 60) {
-      throw new BadRequestException('You can only mark as ready 60 minutes before departure');
-    }
-
-    return this.prisma.booking.update({
-      where: { id: bookingId },
-      data: { isReady: true },
-    });
-  }
 
   /**
    * Get bookings for a user

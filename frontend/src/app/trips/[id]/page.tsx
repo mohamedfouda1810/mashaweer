@@ -8,6 +8,7 @@ import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocket } from '@/providers/SocketProvider';
 import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
+import { BookingRulesModal } from '@/components/trips/BookingRulesModal';
 import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
 import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
@@ -61,6 +62,7 @@ export default function TripDetailPage() {
     const [submittingRating, setSubmittingRating] = useState(false);
     const [tripActionLoading, setTripActionLoading] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
 
     useEffect(() => {
         if (tripId) {
@@ -134,14 +136,23 @@ export default function TripDetailPage() {
             router.push('/login');
             return;
         }
+        setShowBookingModal(true);
+    };
+
+    const handleConfirmBooking = async (paymentMethod: 'WALLET' | 'CASH') => {
         setBookingError(null);
-        const success = await bookSeat(tripId, seats);
+        const success = await bookSeat(tripId, seats, paymentMethod);
         if (success) {
             setBookingSuccess(true);
+            setShowBookingModal(false);
             fetchTrip(tripId);
             fetchBookings();
+            toast.success(
+                paymentMethod === 'WALLET'
+                    ? 'تم الحجز بنجاح! تم الخصم من المحفظة ✅'
+                    : 'تم تأكيد الحجز! الدفع كاش عند الرحلة ✅'
+            );
         } else {
-            // Get the error from the booking store
             const storeError = useBookingStore.getState().error;
             setBookingError(storeError || 'Booking failed. Please try again.');
         }
@@ -415,11 +426,9 @@ export default function TripDetailPage() {
                                                 }`}>
                                                 {b.status}
                                             </span>
-                                            {b.status === 'CONFIRMED' && (
-                                                <span className={`text-xs font-semibold ${b.isReady ? 'text-emerald-500' : 'text-zinc-400'}`}>
-                                                    {b.isReady ? '✓ Ready' : '⏳ Pending Check-in'}
+                                                <span className={`text-xs font-semibold ${b.paymentMethod === 'WALLET' ? 'text-teal-500' : 'text-zinc-400'}`}>
+                                                    {b.paymentMethod === 'WALLET' ? '💳 Wallet' : '💵 Cash'}
                                                 </span>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -643,9 +652,12 @@ export default function TripDetailPage() {
                                             onChange={(e) => setSeats(Number(e.target.value))}
                                             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                         >
-                                            {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => (
-                                                <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(Number(trip.price) / trip.totalSeats * n)} EGP</option>
-                                            ))}
+                                            {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => {
+                                                const perSeat = trip.pricePerSeat ? Number(trip.pricePerSeat) : Math.round(Number(trip.price) / trip.totalSeats);
+                                                return (
+                                                    <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(perSeat * n)} EGP</option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                 )}
@@ -688,11 +700,24 @@ export default function TripDetailPage() {
                     driverId={trip.driverId}
                     driverName={`${trip.driver?.firstName || ''} ${trip.driver?.lastName || ''}`}
                     onSuccess={() => {
-                        // Refresh ratings
                         api.getTripRatings(tripId)
                             .then((res) => setRatings((res.data as Rating[]) || []))
                             .catch(() => {});
                     }}
+                />
+            )}
+
+            {/* Booking Rules Modal */}
+            {trip && (
+                <BookingRulesModal
+                    isOpen={showBookingModal}
+                    onClose={() => setShowBookingModal(false)}
+                    onConfirm={handleConfirmBooking}
+                    tripFromCity={trip.fromCity}
+                    tripToCity={trip.toCity}
+                    pricePerSeat={trip.pricePerSeat ? Number(trip.pricePerSeat) : Math.round(Number(trip.price) / trip.totalSeats)}
+                    seats={seats}
+                    isBooking={isBooking}
                 />
             )}
         </div>

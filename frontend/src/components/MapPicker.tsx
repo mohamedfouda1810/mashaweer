@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -19,6 +19,7 @@ const createCircleIcon = (color: string, size: number = 18) => L.divIcon({
 
 const gatheringMarker = createCircleIcon('#10b981', 20);
 const destinationMarker = createCircleIcon('#ef4444', 20);
+const userLocationMarker = createCircleIcon('#3b82f6', 16);
 
 // Reverse geocode using Nominatim
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
@@ -76,6 +77,8 @@ interface MapPickerProps {
   destinationLng?: number;
   onGatheringChange: (lat: number, lng: number, address?: string) => void;
   onDestinationChange: (lat: number, lng: number, address?: string) => void;
+  useCurrentLocation?: boolean;
+  onDistanceCalculated?: (distanceKm: number) => void;
 }
 
 function FitBounds({ gathering, destination }: {
@@ -115,6 +118,17 @@ function ClickHandler({ mode, onGatheringChange, onDestinationChange }: {
   return null;
 }
 
+// Component to center map on user location
+function CenterOnLocation({ position }: { position: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 13, { animate: true });
+    }
+  }, [position, map]);
+  return null;
+}
+
 export default function MapPicker({
   gatheringLat,
   gatheringLng,
@@ -122,10 +136,15 @@ export default function MapPicker({
   destinationLng,
   onGatheringChange,
   onDestinationChange,
+  useCurrentLocation = false,
+  onDistanceCalculated,
 }: MapPickerProps) {
   const [mode, setMode] = useState<'gathering' | 'destination'>('gathering');
   const [routeData, setRouteData] = useState<{ points: [number, number][]; distanceKm: number } | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const defaultCenter: [number, number] = [30.04, 31.24];
 
@@ -133,6 +152,59 @@ export default function MapPicker({
     gatheringLat && gatheringLng ? [gatheringLat, gatheringLng] : undefined;
   const destinationPos: [number, number] | undefined =
     destinationLat && destinationLng ? [destinationLat, destinationLng] : undefined;
+
+  // GPS Detection — auto-detect user location on mount
+  const detectLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGpsError('GPS not supported');
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setUserLocation([lat, lng]);
+        setGpsLoading(false);
+
+        // Cache in localStorage
+        try {
+          localStorage.setItem('lastKnownLocation', JSON.stringify({ lat, lng, ts: Date.now() }));
+        } catch { }
+
+        // If no gathering point set yet, auto-fill from GPS
+        if (!gatheringLat && !gatheringLng) {
+          const address = await reverseGeocode(lat, lng);
+          onGatheringChange(lat, lng, address);
+        }
+      },
+      (err) => {
+        setGpsLoading(false);
+
+        // Try cached location
+        try {
+          const cached = localStorage.getItem('lastKnownLocation');
+          if (cached) {
+            const { lat, lng } = JSON.parse(cached);
+            setUserLocation([lat, lng]);
+            return;
+          }
+        } catch { }
+
+        setGpsError(err.code === 1 ? 'Location access denied' : 'Could not detect location');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  }, [gatheringLat, gatheringLng, onGatheringChange]);
+
+  useEffect(() => {
+    if (useCurrentLocation) {
+      detectLocation();
+    }
+  }, [useCurrentLocation, detectLocation]);
 
   // Fetch route when both points are set
   useEffect(() => {
@@ -143,6 +215,7 @@ export default function MapPicker({
         if (!cancelled) {
           setRouteData(data);
           setLoadingRoute(false);
+          onDistanceCalculated?.(data.distanceKm);
         }
       });
       return () => { cancelled = true; };
@@ -151,9 +224,11 @@ export default function MapPicker({
     }
   }, [gatheringLat, gatheringLng, destinationLat, destinationLng]);
 
+  const mapCenter = gatheringPos || userLocation || defaultCenter;
+
   return (
     <div className="space-y-2">
-      {/* Mode Toggle + Distance */}
+      {/* Mode Toggle + Distance + GPS Button */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <button
           type="button"
@@ -179,6 +254,22 @@ export default function MapPicker({
           <span className="h-2 w-2 rounded-full bg-red-500" />
           Destination
         </button>
+
+        {/* Use My Location button */}
+        <button
+          type="button"
+          onClick={detectLocation}
+          disabled={gpsLoading}
+          className="flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11px] font-semibold text-blue-700 transition-all hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-900/20 dark:text-blue-300"
+        >
+          {gpsLoading ? (
+            <span className="h-2 w-2 animate-spin rounded-full border border-blue-500 border-t-transparent" />
+          ) : (
+            <span className="text-xs">📍</span>
+          )}
+          {gpsLoading ? 'Detecting...' : 'My Location'}
+        </button>
+
         {loadingRoute && (
           <span className="ml-auto text-[10px] text-zinc-400 animate-pulse">Calculating route...</span>
         )}
@@ -189,11 +280,18 @@ export default function MapPicker({
         )}
       </div>
 
+      {/* GPS Error */}
+      {gpsError && (
+        <p className="text-[10px] text-amber-600 dark:text-amber-400">
+          ⚠️ {gpsError} — tap map to set location manually
+        </p>
+      )}
+
       {/* Map */}
       <div className="overflow-hidden rounded-xl border border-zinc-200 shadow-sm dark:border-zinc-700" style={{ height: '280px' }}>
         <MapContainer
-          center={gatheringPos || defaultCenter}
-          zoom={7}
+          center={mapCenter}
+          zoom={useCurrentLocation && userLocation ? 13 : 7}
           className="h-full w-full"
           style={{ height: '100%', width: '100%' }}
         >
@@ -207,6 +305,14 @@ export default function MapPicker({
             onDestinationChange={onDestinationChange}
           />
           <FitBounds gathering={gatheringPos} destination={destinationPos} />
+          {/* Center on user location when first detected */}
+          {userLocation && !gatheringPos && !destinationPos && (
+            <CenterOnLocation position={userLocation} />
+          )}
+          {/* User location dot */}
+          {userLocation && !gatheringPos && (
+            <Marker position={userLocation} icon={userLocationMarker} />
+          )}
           {gatheringPos && <Marker position={gatheringPos} icon={gatheringMarker} />}
           {destinationPos && <Marker position={destinationPos} icon={destinationMarker} />}
           {routeData && routeData.points.length > 0 && (

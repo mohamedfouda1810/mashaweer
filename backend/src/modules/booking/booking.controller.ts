@@ -1,39 +1,33 @@
 import {
   Controller,
   Post,
-  Get,
+  Delete,
   Param,
   Body,
-  UseGuards,
-  Delete,
+  Get,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  @Post('trip/:tripId')
+  @Post('trips/:tripId')
   async bookSeat(
     @CurrentUser('id') userId: string,
     @Param('tripId') tripId: string,
-    @Body() body: { seats?: number },
+    @Body('seats') seats?: number,
+    @Body('paymentMethod') paymentMethod?: 'WALLET' | 'CASH',
   ) {
-    const result = await this.bookingService.bookSeat(userId, tripId, body?.seats);
-    return ApiResponseDto.success(result, 'Booking processed');
-  }
-
-  @Post(':id/ready')
-  async markReady(
-    @CurrentUser('id') userId: string,
-    @Param('id') bookingId: string,
-  ) {
-    const result = await this.bookingService.markReady(userId, bookingId);
-    return ApiResponseDto.success(result, 'You are marked as ready');
+    const result = await this.bookingService.bookSeat(
+      userId,
+      tripId,
+      seats || 1,
+      paymentMethod || 'CASH',
+    );
+    return ApiResponseDto.success(result, 'Seat booked successfully');
   }
 
   @Delete(':id')
@@ -42,20 +36,12 @@ export class BookingController {
     @Param('id') bookingId: string,
   ) {
     const result = await this.bookingService.cancelBooking(userId, bookingId);
-    return ApiResponseDto.success(result, 'Booking cancelled and refunded');
+    return ApiResponseDto.success(result, 'Booking cancelled');
   }
 
-  @Get('my-bookings')
+  @Get()
   async myBookings(@CurrentUser('id') userId: string) {
     const bookings = await this.bookingService.getUserBookings(userId);
-    return ApiResponseDto.success(bookings);
-  }
-
-  @Get('trip/:tripId')
-  @Roles('DRIVER', 'ADMIN')
-  @UseGuards(RolesGuard)
-  async tripBookings(@Param('tripId') tripId: string) {
-    const bookings = await this.bookingService.getTripBookings(tripId);
     return ApiResponseDto.success(bookings);
   }
 }

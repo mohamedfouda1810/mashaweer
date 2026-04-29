@@ -199,7 +199,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
             <div className="flex items-center justify-between border-t border-zinc-100 p-4 dark:border-zinc-800">
                 <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                        {Math.round(Number(trip.price) / trip.totalSeats)}
+                        {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
                     </span>
                     <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                         EGP/seat

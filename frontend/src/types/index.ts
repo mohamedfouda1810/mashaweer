@@ -79,6 +79,8 @@ export interface Trip {
   departureTime: string;
   estimatedArrival?: string;
   price: number;
+  pricePerSeat?: number;
+  suggestedPricePerSeat?: number;
   totalSeats: number;
   availableSeats: number;
   status: TripStatus;
@@ -111,7 +113,8 @@ export interface Booking {
   tripId: string;
   seats: number;
   status: BookingStatus;
-  isReady: boolean;
+  paymentMethod?: 'WALLET' | 'CASH';
+  amountPaid?: number;
   bookedAt: string;
   trip: Trip;
 }

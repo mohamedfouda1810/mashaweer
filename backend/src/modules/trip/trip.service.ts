@@ -41,6 +41,8 @@ export class TripService {
 
   /**
    * Create a new trip (Driver only)
+   * Dynamic pricing: suggestedPrice = distance_km × 5, clamped to [20, 85]
+   * Driver can set within ±20% of suggested price
    */
   async create(driverId: string, dto: CreateTripDto) {
     // Auto-calculate distance if both coordinates are provided
@@ -54,6 +56,38 @@ export class TripService {
         dto.destinationLatitude, dto.destinationLongitude,
       );
     }
+
+    // Dynamic pricing engine
+    let suggestedPricePerSeat: number | undefined;
+    let pricePerSeat = dto.pricePerSeat || dto.price;
+
+    if (distanceKm && distanceKm > 0) {
+      // Formula: distance × 5 EGP per km
+      const rawSuggested = distanceKm * 5;
+      // Clamp to [20, 85] range
+      suggestedPricePerSeat = Math.max(20, Math.min(85, Math.round(rawSuggested * 100) / 100));
+
+      // If driver provided a per-seat price, validate ±20% range
+      if (dto.pricePerSeat !== undefined) {
+        const minAllowed = Math.max(20, Math.round(suggestedPricePerSeat * 0.8 * 100) / 100);
+        const maxAllowed = Math.min(85, Math.round(suggestedPricePerSeat * 1.2 * 100) / 100);
+        if (dto.pricePerSeat < minAllowed || dto.pricePerSeat > maxAllowed) {
+          throw new BadRequestException(
+            `Price per seat must be between ${minAllowed} and ${maxAllowed} EGP (±20% of suggested: ${suggestedPricePerSeat} EGP).`,
+          );
+        }
+        pricePerSeat = dto.pricePerSeat;
+      } else {
+        // Fallback: use suggested price
+        pricePerSeat = suggestedPricePerSeat;
+      }
+    }
+
+    // Ensure pricePerSeat is within absolute bounds
+    pricePerSeat = Math.max(20, Math.min(85, pricePerSeat));
+
+    // Total price = pricePerSeat × totalSeats (for backward compat)
+    const totalPrice = Math.round(pricePerSeat * dto.totalSeats * 100) / 100;
 
     return this.prisma.trip.create({
       data: {
@@ -72,7 +106,9 @@ export class TripService {
         estimatedArrival: dto.estimatedArrival
           ? new Date(dto.estimatedArrival)
           : undefined,
-        price: dto.price,
+        price: totalPrice,
+        pricePerSeat,
+        suggestedPricePerSeat: suggestedPricePerSeat ?? null,
         totalSeats: dto.totalSeats,
         availableSeats: dto.totalSeats,
         notes: dto.notes,
@@ -588,7 +624,7 @@ export class TripService {
             id: true,
             seats: true,
             status: true,
-            isReady: true,
+            paymentMethod: true,
             user: {
               select: { firstName: true, lastName: true },
             },
