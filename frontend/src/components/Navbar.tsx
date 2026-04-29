@@ -68,6 +68,18 @@ export function Navbar() {
         }
     }, [isAuthenticated, pathname]);
 
+    // Polling fallback — keep badge updated when socket is NOT connected
+    useEffect(() => {
+        if (socket || !isAuthenticated) return;
+        const interval = setInterval(() => {
+            api.getUnreadCount().then((res) => {
+                const data = res.data as { count: number } | undefined;
+                setUnreadCount(data?.count ?? 0);
+            }).catch(() => { });
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [socket, isAuthenticated]);
+
     useEffect(() => {
         if (socket) {
             const handleNewNotification = () => setUnreadCount((prev) => prev + 1);

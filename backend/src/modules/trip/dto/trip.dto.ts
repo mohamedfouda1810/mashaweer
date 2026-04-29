@@ -66,6 +66,11 @@ export class CreateTripDto {
   totalSeats: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  distanceKm?: number;
+
+  @IsOptional()
   @IsString()
   notes?: string;
 }

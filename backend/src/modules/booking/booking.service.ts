@@ -84,10 +84,17 @@ export class BookingService {
         }
 
         // Atomic deduction
-        await tx.wallet.update({
+        const updatedWallet = await tx.wallet.update({
           where: { userId },
           data: { balance: { decrement: totalPrice } },
         });
+
+        // ── Safety check: ensure balance didn't go negative (race condition guard) ──
+        if (Number(updatedWallet.balance) < 0) {
+          throw new BadRequestException(
+            'Insufficient wallet balance (concurrent transaction detected). Please try again.',
+          );
+        }
 
         // Create PAYMENT transaction record
         await tx.transaction.create({
@@ -96,7 +103,7 @@ export class BookingService {
             type: 'PAYMENT',
             amount: totalPrice,
             status: 'COMPLETED',
-            reference: `BOOKING-${tripId}-${Date.now()}`,
+            reference: `BOOKING-${tripId}-${userId}-${Date.now()}`,
             metadata: { tripId, seats, pricePerSeat: perSeat },
           },
         });

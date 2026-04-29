@@ -139,6 +139,10 @@ export default function MapPicker({
   useCurrentLocation = false,
   onDistanceCalculated,
 }: MapPickerProps) {
+  // ── Mounted guard: prevent Leaflet _leaflet_pos crash during SSR ──
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+
   const [mode, setMode] = useState<'gathering' | 'destination'>('gathering');
   const [routeData, setRouteData] = useState<{ points: [number, number][]; distanceKm: number } | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
@@ -225,6 +229,16 @@ export default function MapPicker({
   }, [gatheringLat, gatheringLng, destinationLat, destinationLng]);
 
   const mapCenter = gatheringPos || userLocation || defaultCenter;
+
+  if (!mounted) {
+    return (
+      <div className="flex h-[320px] items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="flex flex-col items-center gap-2 text-zinc-400">
+          <span className="text-sm">Loading map...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

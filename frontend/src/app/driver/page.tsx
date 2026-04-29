@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import { Trip } from '@/types';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
+// DriverReadyButton removed — drivers now use Start Trip directly
 import toast from 'react-hot-toast';
 import {
     Gauge,
@@ -350,14 +350,7 @@ export default function DriverDashboardPage() {
                                                                 Request Cancel
                                                             </button>
                                                         )}
-                                                        {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
-                                                            <DriverReadyButton
-                                                                tripId={trip.id}
-                                                                isConfirmed={trip.status === 'DRIVER_CONFIRMED'}
-                                                                onConfirm={load}
-                                                                departureTime={trip.departureTime}
-                                                            />
-                                                        )}
+
                                                     </div>
                                                 </div>
                                             </div>

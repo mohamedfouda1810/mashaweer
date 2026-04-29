@@ -107,12 +107,18 @@ export default function TripMap({
   fromLabel,
   toLabel,
 }: TripMapProps) {
+  // ── Mounted guard: prevent Leaflet _leaflet_pos crash during SSR ──
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+
   const hasGathering = gatheringLat !== undefined && gatheringLng !== undefined
     && gatheringLat !== null && gatheringLng !== null;
   const hasDestination = destinationLat !== undefined && destinationLng !== undefined
     && destinationLat !== null && destinationLng !== null;
 
-  if (!hasGathering && !hasDestination) return null;
+  if (!mounted || (!hasGathering && !hasDestination)) return (
+    <div className="rounded-xl bg-zinc-100 animate-pulse dark:bg-zinc-800" style={{ height }} />
+  );
 
   const gatheringPos: [number, number] | undefined = hasGathering
     ? [gatheringLat!, gatheringLng!] : undefined;
@@ -125,6 +131,7 @@ export default function TripMap({
   return (
     <div className="relative overflow-hidden rounded-xl" style={{ height }}>
       <MapContainer
+        key={`${gatheringLat}-${gatheringLng}-${destinationLat}-${destinationLng}`}
         center={center}
         zoom={10}
         className="h-full w-full"

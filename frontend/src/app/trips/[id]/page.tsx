@@ -7,7 +7,7 @@ import { useTripStore } from '@/stores/useTripStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocket } from '@/providers/SocketProvider';
-import { DriverReadyButton } from '@/components/driver/DriverReadyButton';
+// DriverReadyButton removed — drivers now use Start Trip directly
 import { BookingRulesModal } from '@/components/trips/BookingRulesModal';
 import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
@@ -323,23 +323,16 @@ export default function TripDetailPage() {
                         )}
                     </div>
 
-                    {/* Driver "I'm Ready" for trip driver */}
-                    {isDriver && (trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
-                        <DriverReadyButton
-                            tripId={trip.id}
-                            departureTime={trip.departureTime}
-                            isConfirmed={trip.status === 'DRIVER_CONFIRMED'}
-                        />
-                    )}
+
 
                     {/* Driver Trip Lifecycle Controls */}
-                    {isDriver && (trip.status === 'DRIVER_CONFIRMED' || trip.status === 'IN_PROGRESS') && (
+                    {isDriver && (trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED' || trip.status === 'IN_PROGRESS') && (
                         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                                 Trip Controls
                             </h2>
                             <div className="flex flex-wrap gap-3">
-                                {trip.status === 'DRIVER_CONFIRMED' && (
+                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
                                     <button
                                         onClick={async () => {
                                             setTripActionLoading(true);
@@ -385,7 +378,7 @@ export default function TripDetailPage() {
                                 )}
                             </div>
                             <p className="mt-3 text-xs text-zinc-500">
-                                {trip.status === 'DRIVER_CONFIRMED' && 'Start the trip when you begin driving. Passengers will be notified.'}
+                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && 'Start the trip when you begin driving. Passengers will be notified.'}
                                 {trip.status === 'IN_PROGRESS' && 'Mark as complete when you arrive at the destination. All bookings will be finalized.'}
                             </p>
                         </div>
@@ -602,45 +595,54 @@ export default function TripDetailPage() {
 
                     {/* Price & Booking (hide for drivers/admins) */}
                     {!isDriver && user?.role !== 'ADMIN' && (
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="mb-4 text-center">
-                            <p className="text-sm text-zinc-500">Price per seat</p>
-                            <p className="text-4xl font-bold text-zinc-900 dark:text-white">
-                                {Math.round(Number(trip.price) / trip.totalSeats)}
-                                <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
-                            </p>
-                            <p className="mt-1 text-xs text-zinc-400">Total trip price: {Number(trip.price).toFixed(0)} EGP</p>
-                        </div>
-                        {/* Total Price Breakdown */}
-                        <div className="mb-4 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-zinc-500">{Math.round(Number(trip.price) / trip.totalSeats)} EGP × {seats} seat{seats > 1 ? 's' : ''}</span>
-                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                    {Math.round(Number(trip.price) / trip.totalSeats * seats)} EGP
-                                </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
-                                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Total</span>
-                                <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
-                                    {Math.round(Number(trip.price) / trip.totalSeats * seats)} EGP
-                                </span>
-                            </div>
-                        </div>
-
-                        {bookingSuccess || userAlreadyBooked ? (
-                            <div className="rounded-lg bg-mint/10 p-4 text-center dark:bg-mint/20">
-                                <CheckCircle2 className="mx-auto h-8 w-8 text-mint" />
-                                <p className="mt-2 font-medium text-mint-dark dark:text-mint-light">
-                                    {bookingSuccess ? 'Booked!' : '✓ Already Booked'}
+                      bookingSuccess || userAlreadyBooked ? (
+                        /* ── Already Booked — hide entire booking section ── */
+                        <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-b from-emerald-50 to-white p-6 shadow-sm dark:border-emerald-800 dark:from-emerald-950/30 dark:to-zinc-900">
+                            <div className="text-center">
+                                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+                                <p className="mt-3 text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                                    {bookingSuccess ? 'Booked Successfully! 🎉' : "You're Booked ✓"}
+                                </p>
+                                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                    Your seat is confirmed for this trip
                                 </p>
                                 <button
                                     onClick={() => router.push('/bookings')}
-                                    className="mt-2 text-sm text-navy hover:underline dark:text-mint"
+                                    className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
                                 >
-                                    View my bookings
+                                    View My Bookings
                                 </button>
                             </div>
-                        ) : !isDriver && trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' ? (
+                        </div>
+                      ) : trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' ? (
+                        /* ── Not Booked — show price & booking form ── */
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="mb-4 text-center">
+                                <p className="text-sm text-zinc-500">Price per seat</p>
+                                <p className="text-4xl font-bold text-zinc-900 dark:text-white">
+                                    {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
+                                    <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
+                                </p>
+                                <p className="mt-1 text-xs text-zinc-400">Total trip price: {Number(trip.price).toFixed(0)} EGP</p>
+                            </div>
+                            {/* Total Price Breakdown */}
+                            <div className="mb-4 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-zinc-500">
+                                        {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)} EGP × {seats} seat{seats > 1 ? 's' : ''}
+                                    </span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                        {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
+                                    </span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
+                                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Total</span>
+                                    <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                                        {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="space-y-3">
                                 {!isFull && (
                                     <div>
@@ -677,8 +679,8 @@ export default function TripDetailPage() {
                                     {isBooking ? 'Processing...' : isFull ? 'Join Waitlist' : `Book ${seats} Seat${seats > 1 ? 's' : ''}`}
                                 </button>
                             </div>
-                        ) : null}
-                    </div>
+                        </div>
+                      ) : null
                     )}
 
                     {/* Waitlist info */}

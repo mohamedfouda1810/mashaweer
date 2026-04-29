@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -35,12 +35,27 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
     ),
 });
 
+interface BackendPricing {
+    distanceKm: number;
+    suggestedTripPrice: number;
+    seats: number;
+    suggestedPricePerSeat: number;
+    minPricePerSeat: number;
+    maxPricePerSeat: number;
+    clampedMin: number;
+    clampedMax: number;
+}
+
 export default function CreateTripPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [routeDistance, setRouteDistance] = useState<number | null>(null);
+
+    // Backend-authoritative pricing — NO local recalculation
+    const [pricingInfo, setPricingInfo] = useState<BackendPricing | null>(null);
+    const [pricingLoading, setPricingLoading] = useState(false);
 
     const [form, setForm] = useState({
         fromCity: '',
@@ -78,31 +93,44 @@ export default function CreateTripPage() {
         }));
     };
 
-    // Dynamic pricing calculations
-    const pricingInfo = useMemo(() => {
-        if (!routeDistance || routeDistance <= 0) return null;
+    // Fetch pricing from backend (SINGLE SOURCE OF TRUTH)
+    const fetchPricing = useCallback(async (distanceKm: number, seats: number) => {
+        if (distanceKm <= 0) {
+            setPricingInfo(null);
+            return;
+        }
+        setPricingLoading(true);
+        try {
+            const res = await api.calculatePricing(distanceKm, seats);
+            if (res.data) {
+                setPricingInfo(res.data);
+                // Auto-fill suggested price if user hasn't manually changed it
+                if (!form.pricePerSeat || form.pricePerSeat === String(pricingInfo?.suggestedPricePerSeat)) {
+                    update('pricePerSeat', String(res.data.suggestedPricePerSeat));
+                }
+            }
+        } catch {
+            // Silently fail — user can still manually enter price
+        } finally {
+            setPricingLoading(false);
+        }
+    }, [form.pricePerSeat, pricingInfo?.suggestedPricePerSeat]);
 
-        const rawSuggested = routeDistance * 5;
-        const suggested = Math.max(20, Math.min(85, Math.round(rawSuggested)));
-        const minAllowed = Math.max(20, Math.round(suggested * 0.8));
-        const maxAllowed = Math.min(85, Math.round(suggested * 1.2));
+    // Re-fetch pricing when distance or seats change
+    useEffect(() => {
+        if (routeDistance && routeDistance > 0) {
+            fetchPricing(routeDistance, Number(form.totalSeats) || 4);
+        }
+    }, [routeDistance, form.totalSeats]);
 
-        return { suggested, minAllowed, maxAllowed, distance: routeDistance };
-    }, [routeDistance]);
-
-    // Auto-fill suggested price when distance is calculated
+    // Distance callback from MapPicker
     const handleDistanceCalculated = (distanceKm: number) => {
         setRouteDistance(distanceKm);
-        if (!form.pricePerSeat) {
-            const rawSuggested = distanceKm * 5;
-            const suggested = Math.max(20, Math.min(85, Math.round(rawSuggested)));
-            update('pricePerSeat', String(suggested));
-        }
     };
 
     const pricePerSeatNum = Number(form.pricePerSeat) || 0;
     const isPriceValid = pricingInfo
-        ? pricePerSeatNum >= pricingInfo.minAllowed && pricePerSeatNum <= pricingInfo.maxAllowed
+        ? pricePerSeatNum >= pricingInfo.minPricePerSeat && pricePerSeatNum <= pricingInfo.maxPricePerSeat
         : pricePerSeatNum > 0;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -126,7 +154,9 @@ export default function CreateTripPage() {
                 gatheringLongitude: form.gatheringLongitude,
                 destinationLatitude: form.destinationLatitude,
                 destinationLongitude: form.destinationLongitude,
-            });
+                // Send OSRM road-distance so backend uses the SAME distance
+                distanceKm: routeDistance || undefined,
+            } as any);
             if (response.data) {
                 router.push(`/trips/${response.data.id}`);
             }
@@ -280,33 +310,36 @@ export default function CreateTripPage() {
                         </div>
                     </div>
 
-                    {/* Dynamic Price Per Seat */}
+                    {/* Dynamic Price Per Seat — values from BACKEND */}
                     <div>
                         <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                             <CreditCard className="h-3.5 w-3.5 text-teal-500" /> Price per Seat (EGP)
                         </label>
 
-                        {/* Pricing guidance */}
+                        {/* Pricing guidance — ALL values from backend */}
                         {pricingInfo && (
                             <div className="mb-2 rounded-lg bg-gradient-to-r from-teal-50 to-indigo-50 p-3 dark:from-teal-900/10 dark:to-indigo-900/10">
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <TrendingUp className="h-3.5 w-3.5 text-teal-600" />
                                     <span className="text-xs font-semibold text-teal-800 dark:text-teal-300">
-                                        Dynamic Pricing ({pricingInfo.distance} km route)
+                                        Dynamic Pricing ({pricingInfo.distanceKm} km route)
                                     </span>
+                                    {pricingLoading && (
+                                        <Loader2 className="h-3 w-3 animate-spin text-teal-500" />
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                                        Suggested: <strong className="text-teal-700 dark:text-teal-300">{pricingInfo.suggested} EGP</strong>
+                                        Suggested: <strong className="text-teal-700 dark:text-teal-300">{pricingInfo.suggestedPricePerSeat} EGP</strong>
                                     </span>
                                     <span className="text-[10px] text-zinc-400">•</span>
                                     <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                                        Range: <strong>{pricingInfo.minAllowed}</strong> – <strong>{pricingInfo.maxAllowed}</strong> EGP
+                                        Range: <strong>{pricingInfo.minPricePerSeat}</strong> – <strong>{pricingInfo.maxPricePerSeat}</strong> EGP
                                     </span>
                                 </div>
                                 {/* Range slider visualization */}
                                 <div className="mt-2 flex items-center gap-2">
-                                    <span className="text-[10px] text-zinc-500">{pricingInfo.minAllowed}</span>
+                                    <span className="text-[10px] text-zinc-500">{pricingInfo.minPricePerSeat}</span>
                                     <div className="relative flex-1 h-2 rounded-full bg-zinc-200 dark:bg-zinc-700">
                                         <div
                                             className="absolute h-2 rounded-full bg-gradient-to-r from-teal-400 to-indigo-400"
@@ -315,16 +348,16 @@ export default function CreateTripPage() {
                                                 width: '100%',
                                             }}
                                         />
-                                        {pricePerSeatNum >= pricingInfo.minAllowed && pricePerSeatNum <= pricingInfo.maxAllowed && (
+                                        {pricePerSeatNum >= pricingInfo.minPricePerSeat && pricePerSeatNum <= pricingInfo.maxPricePerSeat && (
                                             <div
                                                 className="absolute -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-teal-600 shadow-md"
                                                 style={{
-                                                    left: `${((pricePerSeatNum - pricingInfo.minAllowed) / (pricingInfo.maxAllowed - pricingInfo.minAllowed)) * 100}%`,
+                                                    left: `${((pricePerSeatNum - pricingInfo.minPricePerSeat) / (pricingInfo.maxPricePerSeat - pricingInfo.minPricePerSeat)) * 100}%`,
                                                 }}
                                             />
                                         )}
                                     </div>
-                                    <span className="text-[10px] text-zinc-500">{pricingInfo.maxAllowed}</span>
+                                    <span className="text-[10px] text-zinc-500">{pricingInfo.maxPricePerSeat}</span>
                                 </div>
                             </div>
                         )}
@@ -332,11 +365,16 @@ export default function CreateTripPage() {
                         <input
                             type="number"
                             required
-                            min={pricingInfo?.minAllowed || 20}
-                            max={pricingInfo?.maxAllowed || 85}
+                            min={pricingInfo?.minPricePerSeat || 20}
+                            max={pricingInfo?.maxPricePerSeat || 85}
+                            step="1"
                             value={form.pricePerSeat}
-                            onChange={(e) => update('pricePerSeat', e.target.value)}
-                            placeholder={pricingInfo ? `${pricingInfo.suggested}` : "40"}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                // Clamp value inside backend range on input
+                                update('pricePerSeat', val);
+                            }}
+                            placeholder={pricingInfo ? `${pricingInfo.suggestedPricePerSeat}` : "40"}
                             className={`w-full rounded-lg border px-3 py-2.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 dark:bg-zinc-800 dark:text-zinc-100 ${
                                 !isPriceValid && form.pricePerSeat
                                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
@@ -347,7 +385,7 @@ export default function CreateTripPage() {
                         {!isPriceValid && form.pricePerSeat && pricingInfo && (
                             <div className="mt-1.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
                                 <AlertCircle className="h-3 w-3" />
-                                Price must be between {pricingInfo.minAllowed} and {pricingInfo.maxAllowed} EGP (±20% of suggested)
+                                Price must be between {pricingInfo.minPricePerSeat} and {pricingInfo.maxPricePerSeat} EGP (±20% of suggested)
                             </div>
                         )}
 

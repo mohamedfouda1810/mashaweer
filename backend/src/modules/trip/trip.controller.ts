@@ -51,6 +51,34 @@ export class TripController {
     return ApiResponseDto.success(trip);
   }
 
+  /**
+   * POST /api/trips/calculate-pricing
+   * Public endpoint — returns authoritative pricing for given distance + seats.
+   * Frontend MUST use these values for its slider/display. No local recalculation.
+   */
+  @Public()
+  @Post('calculate-pricing')
+  async calculatePricing(
+    @Body() body: { distanceKm: number; seats?: number },
+  ) {
+    const distanceKm = Number(body.distanceKm) || 0;
+    const seats = Number(body.seats) || 4;
+    if (distanceKm <= 0) {
+      return ApiResponseDto.success({
+        distanceKm: 0,
+        suggestedTripPrice: 0,
+        seats,
+        suggestedPricePerSeat: 20,
+        minPricePerSeat: 20,
+        maxPricePerSeat: 85,
+        clampedMin: 20,
+        clampedMax: 85,
+      });
+    }
+    const pricing = this.tripService.calculatePricing(distanceKm, seats);
+    return ApiResponseDto.success(pricing);
+  }
+
   @Delete(':id')
   @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)

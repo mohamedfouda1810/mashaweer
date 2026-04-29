@@ -141,6 +141,26 @@ class ApiClient {
     });
   }
 
+  /**
+   * Get authoritative pricing from backend — SINGLE SOURCE OF TRUTH
+   * Frontend MUST NOT recalculate pricing locally.
+   */
+  async calculatePricing(distanceKm: number, seats: number = 4) {
+    return this.request<{
+      distanceKm: number;
+      suggestedTripPrice: number;
+      seats: number;
+      suggestedPricePerSeat: number;
+      minPricePerSeat: number;
+      maxPricePerSeat: number;
+      clampedMin: number;
+      clampedMax: number;
+    }>('/trips/calculate-pricing', {
+      method: 'POST',
+      body: JSON.stringify({ distanceKm, seats }),
+    });
+  }
+
   async startTrip(tripId: string) {
     return this.request(`/trips/${tripId}/start`, {
       method: 'PATCH',

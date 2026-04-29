@@ -21,9 +21,10 @@ export class TripService {
   ) {}
 
   /**
-   * Calculate distance between two GPS points using Haversine formula
+   * Calculate distance between two GPS points using Haversine formula (FALLBACK ONLY)
+   * Primary distance should come from frontend OSRM road-distance
    */
-  private calculateDistance(
+  private calculateHaversineDistance(
     lat1: number, lng1: number,
     lat2: number, lng2: number,
   ): number {
@@ -40,40 +41,94 @@ export class TripService {
   }
 
   /**
+   * SINGLE SOURCE OF TRUTH for pricing calculation.
+   * Used by both trip creation validation AND the public calculate-pricing endpoint.
+   * Formula: suggestedPricePerSeat = distance_km × 5, clamped to [20, 85]
+   * Allowed range: ±20% of suggested, clamped to [20, 85]
+   */
+  calculatePricing(distanceKm: number, seats: number = 4) {
+    const r2 = (v: number) => Math.round(v * 100) / 100;
+
+    // Formula: distance × 5 EGP per km
+    const rawSuggested = distanceKm * 5;
+    // Clamp to [20, 85] range
+    const suggestedPricePerSeat = Math.max(20, Math.min(85, r2(rawSuggested)));
+
+    // ±20% range, clamped to [20, 85]
+    const minPricePerSeat = Math.max(20, r2(suggestedPricePerSeat * 0.8));
+    const maxPricePerSeat = Math.min(85, r2(suggestedPricePerSeat * 1.2));
+
+    const suggestedTripPrice = r2(suggestedPricePerSeat * seats);
+
+    return {
+      distanceKm: r2(distanceKm),
+      suggestedTripPrice,
+      seats,
+      suggestedPricePerSeat,
+      minPricePerSeat,
+      maxPricePerSeat,
+      // Aliases for frontend convenience
+      clampedMin: minPricePerSeat,
+      clampedMax: maxPricePerSeat,
+    };
+  }
+
+  /**
    * Create a new trip (Driver only)
    * Dynamic pricing: suggestedPrice = distance_km × 5, clamped to [20, 85]
    * Driver can set within ±20% of suggested price
    */
   async create(driverId: string, dto: CreateTripDto) {
-    // Auto-calculate distance if both coordinates are provided
-    let distanceKm: number | undefined;
+    // ── Idempotency guard: prevent duplicate trip creation ──
+    const sixtySecondsAgo = new Date(Date.now() - 60_000);
+    const duplicate = await this.prisma.trip.findFirst({
+      where: {
+        driverId,
+        fromCity: dto.fromCity,
+        toCity: dto.toCity,
+        gatheringLocation: dto.gatheringLocation,
+        departureTime: new Date(dto.departureTime),
+        createdAt: { gte: sixtySecondsAgo },
+      },
+      include: {
+        driver: {
+          select: {
+            id: true, firstName: true, lastName: true,
+            phone: true, avatarUrl: true, driverProfile: true,
+          },
+        },
+      },
+    });
+    if (duplicate) {
+      return duplicate; // Return existing trip instead of creating duplicate
+    }
+
+    // ── Distance: prefer frontend OSRM road-distance, fallback to Haversine ──
+    let distanceKm: number | undefined = dto.distanceKm;
     if (
+      !distanceKm &&
       dto.gatheringLatitude && dto.gatheringLongitude &&
       dto.destinationLatitude && dto.destinationLongitude
     ) {
-      distanceKm = this.calculateDistance(
+      distanceKm = this.calculateHaversineDistance(
         dto.gatheringLatitude, dto.gatheringLongitude,
         dto.destinationLatitude, dto.destinationLongitude,
       );
     }
 
-    // Dynamic pricing engine
+    // ── Dynamic pricing engine (SINGLE SOURCE OF TRUTH) ──
     let suggestedPricePerSeat: number | undefined;
     let pricePerSeat = dto.pricePerSeat || dto.price;
 
     if (distanceKm && distanceKm > 0) {
-      // Formula: distance × 5 EGP per km
-      const rawSuggested = distanceKm * 5;
-      // Clamp to [20, 85] range
-      suggestedPricePerSeat = Math.max(20, Math.min(85, Math.round(rawSuggested * 100) / 100));
+      const pricing = this.calculatePricing(distanceKm, dto.totalSeats);
+      suggestedPricePerSeat = pricing.suggestedPricePerSeat;
 
-      // If driver provided a per-seat price, validate ±20% range
+      // If driver provided a per-seat price, validate against THE SAME computed range
       if (dto.pricePerSeat !== undefined) {
-        const minAllowed = Math.max(20, Math.round(suggestedPricePerSeat * 0.8 * 100) / 100);
-        const maxAllowed = Math.min(85, Math.round(suggestedPricePerSeat * 1.2 * 100) / 100);
-        if (dto.pricePerSeat < minAllowed || dto.pricePerSeat > maxAllowed) {
+        if (dto.pricePerSeat < pricing.minPricePerSeat || dto.pricePerSeat > pricing.maxPricePerSeat) {
           throw new BadRequestException(
-            `Price per seat must be between ${minAllowed} and ${maxAllowed} EGP (±20% of suggested: ${suggestedPricePerSeat} EGP).`,
+            `Price per seat must be between ${pricing.minPricePerSeat} and ${pricing.maxPricePerSeat} EGP (±20% of suggested: ${pricing.suggestedPricePerSeat} EGP).`,
           );
         }
         pricePerSeat = dto.pricePerSeat;
@@ -85,6 +140,9 @@ export class TripService {
 
     // Ensure pricePerSeat is within absolute bounds
     pricePerSeat = Math.max(20, Math.min(85, pricePerSeat));
+
+    // Round to 2 decimals consistently
+    pricePerSeat = Math.round(pricePerSeat * 100) / 100;
 
     // Total price = pricePerSeat × totalSeats (for backward compat)
     const totalPrice = Math.round(pricePerSeat * dto.totalSeats * 100) / 100;
@@ -319,7 +377,7 @@ export class TripService {
     const dLat = updateData.destinationLatitude ?? trip.destinationLatitude;
     const dLng = updateData.destinationLongitude ?? trip.destinationLongitude;
     if (gLat && gLng && dLat && dLng) {
-      updateData.distanceKm = this.calculateDistance(gLat, gLng, dLat, dLng);
+      updateData.distanceKm = this.calculateHaversineDistance(gLat, gLng, dLat, dLng);
     }
     if (dto.totalSeats !== undefined) {
       const bookedSeats = trip.totalSeats - trip.availableSeats;

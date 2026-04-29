@@ -65,6 +65,13 @@ export default function NotificationsPage() {
         if (isAuthenticated) fetchNotifications();
     }, [isAuthenticated, fetchNotifications]);
 
+    // Polling fallback — auto-refresh every 30s when socket is NOT connected
+    useEffect(() => {
+        if (isConnected || !isAuthenticated) return; // Socket handles it
+        const interval = setInterval(fetchNotifications, 30000);
+        return () => clearInterval(interval);
+    }, [isConnected, isAuthenticated, fetchNotifications]);
+
     // Real-time WebSocket listener — new notifications appear instantly
     useEffect(() => {
         if (!socket) return;

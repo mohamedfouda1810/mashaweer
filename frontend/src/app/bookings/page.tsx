@@ -133,7 +133,7 @@ export default function BookingsPage() {
                                             <div className="mt-4 text-sm">
                                                 <span className="text-zinc-500">{booking.seats} seat(s) • </span>
                                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                                    {Number(trip.price) * booking.seats} EGP
+                                                    {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * booking.seats)} EGP
                                                 </span>
                                             </div>
                                         </div>
