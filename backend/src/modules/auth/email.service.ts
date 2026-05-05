@@ -1,14 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private resend: Resend;
+  private transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: this.configService.get<string>('SMTP_USER'),
+        pass: this.configService.get<string>('SMTP_PASS'),
+      },
+    });
   }
 
   private get frontendUrl(): string {
@@ -18,8 +26,8 @@ export class EmailService {
   async sendVerificationEmail(email: string, token: string, firstName: string): Promise<void> {
     const verifyUrl = `${this.frontendUrl}/verify-email?token=${token}`;
     try {
-      await this.resend.emails.send({
-        from: 'Mashaweer <onboarding@resend.dev>',
+      await this.transporter.sendMail({
+        from: `"Mashaweer" <${this.configService.get<string>('SMTP_USER')}>`,
         to: email,
         subject: '✉️ Verify Your Mashaweer Account',
         html: `
@@ -47,8 +55,8 @@ export class EmailService {
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     const resetUrl = `${this.frontendUrl}/reset-password?token=${token}`;
     try {
-      await this.resend.emails.send({
-        from: 'Mashaweer <onboarding@resend.dev>',
+      await this.transporter.sendMail({
+        from: `"Mashaweer" <${this.configService.get<string>('SMTP_USER')}>`,
         to: email,
         subject: '🔐 Reset Your Mashaweer Password',
         html: `
