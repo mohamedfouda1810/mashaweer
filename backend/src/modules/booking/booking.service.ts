@@ -8,7 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationGateway } from '../notification/notification.gateway';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, NotificationType } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
@@ -27,7 +27,7 @@ export class BookingService {
    */
   async bookSeat(userId: string, tripId: string, seats: number = 1, paymentMethod: 'WALLET' | 'CASH' = 'CASH') {
     seats = Number(seats) || 1;
-    return this.prisma.$transaction(async (tx) => {
+    const txResult = await this.prisma.$transaction(async (tx) => {
       // 1. Get the trip and verify availability
       const trip = await tx.trip.findUnique({
         where: { id: tripId },
@@ -64,7 +64,15 @@ export class BookingService {
       // 2. Check seat availability
       if (trip.availableSeats < seats) {
         // Trip is full → add to waitlist
-        return this.addToWaitlist(tx, userId, tripId);
+        const waitResult = await this.addToWaitlist(tx, userId, tripId);
+        return {
+          result: waitResult,
+          _postCommit: {
+            tripId,
+            availableSeats: trip.availableSeats,
+            notifications: waitResult._postCommitNotifs || [],
+          },
+        };
       }
 
       // 3. Calculate total price
@@ -163,35 +171,53 @@ export class BookingService {
         data: { availableSeats: { decrement: seats } },
       });
 
-      // Broadcast real-time seat update
-      this.notificationGateway.broadcastTripUpdate(tripId, {
-        availableSeats: updatedTrip.availableSeats,
-      });
-
-      // 7. Send confirmation notification to passenger
+      // 7. Create notifications inside the transaction (DB only, no broadcast yet)
       const confirmMsg = paymentMethod === 'WALLET'
         ? `تم حجز مقعدك بنجاح! تم خصم ${totalPrice} جنيه من المحفظة. نقطة التجمع: ${trip.gatheringLocation}`
         : `تم تأكيد الرحلة بنجاح! المبلغ المطلوب دفعه للسائق: ${totalPrice} جنيه. نقطة التجمع: ${trip.gatheringLocation}`;
-      await this.notificationService.createInTransaction(tx, {
+      const passengerNotifData = {
         userId,
-        type: 'BOOKING_CONFIRMED',
+        type: 'BOOKING_CONFIRMED' as NotificationType,
         title: 'Booking Confirmed! ✅',
         message: confirmMsg,
         metadata: { bookingId: booking.id, tripId, paymentMethod, amountPaid },
-      });
+      };
+      const passengerNotif = await this.notificationService.createInTransaction(tx, passengerNotifData);
 
       // 8. Notify the driver about new booking
       const passenger = await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
-      await this.notificationService.createInTransaction(tx, {
+      const driverNotifData = {
         userId: trip.driverId,
-        type: 'BOOKING_CONFIRMED',
+        type: 'BOOKING_CONFIRMED' as NotificationType,
         title: 'New Seat Booked! 🎫',
         message: `${passenger?.firstName || 'A passenger'} ${passenger?.lastName || ''} booked ${seats} seat(s) on your trip ${trip.fromCity} → ${trip.toCity}. ${updatedTrip.availableSeats} seats remaining.`,
         metadata: { bookingId: booking.id, tripId },
-      });
+      };
+      const driverNotif = await this.notificationService.createInTransaction(tx, driverNotifData);
 
-      return { ...booking, paymentMethod, amountPaid, totalPrice };
+      return {
+        result: { ...booking, paymentMethod, amountPaid, totalPrice },
+        _postCommit: {
+          tripId,
+          availableSeats: updatedTrip.availableSeats,
+          notifications: [
+            { data: passengerNotifData, notification: passengerNotif },
+            { data: driverNotifData, notification: driverNotif },
+          ],
+        },
+      };
     });
+
+    // Post-commit: broadcast WebSocket events now that the transaction is committed
+    if (txResult._postCommit) {
+      const pc = txResult._postCommit;
+      this.notificationGateway.broadcastTripUpdate(pc.tripId, { availableSeats: pc.availableSeats });
+      for (const n of pc.notifications) {
+        this.notificationService.broadcastAfterCommit(n.data, n.notification);
+      }
+    }
+
+    return txResult.result;
   }
 
   /**
@@ -222,14 +248,20 @@ export class BookingService {
       data: { userId, tripId, position },
     });
 
-    await this.notificationService.createInTransaction(tx, {
+    const waitNotifData = {
       userId,
-      type: 'WAITLIST_PROMOTED',
+      type: 'WAITLIST_PROMOTED' as NotificationType,
       title: 'Added to Waitlist',
       message: `The trip is full. You are #${position} on the waitlist. We'll notify you if a seat opens up.`,
-    });
+    };
+    const waitNotif = await this.notificationService.createInTransaction(tx, waitNotifData);
 
-    return { waitlisted: true, position, entry: waitlistEntry };
+    return {
+      waitlisted: true,
+      position,
+      entry: waitlistEntry,
+      _postCommitNotifs: [{ data: waitNotifData, notification: waitNotif }],
+    };
   }
 
   /**
@@ -237,7 +269,7 @@ export class BookingService {
    * Refunds to wallet only if original payment was via wallet
    */
   async cancelBooking(userId: string, bookingId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const txResult = await this.prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findUnique({
         where: { id: bookingId },
         include: { trip: true },
@@ -282,11 +314,6 @@ export class BookingService {
         data: { availableSeats: { increment: booking.seats } },
       });
 
-      // Broadcast real-time seat update
-      this.notificationGateway.broadcastTripUpdate(booking.tripId, {
-        availableSeats: updatedTrip.availableSeats,
-      });
-
       // 3. Refund to wallet only if paid via wallet
       let refundAmount = 0;
       if (booking.paymentMethod === 'WALLET' && booking.amountPaid) {
@@ -312,21 +339,43 @@ export class BookingService {
         }
       }
 
-      // 4. Notify the driver about cancellation
+      // 4. Create notification inside transaction (no broadcast yet)
       const passenger = await tx.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } });
-      await this.notificationService.createInTransaction(tx, {
+      const cancelNotifData = {
         userId: booking.trip.driverId,
-        type: 'BOOKING_CANCELLED',
+        type: 'BOOKING_CANCELLED' as NotificationType,
         title: 'Booking Cancelled 🚫',
         message: `${passenger?.firstName || 'A passenger'} ${passenger?.lastName || ''} cancelled their ${booking.seats} seat(s) on your trip ${booking.trip.fromCity} → ${booking.trip.toCity}. ${updatedTrip.availableSeats} seats now available.`,
         metadata: { bookingId, tripId: booking.tripId },
-      });
+      };
+      const cancelNotif = await this.notificationService.createInTransaction(tx, cancelNotifData);
 
       // 5. Promote next waitlisted user
-      await this.promoteFromWaitlist(tx, booking.tripId);
+      const promoResult = await this.promoteFromWaitlist(tx, booking.tripId);
 
-      return { cancelled: true, refundAmount };
+      return {
+        result: { cancelled: true, refundAmount },
+        _postCommit: {
+          tripId: booking.tripId,
+          availableSeats: updatedTrip.availableSeats,
+          notifications: [
+            { data: cancelNotifData, notification: cancelNotif },
+            ...(promoResult?._postCommitNotifs || []),
+          ],
+        },
+      };
     });
+
+    // Post-commit: broadcast WebSocket events
+    if (txResult._postCommit) {
+      const pc = txResult._postCommit;
+      this.notificationGateway.broadcastTripUpdate(pc.tripId, { availableSeats: pc.availableSeats });
+      for (const n of pc.notifications) {
+        this.notificationService.broadcastAfterCommit(n.data, n.notification);
+      }
+    }
+
+    return txResult.result;
   }
 
   /**
@@ -339,7 +388,7 @@ export class BookingService {
       include: { user: { select: { firstName: true } } },
     });
 
-    if (!nextInLine) return;
+    if (!nextInLine) return null;
 
     // Remove from waitlist
     await tx.waitlist.delete({ where: { id: nextInLine.id } });
@@ -350,14 +399,19 @@ export class BookingService {
       data: { position: { decrement: 1 } },
     });
 
-    // Notify the promoted user
-    await this.notificationService.createInTransaction(tx, {
+    // Create notification inside transaction (no broadcast yet)
+    const promoNotifData = {
       userId: nextInLine.userId,
-      type: 'WAITLIST_PROMOTED',
+      type: 'WAITLIST_PROMOTED' as NotificationType,
       title: 'A seat is now available! 🎉',
       message: `A seat has opened up on your waitlisted trip. Book now before it's taken!`,
       metadata: { tripId },
-    });
+    };
+    const promoNotif = await this.notificationService.createInTransaction(tx, promoNotifData);
+
+    return {
+      _postCommitNotifs: [{ data: promoNotifData, notification: promoNotif }],
+    };
   }
 
 
@@ -388,9 +442,35 @@ export class BookingService {
   }
 
   /**
-   * Get bookings for a trip (Driver view)
+   * Get bookings for a trip.
+   * Authorization: only the trip's driver, a booked passenger, or an admin can view.
    */
-  async getTripBookings(tripId: string) {
+  async getTripBookings(tripId: string, requestingUserId?: string, requestingRole?: string) {
+    // If authorization params are provided, verify access
+    if (requestingUserId && requestingRole !== 'ADMIN') {
+      const trip = await this.prisma.trip.findUnique({
+        where: { id: tripId },
+        select: { driverId: true },
+      });
+
+      if (!trip) throw new NotFoundException('Trip not found');
+
+      const isDriver = trip.driverId === requestingUserId;
+      if (!isDriver) {
+        // Check if the user has a booking on this trip
+        const userBooking = await this.prisma.booking.findFirst({
+          where: {
+            tripId,
+            userId: requestingUserId,
+            status: { in: ['CONFIRMED', 'PENDING'] },
+          },
+        });
+        if (!userBooking) {
+          throw new BadRequestException('You do not have access to this trip\'s bookings');
+        }
+      }
+    }
+
     return this.prisma.booking.findMany({
       where: { tripId, status: { in: ['CONFIRMED', 'PENDING'] } },
       include: {
@@ -407,3 +487,4 @@ export class BookingService {
     });
   }
 }
+

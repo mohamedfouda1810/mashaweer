@@ -77,8 +77,8 @@ export class AdminController {
     @Body('days') days: number,
     @Body('reason') reason?: string,
   ) {
-    const user = await this.adminService.tempBanUser(userId, days || 15, reason);
-    return ApiResponseDto.success(user, `User banned for ${days || 15} days`);
+    const user = await this.adminService.tempBanUser(userId, days ?? 15, reason);
+    return ApiResponseDto.success(user, `User banned for ${days ?? 15} days`);
   }
 
   @Post('users/:userId/role')

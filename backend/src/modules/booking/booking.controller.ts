@@ -38,11 +38,15 @@ export class BookingController {
 
   /**
    * GET /api/bookings/trip/:tripId
-   * Get all bookings for a specific trip
+   * Get all bookings for a specific trip.
+   * Only accessible by: the trip's driver, booked passengers, or admins.
    */
   @Get('trip/:tripId')
-  async tripBookings(@Param('tripId') tripId: string) {
-    const bookings = await this.bookingService.getTripBookings(tripId);
+  async tripBookings(
+    @Param('tripId') tripId: string,
+    @CurrentUser() currentUser: { id: string; role: string },
+  ) {
+    const bookings = await this.bookingService.getTripBookings(tripId, currentUser.id, currentUser.role);
     return ApiResponseDto.success(bookings);
   }
 

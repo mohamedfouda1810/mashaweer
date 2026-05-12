@@ -20,6 +20,19 @@ const createCircleIcon = (color: string, size: number = 14) => L.divIcon({
 const gatheringIcon = createCircleIcon('#10b981', 16);
 const destinationIcon = createCircleIcon('#ef4444', 16);
 
+// Pulsing blue marker for live driver position
+const driverLiveIcon = L.divIcon({
+  html: `<div style="
+    width:18px;height:18px;border-radius:50%;
+    background:#3b82f6;border:3px solid white;
+    box-shadow:0 0 0 4px rgba(59,130,246,0.3), 0 2px 6px rgba(0,0,0,0.35);
+    animation: pulse 2s ease-in-out infinite;
+  "><style>@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,0.3), 0 2px 6px rgba(0,0,0,0.35)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0.15), 0 2px 6px rgba(0,0,0,0.35)}}</style></div>`,
+  className: '',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
 // Fetch real road route from OSRM (free, no API key)
 async function fetchRoute(
   start: [number, number],
@@ -58,13 +71,16 @@ function FitBounds({ points }: { points: [number, number][] }) {
 function RoadRoute({ start, end }: { start: [number, number]; end: [number, number] }) {
   const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
 
+  // Use a stable string key to avoid stale closures from array element deps
+  const routeKey = `${start[0]},${start[1]}-${end[0]},${end[1]}`;
+
   useEffect(() => {
     let cancelled = false;
     fetchRoute(start, end).then((pts) => {
       if (!cancelled) setRoutePoints(pts);
     });
     return () => { cancelled = true; };
-  }, [start[0], start[1], end[0], end[1]]);
+  }, [routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (routePoints.length === 0) return null;
 
@@ -94,6 +110,9 @@ interface TripMapProps {
   compact?: boolean;
   fromLabel?: string;
   toLabel?: string;
+  /** Live driver position (for IN_PROGRESS trips) */
+  driverLat?: number;
+  driverLng?: number;
 }
 
 export default function TripMap({
@@ -106,6 +125,8 @@ export default function TripMap({
   compact = true,
   fromLabel,
   toLabel,
+  driverLat,
+  driverLng,
 }: TripMapProps) {
   // ── Mounted guard: prevent Leaflet _leaflet_pos crash during SSR ──
   const [mounted, setMounted] = useState(false);
@@ -160,6 +181,12 @@ export default function TripMap({
         {destinationPos && (
           <Marker position={destinationPos} icon={destinationIcon}>
             {!compact && toLabel && <Popup>{toLabel}</Popup>}
+          </Marker>
+        )}
+        {/* Live driver position marker */}
+        {driverLat != null && driverLng != null && (
+          <Marker position={[driverLat, driverLng]} icon={driverLiveIcon}>
+            {!compact && <Popup>Driver (Live)</Popup>}
           </Marker>
         )}
       </MapContainer>

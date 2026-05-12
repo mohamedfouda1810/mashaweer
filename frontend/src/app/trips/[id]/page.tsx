@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useTripStore } from '@/stores/useTripStore';
@@ -13,6 +13,7 @@ import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
 import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
 import { Rating, Booking } from '@/types';
+import { useDriverLocation } from '@/hooks/useDriverLocation';
 import toast from 'react-hot-toast';
 
 const TripMap = dynamic(() => import('@/components/TripMap'), {
@@ -64,6 +65,14 @@ export default function TripDetailPage() {
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [showBookingModal, setShowBookingModal] = useState(false);
 
+    // Live driver location tracking
+    const isDriver = user?.id === trip?.driverId;
+    const driverLocation = useDriverLocation({
+        tripId,
+        isDriver: !!isDriver,
+        isInProgress: trip?.status === 'IN_PROGRESS',
+    });
+
     useEffect(() => {
         if (tripId) {
             fetchTrip(tripId);
@@ -81,15 +90,15 @@ export default function TripDetailPage() {
     }, [trip?.driverId]);
 
     // Load bookings for all authenticated users
-    const fetchBookings = () => {
+    const fetchBookings = useCallback(() => {
         if (trip && user) {
             api.getTripBookings(tripId).then((res) => setBookings((res.data as Booking[]) || [])).catch(() => { });
         }
-    };
+    }, [trip?.id, user?.id, tripId]);
 
     useEffect(() => {
         fetchBookings();
-    }, [trip?.id, user, tripId]); // using trip?.id instead of trip to avoid infinite loops
+    }, [fetchBookings]);
 
     useEffect(() => {
         if (!socket || !tripId) return;
@@ -141,7 +150,11 @@ export default function TripDetailPage() {
 
     const handleConfirmBooking = async (paymentMethod: 'WALLET' | 'CASH') => {
         setBookingError(null);
-        const success = await bookSeat(tripId, seats, paymentMethod);
+        const success = await bookSeat(tripId, seats, paymentMethod, {
+            fromCity: trip?.fromCity,
+            toCity: trip?.toCity,
+            pricePerSeat: trip?.pricePerSeat ? Number(trip.pricePerSeat) : undefined,
+        });
         if (success) {
             setBookingSuccess(true);
             setShowBookingModal(false);
@@ -203,7 +216,6 @@ export default function TripDetailPage() {
 
     const departure = new Date(trip.departureTime);
     const isFull = trip.availableSeats <= 0;
-    const isDriver = user?.id === trip.driverId;
     const isCompleted = trip.status === 'COMPLETED';
     const userAlreadyBooked = bookings.some(
         (b) => b.userId === user?.id && b.status !== 'CANCELLED'
@@ -237,6 +249,8 @@ export default function TripDetailPage() {
                                 compact={false}
                                 fromLabel={trip.gatheringLocation || trip.fromCity}
                                 toLabel={trip.toAddress || trip.toCity}
+                                driverLat={driverLocation?.lat}
+                                driverLng={driverLocation?.lng}
                             />
                         </div>
                     )}

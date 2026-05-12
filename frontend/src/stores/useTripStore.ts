@@ -78,15 +78,20 @@ export const useTripStore = create<TripState>((set, get) => ({
     set((state) => ({
       filters: { ...state.filters, ...newFilters, page: 1 },
     }));
+    // Auto-fetch with new filters
+    get().fetchTrips();
   },
 
   resetFilters: () => {
     set({ filters: { ...defaultFilters } });
+    get().fetchTrips();
   },
 
   setPage: (page: number) => {
     set((state) => ({
       filters: { ...state.filters, page },
     }));
+    // Auto-fetch when page changes
+    get().fetchTrips();
   },
 }));

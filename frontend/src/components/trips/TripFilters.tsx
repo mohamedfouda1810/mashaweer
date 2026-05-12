@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { useTripStore } from '@/stores/useTripStore';
 import {
     Search,
@@ -27,14 +27,35 @@ const POPULAR_CITIES = [
 ];
 
 export function TripFilters() {
-    const { filters, setFilters, resetFilters, fetchTrips } = useTripStore();
+    const { filters, setFilters, resetFilters } = useTripStore();
     const [showAdvanced, setShowAdvanced] = React.useState(false);
     const [isExpanded, setIsExpanded] = React.useState(false); // collapsed on mobile by default
 
+    // Local state for the search input to enable debouncing
+    const [searchValue, setSearchValue] = React.useState(filters.q || '');
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Debounced search: waits 400ms after typing stops before triggering fetch
+    const handleSearchChange = useCallback((value: string) => {
+        setSearchValue(value);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setFilters({ q: value });
+        }, 400);
+    }, [setFilters]);
+
     const handleApply = () => {
-        fetchTrips();
+        // Commit local search value immediately and trigger fetch
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        setFilters({ q: searchValue });
         // Collapse on mobile after search
         if (window.innerWidth < 768) setIsExpanded(false);
+    };
+
+    const handleReset = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSearchValue('');
+        resetFilters();
     };
 
     const hasActiveFilters =
@@ -69,11 +90,7 @@ export function TripFilters() {
                 <div className="flex items-center gap-2">
                     {hasActiveFilters && (
                         <span
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                resetFilters();
-                                fetchTrips();
-                            }}
+                            onClick={handleReset}
                             className="text-xs text-red-500 hover:text-red-600"
                         >
                             Clear
@@ -95,8 +112,8 @@ export function TripFilters() {
                     </label>
                     <input
                         type="text"
-                        value={filters.q || ''}
-                        onChange={(e) => setFilters({ q: e.target.value })}
+                        value={searchValue}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') handleApply();
                         }}

@@ -77,6 +77,10 @@ export class NotificationService {
 
   /**
    * Create a notification inside an existing Prisma transaction.
+   * 
+   * IMPORTANT: Does NOT broadcast via WebSocket or push during the transaction
+   * to prevent phantom notifications if the transaction rolls back.
+   * Call `broadcastAfterCommit()` after the transaction commits.
    */
   async createInTransaction(
     tx: Prisma.TransactionClient,
@@ -92,13 +96,19 @@ export class NotificationService {
       },
     });
 
-    // Broadcast in real-time
-    this.gateway.sendNotificationToUser(data.userId, notification);
+    // Return notification — caller must call broadcastAfterCommit() after tx commits
+    return notification;
+  }
 
+  /**
+   * Broadcast a notification via WebSocket + Push AFTER the transaction has committed.
+   * Call this in the .then() or after await of $transaction.
+   */
+  broadcastAfterCommit(data: CreateNotificationDto, notification: any) {
+    // Broadcast in real-time via WebSocket
+    this.gateway.sendNotificationToUser(data.userId, notification);
     // Send Web Push notification (non-blocking)
     this.sendPush(data).catch(() => {});
-
-    return notification;
   }
 
   /**

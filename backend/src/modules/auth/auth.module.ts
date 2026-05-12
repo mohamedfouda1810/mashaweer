@@ -14,12 +14,20 @@ import { PrismaModule } from '../../prisma/prisma.module';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          'super-secret-jwt-key-for-mashaweer-dev-only',
-        signOptions: { expiresIn: '7d' }, // 7 days expiration
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        if (!jwtSecret) {
+          throw new Error(
+            'FATAL: JWT_SECRET environment variable is not set. ' +
+            'Refusing to start with an insecure default. ' +
+            'Set JWT_SECRET in your .env file.',
+          );
+        }
+        return {
+          secret: jwtSecret,
+          signOptions: { expiresIn: '7d' }, // 7 days expiration
+        };
+      },
       inject: [ConfigService],
     }),
   ],

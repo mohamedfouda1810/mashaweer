@@ -11,7 +11,12 @@ interface BookingState {
 
   // Actions
   fetchBookings: () => Promise<void>;
-  bookSeat: (tripId: string, seats?: number, paymentMethod?: 'WALLET' | 'CASH') => Promise<boolean>;
+  bookSeat: (
+    tripId: string,
+    seats?: number,
+    paymentMethod?: 'WALLET' | 'CASH',
+    tripMeta?: { fromCity?: string; toCity?: string; pricePerSeat?: number },
+  ) => Promise<boolean>;
   cancelBooking: (bookingId: string) => Promise<{ refundAmount: number } | null>;
 }
 
@@ -31,13 +36,24 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  bookSeat: async (tripId: string, seats = 1, paymentMethod: 'WALLET' | 'CASH' = 'CASH') => {
+  bookSeat: async (
+    tripId: string,
+    seats = 1,
+    paymentMethod: 'WALLET' | 'CASH' = 'CASH',
+    tripMeta?: { fromCity?: string; toCity?: string; pricePerSeat?: number },
+  ) => {
     set({ isBooking: true, error: null });
     try {
       await api.bookSeat(tripId, seats, paymentMethod);
       set({ isBooking: false });
-      // Fire GA4 analytics event
-      trackTripBooked(tripId, '', '', seats, 0);
+      // Fire GA4 analytics event with real trip data
+      trackTripBooked(
+        tripId,
+        tripMeta?.fromCity || '',
+        tripMeta?.toCity || '',
+        seats,
+        tripMeta?.pricePerSeat || 0,
+      );
       // Auto-refresh bookings list
       get().fetchBookings();
       return true;

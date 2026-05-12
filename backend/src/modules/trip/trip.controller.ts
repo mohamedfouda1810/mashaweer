@@ -21,6 +21,12 @@ import { Public } from '../../common/decorators/public.decorator';
 export class TripController {
   constructor(private readonly tripService: TripService) {}
 
+  // ═══════════════════════════════════════════════════════════════════
+  // STATIC / NAMED ROUTES — must come BEFORE parameterized routes
+  // to prevent NestJS from matching 'driver' or 'calculate-pricing'
+  // as the ':id' parameter.
+  // ═══════════════════════════════════════════════════════════════════
+
   @Post()
   @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)
@@ -42,13 +48,6 @@ export class TripController {
       result.meta.limit,
       result.meta.total,
     );
-  }
-
-  @Public()
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const trip = await this.tripService.findOne(id);
-    return ApiResponseDto.success(trip);
   }
 
   /**
@@ -77,6 +76,29 @@ export class TripController {
     }
     const pricing = this.tripService.calculatePricing(distanceKm, seats);
     return ApiResponseDto.success(pricing);
+  }
+
+  /**
+   * GET /api/trips/driver/my-trips
+   * Must be ABOVE :id to prevent 'driver' being matched as a trip ID.
+   */
+  @Get('driver/my-trips')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async myTrips(@CurrentUser('id') driverId: string) {
+    const trips = await this.tripService.findByDriver(driverId);
+    return ApiResponseDto.success(trips);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PARAMETERIZED ROUTES — :id catch-all comes AFTER named routes
+  // ═══════════════════════════════════════════════════════════════════
+
+  @Public()
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const trip = await this.tripService.findOne(id);
+    return ApiResponseDto.success(trip);
   }
 
   @Delete(':id')
@@ -109,14 +131,6 @@ export class TripController {
   ) {
     const trip = await this.tripService.updateTrip(id, userId, body);
     return ApiResponseDto.success(trip, 'Trip updated successfully');
-  }
-
-  @Get('driver/my-trips')
-  @Roles('DRIVER')
-  @UseGuards(RolesGuard)
-  async myTrips(@CurrentUser('id') driverId: string) {
-    const trips = await this.tripService.findByDriver(driverId);
-    return ApiResponseDto.success(trips);
   }
 
   @Patch(':id/ready')

@@ -111,6 +111,7 @@ model Trip {
   @@index([status])
   @@index([fromCity, toCity])
   @@index([driverId])
+  @@index([departureTime, status])
   @@map("trips")
 }
 
@@ -130,6 +131,7 @@ model Booking {
   @@unique([userId, tripId])
   @@index([status])
   @@index([tripId])
+  @@index([tripId, status])
   @@map("bookings")
 }
 
@@ -191,6 +193,7 @@ model DepositRequest {
 
   @@index([status])
   @@index([userId])
+  @@index([userId, status])
   @@map("deposit_requests")
 }
 

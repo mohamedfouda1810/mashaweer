@@ -390,12 +390,23 @@ export class AdminService {
   }
 
   /**
-   * Get financial report
+   * Get financial report.
+   * Defaults to last 30 days to avoid loading all trips into memory.
    */
-  async getFinancialReport() {
-    // Get all completed trips with their bookings
+  async getFinancialReport(fromDate?: string, toDate?: string) {
+    // Default to last 30 days if no date range provided
+    const dateFrom = fromDate ? new Date(fromDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const dateTo = toDate ? new Date(toDate) : new Date();
+
+    // Get completed trips within the date range
     const completedTrips = await this.prisma.trip.findMany({
-      where: { status: 'COMPLETED' },
+      where: {
+        status: 'COMPLETED',
+        departureTime: {
+          gte: dateFrom,
+          lte: dateTo,
+        },
+      },
       include: {
         bookings: {
           where: { status: 'COMPLETED' },
@@ -405,6 +416,8 @@ export class AdminService {
           select: { id: true, firstName: true, lastName: true },
         },
       },
+      orderBy: { departureTime: 'desc' },
+      take: 500, // Safety limit — prevent loading thousands of trips
     });
 
     // Read commission rate from platform settings
@@ -477,6 +490,7 @@ export class AdminService {
         totalCompletedTrips: completedTrips.length,
         totalDeposits: Number(totalDeposits._sum.amount || 0),
         totalRefunds: Number(totalRefunds._sum.amount || 0),
+        dateRange: { from: dateFrom.toISOString(), to: dateTo.toISOString() },
       },
       driverBreakdown: Object.entries(driverEarnings).map(([id, data]) => ({
         driverId: id,
