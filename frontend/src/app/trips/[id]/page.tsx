@@ -7,11 +7,10 @@ import { useTripStore } from '@/stores/useTripStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSocket } from '@/providers/SocketProvider';
-// DriverReadyButton removed — drivers now use Start Trip directly
 import { BookingRulesModal } from '@/components/trips/BookingRulesModal';
 import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
-import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
+import { trackTripCompleted } from '@/lib/analytics';
 import { Rating, Booking } from '@/types';
 import { ClipboardList } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
@@ -55,10 +54,8 @@ export default function TripDetailPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [bookingResult, setBookingResult] = useState<{ bookingId: string; tripId: string; boardingToken: string } | null>(null);
 
-    // Driver ratings (all-time from all trips)
     const [driverRatings, setDriverRatings] = useState<{ averageScore: number; totalRatings: number; recentReviews: any[] } | null>(null);
 
-    // Rating form
     const [showRating, setShowRating] = useState(false);
     const [ratingScore, setRatingScore] = useState(5);
     const [ratingReview, setRatingReview] = useState('');
@@ -67,7 +64,6 @@ export default function TripDetailPage() {
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [showBookingModal, setShowBookingModal] = useState(false);
 
-    // Live driver location tracking
     const isDriver = user?.id === trip?.driverId;
     const driverLocation = useDriverLocation({
         tripId,
@@ -82,7 +78,6 @@ export default function TripDetailPage() {
         }
     }, [tripId, fetchTrip]);
 
-    // Fetch all-time driver ratings when trip loads
     useEffect(() => {
         if (trip?.driverId) {
             api.getDriverRatings(trip.driverId)
@@ -91,7 +86,6 @@ export default function TripDetailPage() {
         }
     }, [trip?.driverId]);
 
-    // Load bookings for all authenticated users
     const fetchBookings = useCallback(() => {
         if (trip && user) {
             api.getTripBookings(tripId).then((res) => setBookings((res.data as Booking[]) || [])).catch(() => { });
@@ -104,39 +98,23 @@ export default function TripDetailPage() {
 
     useEffect(() => {
         if (!socket || !tripId) return;
-
         const handleTripUpdate = (data: any) => {
             if (data.tripId === tripId) {
                 updateTrip(data);
-                // Refresh bookings if needed
                 fetchBookings();
             }
         };
-
         socket.on('tripUpdate', handleTripUpdate);
-
-        return () => {
-            socket.off('tripUpdate', handleTripUpdate);
-        };
+        return () => { socket.off('tripUpdate', handleTripUpdate); };
     }, [socket, tripId, updateTrip]);
 
-    // Auto-show ReviewModal for passengers on completed trips
-    // Must be before early returns to maintain consistent hook order
     useEffect(() => {
         const isCompleted = trip?.status === 'COMPLETED';
-        const isDriver = user?.id === trip?.driverId;
-        const userAlreadyBooked = bookings.some(
-            (b) => b.userId === user?.id && b.status !== 'CANCELLED'
-        );
+        const isDriverUser = user?.id === trip?.driverId;
+        const userAlreadyBooked = bookings.some((b) => b.userId === user?.id && b.status !== 'CANCELLED');
         const userHasRated = ratings.some((r) => r.raterId === user?.id);
 
-        if (
-            isCompleted &&
-            isAuthenticated &&
-            !isDriver &&
-            userAlreadyBooked &&
-            !userHasRated
-        ) {
+        if (isCompleted && isAuthenticated && !isDriverUser && userAlreadyBooked && !userHasRated) {
             const timer = setTimeout(() => setShowReviewModal(true), 800);
             return () => clearTimeout(timer);
         }
@@ -156,7 +134,6 @@ export default function TripDetailPage() {
             const res = await api.bookSeat(tripId, seats, paymentMethod);
             const rawBooking = res.data as any;
             setBookingSuccess(true);
-            // Trigger QR step in the modal if boardingToken is available
             if (rawBooking?.boardingToken) {
                 setBookingResult({
                     bookingId: rawBooking.id,
@@ -189,11 +166,9 @@ export default function TripDetailPage() {
                 review: ratingReview || undefined,
             });
             setShowRating(false);
-            // Refresh ratings
             const res = await api.getTripRatings(tripId);
             setRatings((res.data as Rating[]) || []);
         } catch {
-            // ignore
         } finally {
             setSubmittingRating(false);
         }
@@ -224,9 +199,7 @@ export default function TripDetailPage() {
     const departure = new Date(trip.departureTime);
     const isFull = trip.availableSeats <= 0;
     const isCompleted = trip.status === 'COMPLETED';
-    const userAlreadyBooked = bookings.some(
-        (b) => b.userId === user?.id && b.status !== 'CANCELLED'
-    );
+    const userAlreadyBooked = bookings.some((b) => b.userId === user?.id && b.status !== 'CANCELLED');
     const userHasRated = ratings.some((r) => r.raterId === user?.id);
 
     return (
@@ -268,12 +241,13 @@ export default function TripDetailPage() {
                             <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
                                 {trip.fromCity} → {trip.toCity}
                             </h1>
-                            <span className={`self-start rounded-full px-3 py-1 text-xs font-semibold ${trip.status === 'SCHEDULED' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
+                            <span className={`self-start rounded-full px-3 py-1 text-xs font-semibold ${
+                                trip.status === 'SCHEDULED' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
                                 trip.status === 'DRIVER_CONFIRMED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                    trip.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                        trip.status === 'COMPLETED' ? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' :
-                                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                }`}>
+                                trip.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                trip.status === 'COMPLETED' ? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' :
+                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
                                 {trip.status.replace('_', ' ')}
                             </span>
                         </div>
@@ -288,11 +262,21 @@ export default function TripDetailPage() {
                             <div className="flex-1 space-y-4">
                                 <div>
                                     <p className="font-medium text-zinc-900 dark:text-zinc-100">{trip.fromCity}</p>
-                                    {trip.gatheringLocation && <p className="text-sm text-zinc-500"><Navigation className="mr-1 inline h-3 w-3" />Group Point: {trip.gatheringLocation}</p>}
+                                    {trip.gatheringLocation && (
+                                        <p className="text-sm text-zinc-500">
+                                            <Navigation className="mr-1 inline h-3 w-3" />
+                                            Group Point: {trip.gatheringLocation}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="font-medium text-zinc-900 dark:text-zinc-100">{trip.toCity}</p>
-                                    {trip.toAddress && <p className="text-sm text-zinc-500"><Flag className="mr-1 inline h-3 w-3" />Destination Point: {trip.toAddress}</p>}
+                                    {trip.toAddress && (
+                                        <p className="text-sm text-zinc-500">
+                                            <Flag className="mr-1 inline h-3 w-3" />
+                                            Destination Point: {trip.toAddress}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -344,46 +328,25 @@ export default function TripDetailPage() {
                         )}
                     </div>
 
-
-
-                    {/* Driver Trip Lifecycle Controls */}
+                    {/* Driver Trip Controls */}
                     {isDriver && (trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED' || trip.status === 'IN_PROGRESS') && (
                         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                                 Trip Controls
                             </h2>
                             <div className="flex flex-wrap gap-3">
-                                {/* Register Passengers button — SCHEDULED or DRIVER_CONFIRMED */}
+                                {/* Register Passengers — goes to board page where Start Trip also lives */}
                                 {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
                                     <button
                                         onClick={() => router.push(`/trips/${tripId}/board`)}
                                         className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-green-700 hover:to-emerald-700 hover:shadow-md"
                                     >
                                         <ClipboardList className="h-4 w-4" />
-                                        تسجيل الركاب
+                                        تسجيل الركاب وبدء الرحلة
                                     </button>
                                 )}
-                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
-                                    <button
-                                        onClick={async () => {
-                                            setTripActionLoading(true);
-                                            try {
-                                                await api.startTrip(trip.id);
-                                                toast.success('Trip started! 🚀');
-                                                fetchTrip(tripId);
-                                            } catch (err: any) {
-                                                toast.error(err.message || 'Failed to start trip');
-                                            } finally {
-                                                setTripActionLoading(false);
-                                            }
-                                        }}
-                                        disabled={tripActionLoading}
-                                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-indigo-700 hover:to-teal-700 hover:shadow-md disabled:opacity-50"
-                                    >
-                                        {tripActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                                        Start Trip
-                                    </button>
-                                )}
+
+                                {/* Complete Trip — only shown when IN_PROGRESS */}
                                 {trip.status === 'IN_PROGRESS' && (
                                     <button
                                         onClick={async () => {
@@ -409,7 +372,7 @@ export default function TripDetailPage() {
                                 )}
                             </div>
                             <p className="mt-3 text-xs text-zinc-500">
-                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && 'Start the trip when you begin driving. Passengers will be notified.'}
+                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && 'سجّل الركاب وابدأ الرحلة من شاشة التسجيل.'}
                                 {trip.status === 'IN_PROGRESS' && 'Mark as complete when you arrive at the destination. All bookings will be finalized.'}
                             </p>
                         </div>
@@ -444,15 +407,16 @@ export default function TripDetailPage() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
-                                            <span className={`text-xs font-medium ${b.status === 'CONFIRMED' ? 'text-emerald-600' :
+                                            <span className={`text-xs font-medium ${
+                                                b.status === 'CONFIRMED' ? 'text-emerald-600' :
                                                 b.status === 'PENDING' ? 'text-amber-600' :
-                                                    'text-zinc-500'
-                                                }`}>
+                                                'text-zinc-500'
+                                            }`}>
                                                 {b.status}
                                             </span>
-                                                <span className={`text-xs font-semibold ${b.paymentMethod === 'WALLET' ? 'text-teal-500' : 'text-zinc-400'}`}>
-                                                    {b.paymentMethod === 'WALLET' ? '💳 Wallet' : '💵 Cash'}
-                                                </span>
+                                            <span className={`text-xs font-semibold ${b.paymentMethod === 'WALLET' ? 'text-teal-500' : 'text-zinc-400'}`}>
+                                                {b.paymentMethod === 'WALLET' ? '💳 Wallet' : '💵 Cash'}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
@@ -460,12 +424,10 @@ export default function TripDetailPage() {
                         </div>
                     )}
 
-                    {/* Ratings Section — This Trip */}
+                    {/* Ratings Section */}
                     <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Trip Ratings
-                            </h2>
+                            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Trip Ratings</h2>
                             {isCompleted && isAuthenticated && !isDriver && (
                                 <button
                                     onClick={() => setShowRating(!showRating)}
@@ -477,16 +439,11 @@ export default function TripDetailPage() {
                             )}
                         </div>
 
-                        {/* Rating Form */}
                         {showRating && (
                             <div className="mb-4 space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
                                 <div className="flex items-center gap-2">
                                     {[1, 2, 3, 4, 5].map((s) => (
-                                        <button
-                                            key={s}
-                                            onClick={() => setRatingScore(s)}
-                                            className="transition-transform hover:scale-110"
-                                        >
+                                        <button key={s} onClick={() => setRatingScore(s)} className="transition-transform hover:scale-110">
                                             <Star className={`h-6 w-6 ${s <= ratingScore ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-600'}`} />
                                         </button>
                                     ))}
@@ -520,13 +477,9 @@ export default function TripDetailPage() {
                                                     <Star key={s} className={`h-3.5 w-3.5 ${s <= r.score ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'}`} />
                                                 ))}
                                             </div>
-                                            <span className="text-xs text-zinc-500">
-                                                {new Date(r.createdAt).toLocaleDateString()}
-                                            </span>
+                                            <span className="text-xs text-zinc-500">{new Date(r.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                        {r.review && (
-                                            <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{r.review}</p>
-                                        )}
+                                        {r.review && <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">{r.review}</p>}
                                     </div>
                                 ))}
                             </div>
@@ -538,22 +491,15 @@ export default function TripDetailPage() {
                         <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <div className="mb-4">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                        Driver Reviews
-                                    </h2>
+                                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Driver Reviews</h2>
                                     <div className="flex items-center gap-1.5">
                                         <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                        <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                                            {driverRatings.averageScore?.toFixed(1)}
-                                        </span>
-                                        <span className="text-xs text-zinc-500">
-                                            ({driverRatings.totalRatings} review{driverRatings.totalRatings !== 1 ? 's' : ''})
-                                        </span>
+                                        <span className="text-sm font-bold text-zinc-900 dark:text-white">{driverRatings.averageScore?.toFixed(1)}</span>
+                                        <span className="text-xs text-zinc-500">({driverRatings.totalRatings} review{driverRatings.totalRatings !== 1 ? 's' : ''})</span>
                                     </div>
                                 </div>
                                 <p className="mt-1 text-xs text-zinc-500">All reviews from previous passengers</p>
                             </div>
-
                             <div className="space-y-3">
                                 {(driverRatings.recentReviews || []).map((r: any, i: number) => (
                                     <div key={r.id || i} className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
@@ -562,22 +508,16 @@ export default function TripDetailPage() {
                                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-[10px] font-bold text-white">
                                                     {r.rater?.firstName?.[0] || '?'}
                                                 </div>
-                                                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                                    {r.rater?.firstName || 'Anonymous'}
-                                                </span>
+                                                <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{r.rater?.firstName || 'Anonymous'}</span>
                                                 <div className="flex">
                                                     {[1, 2, 3, 4, 5].map((s) => (
                                                         <Star key={s} className={`h-3 w-3 ${s <= r.score ? 'fill-amber-400 text-amber-400' : 'text-zinc-300'}`} />
                                                     ))}
                                                 </div>
                                             </div>
-                                            <span className="text-[10px] text-zinc-400">
-                                                {new Date(r.createdAt).toLocaleDateString()}
-                                            </span>
+                                            <span className="text-[10px] text-zinc-400">{new Date(r.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                        {r.review && (
-                                            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">{r.review}</p>
-                                        )}
+                                        {r.review && <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">{r.review}</p>}
                                     </div>
                                 ))}
                             </div>
@@ -624,94 +564,83 @@ export default function TripDetailPage() {
                         </div>
                     </div>
 
-                    {/* Price & Booking (hide for drivers/admins) */}
+                    {/* Price & Booking */}
                     {!isDriver && user?.role !== 'ADMIN' && (
-                      bookingSuccess || userAlreadyBooked ? (
-                        /* ── Already Booked — hide entire booking section ── */
-                        <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-b from-emerald-50 to-white p-6 shadow-sm dark:border-emerald-800 dark:from-emerald-950/30 dark:to-zinc-900">
-                            <div className="text-center">
-                                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
-                                <p className="mt-3 text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                                    {bookingSuccess ? 'Booked Successfully! 🎉' : "You're Booked ✓"}
-                                </p>
-                                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                                    Your seat is confirmed for this trip
-                                </p>
-                                <button
-                                    onClick={() => router.push('/bookings')}
-                                    className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
-                                >
-                                    View My Bookings
-                                </button>
-                            </div>
-                        </div>
-                      ) : trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' ? (
-                        /* ── Not Booked — show price & booking form ── */
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                            <div className="mb-4 text-center">
-                                <p className="text-sm text-zinc-500">Price per seat</p>
-                                <p className="text-4xl font-bold text-zinc-900 dark:text-white">
-                                    {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
-                                    <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
-                                </p>
-                                <p className="mt-1 text-xs text-zinc-400">Total trip price: {Number(trip.price).toFixed(0)} EGP</p>
-                            </div>
-                            {/* Total Price Breakdown */}
-                            <div className="mb-4 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-zinc-500">
-                                        {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)} EGP × {seats} seat{seats > 1 ? 's' : ''}
-                                    </span>
-                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                        {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
-                                    </span>
-                                </div>
-                                <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
-                                    <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Total</span>
-                                    <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
-                                        {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
-                                    </span>
+                        bookingSuccess || userAlreadyBooked ? (
+                            <div className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-b from-emerald-50 to-white p-6 shadow-sm dark:border-emerald-800 dark:from-emerald-950/30 dark:to-zinc-900">
+                                <div className="text-center">
+                                    <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+                                    <p className="mt-3 text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                                        {bookingSuccess ? 'Booked Successfully! 🎉' : "You're Booked ✓"}
+                                    </p>
+                                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Your seat is confirmed for this trip</p>
+                                    <button
+                                        onClick={() => router.push('/bookings')}
+                                        className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
+                                    >
+                                        View My Bookings
+                                    </button>
                                 </div>
                             </div>
-
-                            <div className="space-y-3">
-                                {!isFull && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                            Seats
-                                        </label>
-                                        <select
-                                            value={seats}
-                                            onChange={(e) => setSeats(Number(e.target.value))}
-                                            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                                        >
-                                            {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => {
-                                                const perSeat = trip.pricePerSeat ? Number(trip.pricePerSeat) : Math.round(Number(trip.price) / trip.totalSeats);
-                                                return (
-                                                    <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(perSeat * n)} EGP</option>
-                                                );
-                                            })}
-                                        </select>
+                        ) : trip.status !== 'COMPLETED' && trip.status !== 'CANCELLED' ? (
+                            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                <div className="mb-4 text-center">
+                                    <p className="text-sm text-zinc-500">Price per seat</p>
+                                    <p className="text-4xl font-bold text-zinc-900 dark:text-white">
+                                        {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
+                                        <span className="ml-1 text-lg font-normal text-zinc-500">EGP</span>
+                                    </p>
+                                    <p className="mt-1 text-xs text-zinc-400">Total trip price: {Number(trip.price).toFixed(0)} EGP</p>
+                                </div>
+                                <div className="mb-4 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-zinc-500">
+                                            {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)} EGP × {seats} seat{seats > 1 ? 's' : ''}
+                                        </span>
+                                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                            {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
+                                        </span>
                                     </div>
-                                )}
-
-                                {bookingError && (
-                                    <p className="text-sm text-red-600">{bookingError}</p>
-                                )}
-
-                                <button
-                                    onClick={handleBook}
-                                    disabled={isBooking}
-                                    className={`w-full rounded-lg py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] ${isFull
-                                        ? 'bg-navy-light hover:bg-navy'
-                                        : 'bg-gradient-to-r from-navy to-mint hover:from-navy-light hover:to-mint-light shadow-sm hover:shadow-md'
+                                    <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
+                                        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Total</span>
+                                        <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                                            {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * seats)} EGP
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {!isFull && (
+                                        <div>
+                                            <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Seats</label>
+                                            <select
+                                                value={seats}
+                                                onChange={(e) => setSeats(Number(e.target.value))}
+                                                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                            >
+                                                {Array.from({ length: Math.min(trip.availableSeats, 4) }, (_, i) => i + 1).map((n) => {
+                                                    const perSeat = trip.pricePerSeat ? Number(trip.pricePerSeat) : Math.round(Number(trip.price) / trip.totalSeats);
+                                                    return (
+                                                        <option key={n} value={n}>{n} seat{n > 1 ? 's' : ''} — {Math.round(perSeat * n)} EGP</option>
+                                                    );
+                                                })}
+                                            </select>
+                                        </div>
+                                    )}
+                                    {bookingError && <p className="text-sm text-red-600">{bookingError}</p>}
+                                    <button
+                                        onClick={handleBook}
+                                        disabled={isBooking}
+                                        className={`w-full rounded-lg py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] ${
+                                            isFull
+                                                ? 'bg-navy-light hover:bg-navy'
+                                                : 'bg-gradient-to-r from-navy to-mint hover:from-navy-light hover:to-mint-light shadow-sm hover:shadow-md'
                                         } disabled:opacity-50`}
-                                >
-                                    {isBooking ? 'Processing...' : isFull ? 'Join Waitlist' : `Book ${seats} Seat${seats > 1 ? 's' : ''}`}
-                                </button>
+                                    >
+                                        {isBooking ? 'Processing...' : isFull ? 'Join Waitlist' : `Book ${seats} Seat${seats > 1 ? 's' : ''}`}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                      ) : null
+                        ) : null
                     )}
 
                     {/* Waitlist info */}
@@ -724,7 +653,7 @@ export default function TripDetailPage() {
                 </div>
             </div>
 
-            {/* Auto-triggered Review Modal for passengers */}
+            {/* Review Modal */}
             {trip && (
                 <ReviewModal
                     isOpen={showReviewModal}
@@ -740,7 +669,7 @@ export default function TripDetailPage() {
                 />
             )}
 
-            {/* Booking Rules Modal — also handles QR step after booking */}
+            {/* Booking Rules Modal */}
             {trip && (
                 <BookingRulesModal
                     isOpen={showBookingModal || (bookingResult !== null)}

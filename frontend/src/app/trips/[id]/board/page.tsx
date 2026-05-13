@@ -79,11 +79,9 @@ function CameraScannerModal({
                     { fps: 10, qrbox: { width: 250, height: 250 } },
                     async (decodedText) => {
                         if (!mounted) return;
-                        // Only process once
                         setScanState({ status: 'processing', token: decodedText });
                         await stopScanner();
 
-                        // Parse the QR payload
                         let boardingToken: string | null = null;
                         try {
                             const payload = JSON.parse(decodedText);
@@ -97,7 +95,6 @@ function CameraScannerModal({
                             return;
                         }
 
-                        // Call boarding API
                         try {
                             const res = await api.boardPassenger(tripId, boardingToken);
                             if (!mounted) return;
@@ -112,7 +109,6 @@ function CameraScannerModal({
                             });
                         } catch (err: any) {
                             if (!mounted) return;
-                            // Map known Arabic error messages from backend
                             const msg: string = err.message || 'حدث خطأ';
                             setScanState({ status: 'error', message: msg });
                         }
@@ -136,11 +132,9 @@ function CameraScannerModal({
 
     const handleScanAnother = async () => {
         setScanState({ status: 'scanning' });
-        // Re-start scanner
         const { Html5Qrcode } = await import('html5-qrcode');
         const scanner = new Html5Qrcode('qr-reader');
         html5QrRef.current = scanner;
-        // The useEffect won't re-run so we start inline
         try {
             await scanner.start(
                 { facingMode: 'environment' },
@@ -202,10 +196,8 @@ function CameraScannerModal({
 
             {/* Scanner viewport */}
             <div className="flex-1 relative flex flex-col items-center justify-center">
-                {/* Html5Qrcode mounts into this div */}
                 <div id="qr-reader" ref={scannerRef} className="w-full max-w-sm" />
 
-                {/* Overlay for non-scanning states */}
                 {scanState.status !== 'scanning' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 px-6">
                         {scanState.status === 'processing' && (
@@ -218,12 +210,8 @@ function CameraScannerModal({
                         {scanState.status === 'success' && (
                             <div className="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 text-center">
                                 <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-400" />
-                                <p className="mt-4 text-xl font-bold text-white">
-                                    {scanState.name}
-                                </p>
-                                <p className="mt-1 text-sm text-zinc-400">
-                                    {scanState.seats} مقعد — تم التسجيل ✅
-                                </p>
+                                <p className="mt-4 text-xl font-bold text-white">{scanState.name}</p>
+                                <p className="mt-1 text-sm text-zinc-400">{scanState.seats} مقعد — تم التسجيل ✅</p>
                                 <div className="mt-6 flex flex-col gap-3">
                                     <button
                                         onClick={handleScanAnother}
@@ -274,7 +262,7 @@ function CameraScannerModal({
     );
 }
 
-// ─── Main Board Page ─────────────────────────────────────────────────────────
+// ─── Main Board Page ──────────────────────────────────────────────────────────
 
 export default function BoardPage() {
     const params = useParams();
@@ -288,7 +276,6 @@ export default function BoardPage() {
     const [showScanner, setShowScanner] = useState(false);
     const [startingTrip, setStartingTrip] = useState(false);
 
-    // Access control: redirect if not driver of this trip
     useEffect(() => {
         if (!tripId) return;
         fetchTrip(tripId);
@@ -301,7 +288,6 @@ export default function BoardPage() {
         }
     }, [trip, isAuthenticated, user, tripId, router]);
 
-    // Load already-boarded passengers
     const refreshPassengers = useCallback(async () => {
         setLoadingPassengers(true);
         try {
@@ -320,7 +306,6 @@ export default function BoardPage() {
 
     const handlePassengerBoarded = useCallback((passenger: BoardedPassenger) => {
         setBoardedPassengers((prev) => {
-            // Avoid duplicates (in case of re-scan)
             if (prev.some((p) => p.bookingId === passenger.bookingId)) return prev;
             return [...prev, passenger];
         });
@@ -361,9 +346,7 @@ export default function BoardPage() {
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-lg font-bold text-zinc-900 dark:text-white">
-                            تسجيل الركاب
-                        </h1>
+                        <h1 className="text-lg font-bold text-zinc-900 dark:text-white">تسجيل الركاب</h1>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                             {trip.fromCity} ← {trip.toCity}
                         </p>
@@ -377,9 +360,8 @@ export default function BoardPage() {
                 </div>
             </div>
 
-            {/* Body */}
-            <div className="mx-auto max-w-lg space-y-4 px-4 py-6 pb-40">
-                {/* Boarded passengers list */}
+            {/* Body — pb-56 leaves room for the fixed bottom bar + mobile navbar */}
+            <div className="mx-auto max-w-lg space-y-4 px-4 py-6 pb-56">
                 {loadingPassengers ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
@@ -427,18 +409,19 @@ export default function BoardPage() {
                 )}
             </div>
 
-            {/* Fixed Bottom Actions */}
-            <div className="fixed bottom-0 inset-x-0 border-t border-zinc-200 bg-white px-4 py-4 space-y-3 dark:border-zinc-800 dark:bg-zinc-900">
+            {/* Fixed Bottom Actions
+                bottom-16 = clears the mobile bottom navbar (64px)
+                so buttons are always visible above the nav bar     */}
+            <div className="fixed bottom-16 inset-x-0 border-t border-zinc-200 bg-white px-4 pt-3 pb-4 space-y-3 dark:border-zinc-800 dark:bg-zinc-900">
                 <button
-                    id="btn-add-passenger"
                     onClick={() => setShowScanner(true)}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-emerald-500 hover:shadow-md active:scale-[0.98]"
                 >
                     <Camera className="h-5 w-5" />
                     إضافة راكب
                 </button>
+
                 <button
-                    id="btn-start-trip"
                     onClick={handleStartTrip}
                     disabled={boardedPassengers.length === 0 || startingTrip || trip.status === 'IN_PROGRESS'}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:from-indigo-500 hover:to-blue-500 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
@@ -450,6 +433,7 @@ export default function BoardPage() {
                     )}
                     {trip.status === 'IN_PROGRESS' ? 'الرحلة جارية بالفعل ✅' : 'بدء الرحلة'}
                 </button>
+
                 {boardedPassengers.length === 0 && (
                     <p className="text-center text-xs text-zinc-400 dark:text-zinc-600">
                         سجّل راكباً واحداً على الأقل لبدء الرحلة
