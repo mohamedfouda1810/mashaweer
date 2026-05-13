@@ -433,6 +433,36 @@ class ApiClient {
     });
   }
 
+  async boardPassenger(tripId: string, boardingToken: string) {
+    return this.request<{
+      passengerName: string;
+      seatNumber: number;
+      boardedAt: string;
+      message: string;
+    }>(`/trips/${tripId}/board-passenger`, {
+      method: 'POST',
+      body: JSON.stringify({ boardingToken }),
+    });
+  }
+
+  async getBoardedPassengers(tripId: string) {
+    return this.request<
+      Array<{
+        bookingId: string;
+        passengerName: string;
+        maskedPhone: string;
+        seats: number;
+        boardedAt: string;
+      }>
+    >(`/trips/${tripId}/boarded-passengers`);
+  }
+
+  async adminCompleteTrip(tripId: string) {
+    return this.request(`/admin/trips/${tripId}/complete`, {
+      method: 'PATCH',
+    });
+  }
+
 
 
   async getFinancials() {

@@ -101,6 +101,29 @@ export class TripController {
     return ApiResponseDto.success(trip);
   }
 
+  @Post(':id/board-passenger')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async boardPassenger(
+    @Param('id') tripId: string,
+    @CurrentUser('id') driverId: string,
+    @Body('boardingToken') boardingToken: string,
+  ) {
+    const result = await this.tripService.boardPassenger(tripId, driverId, boardingToken);
+    return ApiResponseDto.success(result, result.message);
+  }
+
+  @Get(':id/boarded-passengers')
+  @Roles('DRIVER')
+  @UseGuards(RolesGuard)
+  async getBoardedPassengers(
+    @Param('id') tripId: string,
+    @CurrentUser('id') driverId: string,
+  ) {
+    const list = await this.tripService.getBoardedPassengers(tripId, driverId);
+    return ApiResponseDto.success(list);
+  }
+
   @Delete(':id')
   @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)

@@ -13,6 +13,7 @@ import { ReviewModal } from '@/components/ReviewModal';
 import { api, getImageUrl } from '@/lib/api';
 import { trackTripCompleted, trackDriverRated } from '@/lib/analytics';
 import { Rating, Booking } from '@/types';
+import { ClipboardList } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import toast from 'react-hot-toast';
 
@@ -52,6 +53,7 @@ export default function TripDetailPage() {
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [ratings, setRatings] = useState<Rating[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [bookingResult, setBookingResult] = useState<{ bookingId: string; tripId: string; boardingToken: string } | null>(null);
 
     // Driver ratings (all-time from all trips)
     const [driverRatings, setDriverRatings] = useState<{ averageScore: number; totalRatings: number; recentReviews: any[] } | null>(null);
@@ -150,14 +152,20 @@ export default function TripDetailPage() {
 
     const handleConfirmBooking = async (paymentMethod: 'WALLET' | 'CASH') => {
         setBookingError(null);
-        const success = await bookSeat(tripId, seats, paymentMethod, {
-            fromCity: trip?.fromCity,
-            toCity: trip?.toCity,
-            pricePerSeat: trip?.pricePerSeat ? Number(trip.pricePerSeat) : undefined,
-        });
-        if (success) {
+        try {
+            const res = await api.bookSeat(tripId, seats, paymentMethod);
+            const rawBooking = res.data as any;
             setBookingSuccess(true);
-            setShowBookingModal(false);
+            // Trigger QR step in the modal if boardingToken is available
+            if (rawBooking?.boardingToken) {
+                setBookingResult({
+                    bookingId: rawBooking.id,
+                    tripId: rawBooking.tripId,
+                    boardingToken: rawBooking.boardingToken,
+                });
+            } else {
+                setShowBookingModal(false);
+            }
             fetchTrip(tripId);
             fetchBookings();
             toast.success(
@@ -165,9 +173,8 @@ export default function TripDetailPage() {
                     ? 'تم الحجز بنجاح! تم الخصم من المحفظة ✅'
                     : 'تم تأكيد الحجز! الدفع كاش عند الرحلة ✅'
             );
-        } else {
-            const storeError = useBookingStore.getState().error;
-            setBookingError(storeError || 'Booking failed. Please try again.');
+        } catch (err: any) {
+            setBookingError(err.message || 'Booking failed. Please try again.');
         }
     };
 
@@ -346,6 +353,16 @@ export default function TripDetailPage() {
                                 Trip Controls
                             </h2>
                             <div className="flex flex-wrap gap-3">
+                                {/* Register Passengers button — SCHEDULED or DRIVER_CONFIRMED */}
+                                {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
+                                    <button
+                                        onClick={() => router.push(`/trips/${tripId}/board`)}
+                                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-green-700 hover:to-emerald-700 hover:shadow-md"
+                                    >
+                                        <ClipboardList className="h-4 w-4" />
+                                        تسجيل الركاب
+                                    </button>
+                                )}
                                 {(trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && (
                                     <button
                                         onClick={async () => {
@@ -723,17 +740,18 @@ export default function TripDetailPage() {
                 />
             )}
 
-            {/* Booking Rules Modal */}
+            {/* Booking Rules Modal — also handles QR step after booking */}
             {trip && (
                 <BookingRulesModal
-                    isOpen={showBookingModal}
-                    onClose={() => setShowBookingModal(false)}
+                    isOpen={showBookingModal || (bookingResult !== null)}
+                    onClose={() => { setShowBookingModal(false); setBookingResult(null); }}
                     onConfirm={handleConfirmBooking}
                     tripFromCity={trip.fromCity}
                     tripToCity={trip.toCity}
                     pricePerSeat={trip.pricePerSeat ? Number(trip.pricePerSeat) : Math.round(Number(trip.price) / trip.totalSeats)}
                     seats={seats}
                     isBooking={isBooking}
+                    bookingResult={bookingResult}
                 />
             )}
         </div>

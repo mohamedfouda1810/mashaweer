@@ -733,24 +733,50 @@ export default function AdminPage() {
                                                             </span>
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
-                                                            {(t.status === 'SCHEDULED' || t.status === 'DRIVER_CONFIRMED') && (
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        if (!confirm('Cancel this trip?')) return;
-                                                                        setActionLoading(t.id);
-                                                                        try {
-                                                                            await api.cancelTripAdmin(t.id);
-                                                                            toast.success('Trip cancelled');
-                                                                            loadData();
-                                                                        } catch (err: any) { toast.error(err.message); }
-                                                                        setActionLoading(null);
-                                                                    }}
-                                                                    disabled={actionLoading === t.id}
-                                                                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                            )}
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                {(t.status === 'SCHEDULED' || t.status === 'DRIVER_CONFIRMED') && (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (!confirm('Cancel this trip?')) return;
+                                                                            setActionLoading(t.id);
+                                                                            try {
+                                                                                await api.cancelTripAdmin(t.id);
+                                                                                toast.success('Trip cancelled');
+                                                                                loadData();
+                                                                            } catch (err: any) { toast.error(err.message); }
+                                                                            setActionLoading(null);
+                                                                        }}
+                                                                        disabled={actionLoading === t.id}
+                                                                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                )}
+                                                                {t.status === 'IN_PROGRESS' && (
+                                                                    <button
+                                                                        id={`btn-complete-trip-${t.id}`}
+                                                                        onClick={async () => {
+                                                                            if (!confirm(`إنهاء الرحلة ${t.fromCity} ← ${t.toCity}؟`)) return;
+                                                                            setActionLoading(t.id);
+                                                                            try {
+                                                                                await api.adminCompleteTrip(t.id);
+                                                                                toast.success('تم إنهاء الرحلة ✅');
+                                                                                loadData();
+                                                                            } catch (err: any) { toast.error(err.message); }
+                                                                            setActionLoading(null);
+                                                                        }}
+                                                                        disabled={actionLoading === t.id}
+                                                                        className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                                                                    >
+                                                                        {actionLoading === t.id ? (
+                                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        ) : (
+                                                                            <CheckCircle2 className="h-3 w-3" />
+                                                                        )}
+                                                                        إنهاء
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}

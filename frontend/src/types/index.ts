@@ -116,6 +116,8 @@ export interface Booking {
   paymentMethod?: 'WALLET' | 'CASH';
   amountPaid?: number;
   bookedAt: string;
+  boardingToken?: string;
+  boardedAt?: string | null;
   trip: Trip;
 }
 

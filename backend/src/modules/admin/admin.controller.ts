@@ -280,4 +280,15 @@ export class AdminController {
     const result = await this.tripService.rejectCancellation(id, adminId, reason);
     return ApiResponseDto.success(result, 'Cancellation rejected');
   }
+
+  // ─── Admin: Manual Trip Completion ────────────────────────────────────
+
+  @Patch('trips/:tripId/complete')
+  async adminCompleteTrip(
+    @Param('tripId') tripId: string,
+    @CurrentUser('id') adminId: string,
+  ) {
+    const trip = await this.tripService.adminCompleteTrip(tripId, adminId);
+    return ApiResponseDto.success(trip, 'تم إنهاء الرحلة بنجاح');
+  }
 }

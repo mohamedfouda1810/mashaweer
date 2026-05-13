@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { QRCodeDisplay } from '@/components/passenger/QRCodeDisplay';
 
 import {
     Ticket,
@@ -16,6 +17,8 @@ import {
     CheckCircle2,
     AlertTriangle,
     ChevronRight,
+    QrCode,
+    X,
 } from 'lucide-react';
 
 export default function BookingsPage() {
@@ -24,6 +27,11 @@ export default function BookingsPage() {
     const { bookings, isLoading, error, fetchBookings, cancelBooking } = useBookingStore();
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [refundInfo, setRefundInfo] = useState<{ amount: number } | null>(null);
+    const [qrModal, setQrModal] = useState<{
+        bookingId: string;
+        tripId: string;
+        boardingToken: string;
+    } | null>(null);
 
     useEffect(() => {
         if (isAuthenticated) fetchBookings();
@@ -93,6 +101,9 @@ export default function BookingsPage() {
                             const trip = booking.trip;
                             const departure = new Date(trip.departureTime);
                             const sc = statusConfig[booking.status] || statusConfig.PENDING;
+                            const canShowQR =
+                                (booking.status === 'CONFIRMED' || booking.status === 'PENDING') &&
+                                booking.boardingToken;
 
                             return (
                                 <div
@@ -128,14 +139,29 @@ export default function BookingsPage() {
                                                 </span>
                                             </div>
 
-
-
                                             <div className="mt-4 text-sm">
                                                 <span className="text-zinc-500">{booking.seats} seat(s) • </span>
                                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                                                     {Math.round((trip.pricePerSeat ? Number(trip.pricePerSeat) : Number(trip.price) / trip.totalSeats) * booking.seats)} EGP
                                                 </span>
                                             </div>
+
+                                            {/* QR inline preview for confirmed bookings */}
+                                            {canShowQR && booking.boardingToken && (
+                                                <button
+                                                    onClick={() =>
+                                                        setQrModal({
+                                                            bookingId: booking.id,
+                                                            tripId: booking.tripId,
+                                                            boardingToken: booking.boardingToken!,
+                                                        })
+                                                    }
+                                                    className="mt-3 flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-900/20 dark:text-teal-400"
+                                                >
+                                                    <QrCode className="h-4 w-4" />
+                                                    عرض رمز QR للركوب
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Actions */}
@@ -163,6 +189,48 @@ export default function BookingsPage() {
                     </div>
                 )}
             </div>
+
+            {/* QR Modal */}
+            {qrModal && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    onClick={() => setQrModal(null)}
+                >
+                    <div
+                        className="w-full max-w-sm overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <QrCode className="h-5 w-5 text-teal-600" />
+                                <h2 className="text-lg font-bold text-zinc-900 dark:text-white">رمز QR للركوب</h2>
+                            </div>
+                            <button
+                                onClick={() => setQrModal(null)}
+                                className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <p className="mb-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                            أظهر هذا الرمز للسائق عند الركوب
+                        </p>
+                        <div className="flex justify-center">
+                            <QRCodeDisplay
+                                bookingId={qrModal.bookingId}
+                                tripId={qrModal.tripId}
+                                boardingToken={qrModal.boardingToken}
+                            />
+                        </div>
+                        <button
+                            onClick={() => setQrModal(null)}
+                            className="mt-4 w-full rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700"
+                        >
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            )}
         </ProtectedRoute>
     );
 }

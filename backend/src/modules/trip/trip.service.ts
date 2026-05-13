@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTripDto, FilterTripsDto } from './dto/trip.dto';
@@ -906,5 +908,181 @@ export class TripService {
     });
 
     return txResult;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // BOARDING SYSTEM
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * POST /api/trips/:tripId/board-passenger
+   * Driver scans a passenger's QR code and registers them as boarded.
+   */
+  async boardPassenger(tripId: string, driverId: string, boardingToken: string) {
+    // 1. Find booking by token
+    const booking = await this.prisma.booking.findUnique({
+      where: { boardingToken },
+      include: {
+        user: { select: { firstName: true, lastName: true, phone: true } },
+        trip: { select: { id: true, driverId: true, status: true, fromCity: true, toCity: true } },
+      },
+    });
+
+    if (!booking) {
+      throw new HttpException('رمز QR غير صحيح', HttpStatus.NOT_FOUND);
+    }
+
+    // 2. Booking must belong to this trip
+    if (booking.tripId !== tripId) {
+      throw new HttpException('هذا الحجز ليس لهذه الرحلة', HttpStatus.BAD_REQUEST);
+    }
+
+    // 3. Trip must belong to this driver
+    if (booking.trip.driverId !== driverId) {
+      throw new ForbiddenException('هذه الرحلة ليست لك');
+    }
+
+    // 4. Passenger not already boarded
+    if (booking.boardedAt !== null) {
+      throw new HttpException('هذا الراكب مسجل بالفعل', HttpStatus.CONFLICT);
+    }
+
+    // 5. Trip status must be SCHEDULED or IN_PROGRESS
+    const allowedStatuses: TripStatus[] = [TripStatus.SCHEDULED, TripStatus.DRIVER_CONFIRMED, TripStatus.IN_PROGRESS];
+    if (!allowedStatuses.includes(booking.trip.status as TripStatus)) {
+      throw new HttpException(
+        `لا يمكن تسجيل الركاب لرحلة بحالة ${booking.trip.status}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // 6. Mark as boarded
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id: booking.id },
+      data: { boardedAt: new Date() },
+      select: {
+        id: true,
+        seats: true,
+        boardedAt: true,
+        user: { select: { firstName: true, lastName: true } },
+      },
+    });
+
+    // 7. Emit WebSocket event to all trip subscribers
+    this.notificationGateway.broadcastTripUpdate(tripId, {
+      event: 'passengerBoarded',
+      passengerName: `${booking.user.firstName} ${booking.user.lastName}`,
+      seatNumber: booking.seats,
+      boardedAt: updatedBooking.boardedAt,
+    });
+
+    return {
+      passengerName: `${booking.user.firstName} ${booking.user.lastName}`,
+      seatNumber: booking.seats,
+      boardedAt: updatedBooking.boardedAt,
+      message: `تم تسجيل ${booking.user.firstName} ${booking.user.lastName} بنجاح ✅`,
+    };
+  }
+
+  /**
+   * GET /api/trips/:tripId/boarded-passengers
+   * Returns all boarded passengers for a trip (driver only).
+   * Phone is masked: 010****1234
+   */
+  async getBoardedPassengers(tripId: string, driverId: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { driverId: true },
+    });
+
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.driverId !== driverId) {
+      throw new ForbiddenException('هذه الرحلة ليست لك');
+    }
+
+    const boardings = await this.prisma.booking.findMany({
+      where: { tripId, boardedAt: { not: null } },
+      select: {
+        id: true,
+        seats: true,
+        boardedAt: true,
+        user: { select: { firstName: true, lastName: true, phone: true } },
+      },
+      orderBy: { boardedAt: 'asc' },
+    });
+
+    return boardings.map((b) => ({
+      bookingId: b.id,
+      passengerName: `${b.user.firstName} ${b.user.lastName}`,
+      maskedPhone: this.maskPhone(b.user.phone),
+      seats: b.seats,
+      boardedAt: b.boardedAt,
+    }));
+  }
+
+  /**
+   * Mask phone: 01012345678 → 010****5678
+   */
+  private maskPhone(phone: string): string {
+    if (!phone || phone.length < 7) return phone;
+    const start = phone.slice(0, 3);
+    const end = phone.slice(-4);
+    return `${start}****${end}`;
+  }
+
+  /**
+   * PATCH /api/admin/trips/:tripId/complete
+   * Admin manually completes an IN_PROGRESS trip and notifies all boarded passengers.
+   */
+  async adminCompleteTrip(tripId: string, adminId: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      select: { id: true, status: true, fromCity: true, toCity: true, driverId: true },
+    });
+
+    if (!trip) throw new NotFoundException('Trip not found');
+
+    if (trip.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        `يجب أن تكون الرحلة قيد التشغيل لإتمامها. الحالة الحالية: ${trip.status}`,
+      );
+    }
+
+    // Complete the trip
+    const updatedTrip = await this.prisma.trip.update({
+      where: { id: tripId },
+      data: { status: TripStatus.COMPLETED },
+    });
+
+    // Complete all confirmed bookings
+    await this.prisma.booking.updateMany({
+      where: { tripId, status: 'CONFIRMED' },
+      data: { status: 'COMPLETED' },
+    });
+
+    // Notify all passengers who boarded (boardedAt != null)
+    const boardedBookings = await this.prisma.booking.findMany({
+      where: { tripId, boardedAt: { not: null } },
+      select: { userId: true },
+    });
+
+    for (const b of boardedBookings) {
+      await this.prisma.notification.create({
+        data: {
+          userId: b.userId,
+          type: 'TRIP_REMINDER',
+          title: 'رحلتك اكتملت ✅',
+          message: `رحلتك من ${trip.fromCity} إلى ${trip.toCity} اكتملت. شكراً لاستخدامك مشاوير!`,
+          metadata: { tripId } as any,
+        },
+      });
+    }
+
+    // Broadcast trip status update
+    this.notificationGateway.broadcastTripUpdate(tripId, {
+      status: updatedTrip.status,
+    });
+
+    return updatedTrip;
   }
 }

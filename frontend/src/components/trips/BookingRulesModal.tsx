@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   AlertTriangle,
   Clock,
+  QrCode,
 } from 'lucide-react';
+import { QRCodeDisplay } from '@/components/passenger/QRCodeDisplay';
 
 interface BookingRulesModalProps {
   isOpen: boolean;
@@ -22,6 +24,12 @@ interface BookingRulesModalProps {
   pricePerSeat: number;
   seats: number;
   isBooking: boolean;
+  /** Passed after booking succeeds — triggers the QR step */
+  bookingResult?: {
+    bookingId: string;
+    tripId: string;
+    boardingToken: string;
+  } | null;
 }
 
 export function BookingRulesModal({
@@ -33,8 +41,9 @@ export function BookingRulesModal({
   pricePerSeat,
   seats,
   isBooking,
+  bookingResult,
 }: BookingRulesModalProps) {
-  const [step, setStep] = useState<'rules' | 'payment'>('rules');
+  const [step, setStep] = useState<'rules' | 'payment' | 'qr'>('rules');
   const [paymentMethod, setPaymentMethod] = useState<'WALLET' | 'CASH'>('CASH');
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
@@ -58,12 +67,22 @@ export function BookingRulesModal({
     }
   }, [isOpen]);
 
+  // When booking completes and we receive bookingResult, jump to QR step
+  useEffect(() => {
+    if (bookingResult && isOpen) {
+      setStep('qr');
+    }
+  }, [bookingResult, isOpen]);
+
   if (!isOpen) return null;
 
   const insufficientBalance = walletBalance !== null && walletBalance < totalPrice;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
         onClick={(e) => e.stopPropagation()}
@@ -71,9 +90,17 @@ export function BookingRulesModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            {step === 'qr' ? (
+              <QrCode className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            ) : (
+              <ShieldCheck className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            )}
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-              {step === 'rules' ? 'شروط الحجز' : 'طريقة الدفع'}
+              {step === 'rules'
+                ? 'شروط الحجز'
+                : step === 'payment'
+                  ? 'طريقة الدفع'
+                  : 'رمز QR للركوب'}
             </h2>
           </div>
           <button
@@ -86,7 +113,27 @@ export function BookingRulesModal({
 
         {/* Body */}
         <div className="px-5 py-4">
-          {step === 'rules' ? (
+          {step === 'qr' && bookingResult ? (
+            <div className="space-y-4 text-center" dir="rtl">
+              <div className="rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 p-3 dark:from-teal-900/20 dark:to-emerald-900/20">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+                <p className="mt-2 font-bold text-zinc-900 dark:text-white">تم الحجز بنجاح! 🎉</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {tripFromCity} ← {tripToCity}
+                </p>
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                احتفظ بهذا الرمز — سيطلبه منك السائق عند الركوب
+              </p>
+              <div className="flex justify-center">
+                <QRCodeDisplay
+                  bookingId={bookingResult.bookingId}
+                  tripId={bookingResult.tripId}
+                  boardingToken={bookingResult.boardingToken}
+                />
+              </div>
+            </div>
+          ) : step === 'rules' ? (
             <div className="space-y-4" dir="rtl">
               {/* Trip Summary */}
               <div className="rounded-xl bg-gradient-to-r from-teal-50 to-indigo-50 p-3 dark:from-teal-900/20 dark:to-indigo-900/20">
@@ -164,9 +211,11 @@ export function BookingRulesModal({
                         : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'
                   }`}
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                    paymentMethod === 'WALLET' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
-                  }`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                      paymentMethod === 'WALLET' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
+                    }`}
+                  >
                     <Wallet className={`h-5 w-5 ${paymentMethod === 'WALLET' ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`} />
                   </div>
                   <div className="flex-1 text-left">
@@ -176,8 +225,11 @@ export function BookingRulesModal({
                         <span className="animate-pulse">Loading balance...</span>
                       ) : walletBalance !== null ? (
                         <>
-                          الرصيد المتاح: <strong className={insufficientBalance ? 'text-red-500' : 'text-emerald-600'}>{walletBalance} جنيه</strong>
-                          {insufficientBalance && <span className="text-red-500 ml-1">(غير كافٍ)</span>}
+                          الرصيد المتاح:{' '}
+                          <strong className={insufficientBalance ? 'text-red-500' : 'text-emerald-600'}>
+                            {walletBalance} جنيه
+                          </strong>
+                          {insufficientBalance && <span className="ml-1 text-red-500">(غير كافٍ)</span>}
                         </>
                       ) : (
                         'الدفع من رصيد المحفظة'
@@ -199,18 +251,18 @@ export function BookingRulesModal({
                       : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'
                   }`}
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                    paymentMethod === 'CASH' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
-                  }`}>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                      paymentMethod === 'CASH' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
+                    }`}
+                  >
                     <Banknote className={`h-5 w-5 ${paymentMethod === 'CASH' ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`} />
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-semibold text-zinc-900 dark:text-white">كاش (Cash)</p>
                     <p className="text-xs text-zinc-500">الدفع للسائق عند الرحلة</p>
                   </div>
-                  {paymentMethod === 'CASH' && (
-                    <CheckCircle2 className="h-5 w-5 text-teal-500" />
-                  )}
+                  {paymentMethod === 'CASH' && <CheckCircle2 className="h-5 w-5 text-teal-500" />}
                 </button>
               </div>
 
@@ -227,34 +279,45 @@ export function BookingRulesModal({
 
         {/* Footer */}
         <div className="flex gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
-          <button
-            onClick={step === 'payment' ? () => setStep('rules') : onClose}
-            className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            {step === 'payment' ? 'رجوع' : 'إلغاء'}
-          </button>
-          <button
-            onClick={() => {
-              if (step === 'rules') {
-                setStep('payment');
-              } else {
-                onConfirm(paymentMethod);
-              }
-            }}
-            disabled={isBooking || (step === 'payment' && paymentMethod === 'WALLET' && insufficientBalance)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-md active:scale-[0.98] disabled:opacity-50"
-          >
-            {isBooking ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                جاري الحجز...
-              </>
-            ) : step === 'rules' ? (
-              'أوافق على الشروط ✓'
-            ) : (
-              'تأكيد الحجز ✓'
-            )}
-          </button>
+          {step === 'qr' ? (
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-indigo-500"
+            >
+              تم ✓
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={step === 'payment' ? () => setStep('rules') : onClose}
+                className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                {step === 'payment' ? 'رجوع' : 'إلغاء'}
+              </button>
+              <button
+                onClick={() => {
+                  if (step === 'rules') {
+                    setStep('payment');
+                  } else {
+                    onConfirm(paymentMethod);
+                  }
+                }}
+                disabled={isBooking || (step === 'payment' && paymentMethod === 'WALLET' && insufficientBalance)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-md active:scale-[0.98] disabled:opacity-50"
+              >
+                {isBooking ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري الحجز...
+                  </>
+                ) : step === 'rules' ? (
+                  'أوافق على الشروط ✓'
+                ) : (
+                  'تأكيد الحجز ✓'
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -116,17 +116,19 @@ model Trip {
 }
 
 model Booking {
-  id        String        @id @default(uuid())
-  userId    String
-  tripId    String
-  seats     Int           @default(1)
-  status    BookingStatus @default(PENDING)
+  id             String        @id @default(uuid())
+  userId         String
+  tripId         String
+  seats          Int           @default(1)
+  status         BookingStatus @default(PENDING)
   bookedAt       DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   paymentMethod  String?       @default("CASH")
   amountPaid     Decimal?      @db.Decimal(10, 2)
+  boardingToken  String?       @unique @default(cuid())
+  boardedAt      DateTime?
   trip           Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
 
   @@unique([userId, tripId])
   @@index([status])
