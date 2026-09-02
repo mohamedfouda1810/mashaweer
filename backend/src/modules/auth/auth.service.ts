@@ -150,9 +150,15 @@ export class AuthService {
     });
 
     // Send verification email (non-blocking)
-    this.emailService
-      .sendVerificationEmail(user.email, verificationToken, user.firstName)
-      .catch(() => {});
+    try {
+      await this.emailService.sendVerificationEmail(
+        user.email,
+        verificationToken,
+        user.firstName,
+      );
+    } catch (error) {
+      console.error('Failed to send verification email during registration:', error);
+    }
 
     if (dto.role === Role.DRIVER) {
       // Notify admins
