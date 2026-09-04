@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
@@ -25,8 +25,9 @@ import toast from 'react-hot-toast';
 const STEPS_PASSENGER = ['Account Info'];
 const STEPS_DRIVER = ['Account Info', 'Vehicle Details', 'Documents'];
 
-export default function RegisterPage() {
+function RegisterFormContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [step, setStep] = useState(0);
     const [form, setForm] = useState({
         firstName: '',
@@ -40,6 +41,13 @@ export default function RegisterPage() {
         plateNumber: '',
         licenseNumber: '',
     });
+
+    useEffect(() => {
+        const paramRole = searchParams.get('role');
+        if (paramRole && paramRole.toLowerCase() === 'driver') {
+            setForm(prev => ({ ...prev, role: 'DRIVER' }));
+        }
+    }, [searchParams]);
     const [files, setFiles] = useState({
         personalPhoto: null as File | null,
         identityPhotos: [] as File[],
@@ -487,5 +495,17 @@ export default function RegisterPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-mint" />
+            </div>
+        }>
+            <RegisterFormContent />
+        </Suspense>
     );
 }
