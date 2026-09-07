@@ -133,7 +133,7 @@ function RegisterFormContent() {
                     : {}),
             });
             setRegistrationComplete(true);
-            toast.success('Registration successful! Check your email.');
+            toast.success('Registration successful!');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
         } finally {
@@ -161,21 +161,32 @@ function RegisterFormContent() {
                     </div>
                     <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <CheckCircle2 className="mx-auto h-16 w-16 text-mint mb-4" />
-                        <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Check Your Email! ✉️</h2>
-                        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                            We sent a verification link to <strong className="text-zinc-900 dark:text-white">{form.email}</strong>.
-                            Please click the link to verify your account.
-                        </p>
-                        {form.role === 'DRIVER' && (
-                            <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-                                ⚠️ Your driver application will also need admin approval after verification.
-                            </p>
+                        {form.role === 'DRIVER' ? (
+                            <>
+                                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Request Submitted ✅</h2>
+                                <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                    Your request is under review. Admin will verify your documents.
+                                </p>
+                                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400" dir="rtl">
+                                    طلبك قيد المراجعة. سيتم مراجعة مستنداتك من قبل الإدارة.
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Account Created ✅</h2>
+                                <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                                    Account created successfully!
+                                </p>
+                                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400" dir="rtl">
+                                    تم إنشاء الحساب بنجاح!
+                                </p>
+                            </>
                         )}
                         <Link
                             href="/login"
                             className="mt-6 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-navy to-mint py-3 text-sm font-semibold text-white shadow-sm"
                         >
-                            Go to Login
+                            Go to Login / تسجيل الدخول
                         </Link>
                     </div>
                 </div>

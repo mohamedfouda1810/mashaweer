@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ResendVerificationDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Role } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
@@ -41,13 +41,6 @@ export class AuthService {
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Check email verification
-    if (!user.emailVerified) {
-      throw new UnauthorizedException(
-        'Please verify your email before signing in. Check your inbox for the verification link.',
-      );
     }
 
     if (user.isBanned) {
@@ -113,7 +106,6 @@ export class AuthService {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
-    const verificationToken = randomUUID();
 
     const user = await this.prisma.user.create({
       data: {
@@ -123,8 +115,8 @@ export class AuthService {
         phone: dto.phone,
         passwordHash,
         role: dto.role || Role.PASSENGER,
-        emailVerified: false,
-        emailVerificationToken: verificationToken,
+        emailVerified: true,
+        emailVerificationToken: null,
         wallet: {
           create: {
             balance: 0,
@@ -149,17 +141,6 @@ export class AuthService {
       },
     });
 
-    // Send verification email (non-blocking)
-    try {
-      await this.emailService.sendVerificationEmail(
-        user.email,
-        verificationToken,
-        user.firstName,
-      );
-    } catch (error) {
-      console.error('Failed to send verification email during registration:', error);
-    }
-
     if (dto.role === Role.DRIVER) {
       // Notify admins
       const admins = await this.prisma.user.findMany({
@@ -178,66 +159,16 @@ export class AuthService {
 
     const { passwordHash: _, emailVerificationToken: __, ...userWithoutSensitive } = user;
 
+    const message = dto.role === Role.DRIVER
+      ? 'Registration submitted! Admin will review your request.'
+      : 'Registration successful!';
+
     return {
-      message: 'Registration successful! Please check your email to verify your account.',
+      message,
       user: userWithoutSensitive,
     };
   }
 
-  /**
-   * Verify email using token
-   */
-  async verifyEmail(token: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { emailVerificationToken: token },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Invalid or expired verification link.');
-    }
-
-    if (user.emailVerified) {
-      return { message: 'Email is already verified. You can sign in.' };
-    }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: true,
-        emailVerificationToken: null,
-      },
-    });
-
-    return { message: 'Email verified successfully! You can now sign in.' };
-  }
-
-  /**
-   * Resend verification email
-   */
-  async resendVerification(dto: ResendVerificationDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (!user) {
-      // Don't reveal if the email exists
-      return { message: 'If an account exists with this email, a verification link has been sent.' };
-    }
-
-    if (user.emailVerified) {
-      return { message: 'Email is already verified. You can sign in.' };
-    }
-
-    const newToken = randomUUID();
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerificationToken: newToken },
-    });
-
-    await this.emailService.sendVerificationEmail(user.email, newToken, user.firstName);
-
-    return { message: 'If an account exists with this email, a verification link has been sent.' };
-  }
 
   /**
    * Forgot password — send reset email

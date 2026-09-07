@@ -226,6 +226,7 @@ export class AdminService {
         passwordHash,
         role: data.role as any,
         isVerified: true,
+        emailVerified: true,
         wallet: { create: { balance: 0 } },
       },
       select: {

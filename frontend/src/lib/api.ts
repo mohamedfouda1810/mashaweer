@@ -91,17 +91,6 @@ class ApiClient {
     });
   }
 
-  async verifyEmail(token: string) {
-    return this.request<{ message: string }>(`/auth/verify-email?token=${token}`);
-  }
-
-  async resendVerification(email: string) {
-    return this.request<{ message: string }>('/auth/resend-verification', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
   //  ─── Trips ──────────────────────────────────────────────────────
 
   async getTrips(filters?: TripFilters) {

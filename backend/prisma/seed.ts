@@ -30,6 +30,7 @@ async function main() {
       update: {
         role: 'ADMIN',
         isVerified: true,
+        emailVerified: true,
         passwordHash,
       },
       create: {
@@ -40,6 +41,7 @@ async function main() {
         lastName: admin.lastName,
         role: 'ADMIN',
         isVerified: true,
+        emailVerified: true,
         wallet: {
           create: { balance: 0 },
         },
