@@ -47,6 +47,16 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      // ── Critical fix: sync token to API client when Zustand rehydrates from localStorage ──
+      // Without this, the API client has no token until login() is called, causing
+      // 401 errors for any request made before the user explicitly logs in again.
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state?.token) {
+            api.setToken(state.token);
+          }
+        };
+      },
     },
   ),
 );

@@ -58,8 +58,14 @@ async function bootstrap() {
 
 export default async function handler(req: any, res: any) {
   // Handle CORS preflight immediately — don't wait for NestJS bootstrap
+  const origin = req.headers.origin || '';
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map((o: string) => o.trim());
+  const isAllowed = !origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Origin', isAllowed ? (origin || allowedOrigins[0]) : allowedOrigins[0]);
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
@@ -73,11 +79,9 @@ export default async function handler(req: any, res: any) {
     return handleRequest(req, res);
   } catch (error: any) {
     console.error('Vercel Bootstrap Error:', error);
+    // Don't expose stack traces to clients
     res.status(500).json({
-      message: 'Bootstrap failed',
-      error: error.message,
-      stack: error.stack,
-      name: error.name
+      message: 'Service temporarily unavailable. Please try again.',
     });
   }
 }

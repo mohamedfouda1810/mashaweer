@@ -7,7 +7,6 @@ import {
     CalendarDays,
     MapPin,
     DollarSign,
-    X,
     SlidersHorizontal,
     ChevronDown,
     ChevronUp,
@@ -44,12 +43,19 @@ export function TripFilters() {
         }, 400);
     }, [setFilters]);
 
+    // Cleanup debounce timer on unmount
+    React.useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, []);
+
     const handleApply = () => {
         // Commit local search value immediately and trigger fetch
         if (debounceRef.current) clearTimeout(debounceRef.current);
         setFilters({ q: searchValue });
-        // Collapse on mobile after search
-        if (window.innerWidth < 768) setIsExpanded(false);
+        // Collapse on mobile after search (SSR-safe)
+        if (typeof window !== 'undefined' && window.innerWidth < 768) setIsExpanded(false);
     };
 
     const handleReset = (e: React.MouseEvent) => {
@@ -71,36 +77,38 @@ export function TripFilters() {
 
     return (
         <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            {/* Header — always visible, acts as toggle on mobile */}
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex w-full items-center justify-between px-4 py-3 md:cursor-default"
-            >
-                <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="h-4 w-4 text-teal-600" />
-                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        Filter Trips
-                    </span>
-                    {hasActiveFilters && (
-                        <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                            !
+            {/* Header — toggleable on mobile */}
+            <div className="flex w-full items-center justify-between px-4 py-3">
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex flex-1 items-center justify-between md:cursor-default"
+                >
+                    <div className="flex items-center gap-2">
+                        <SlidersHorizontal className="h-4 w-4 text-teal-600" />
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                            Filter Trips
                         </span>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    {hasActiveFilters && (
-                        <span
-                            onClick={handleReset}
-                            className="text-xs text-red-500 hover:text-red-600"
-                        >
-                            Clear
-                        </span>
-                    )}
-                    <span className="text-zinc-400 md:hidden">
+                        {hasActiveFilters && (
+                            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                                !
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-zinc-400 md:hidden mr-2">
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </span>
-                </div>
-            </button>
+                </button>
+                {hasActiveFilters && (
+                    <button
+                        type="button"
+                        onClick={handleReset}
+                        className="rounded-md px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
 
             {/* Filter body — always visible on desktop, toggle on mobile */}
             <div className={`${isExpanded ? 'block' : 'hidden'} md:block border-t border-zinc-100 px-4 pb-4 pt-3 dark:border-zinc-800`}>

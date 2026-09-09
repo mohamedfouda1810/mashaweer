@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTripStore } from '@/stores/useTripStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { api } from '@/lib/api';
+import { api, isAbortError } from '@/lib/api';
 import { TripCard } from './TripCard';
 import { TripFilters } from './TripFilters';
 import { Booking } from '@/types';
-import { Loader2, MapPinOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, MapPinOff, ChevronLeft, ChevronRight, WifiOff, ServerCrash, RefreshCw } from 'lucide-react';
 
 interface TripListProps {
     onBook?: (tripId: string) => void;
@@ -16,30 +16,81 @@ interface TripListProps {
 }
 
 export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) {
-    const { trips, isLoading, error, meta, fetchTrips, setPage } = useTripStore();
+    const { trips, isLoading, error, errorKind, meta, fetchTrips, setPage, cancelPendingRequest } = useTripStore();
     const { isAuthenticated } = useAuthStore();
     const [bookedTripIds, setBookedTripIds] = useState<Set<string>>(new Set());
+    const hasFetched = useRef(false);
 
+    // Fetch trips once on mount — stable ref prevents duplicate calls
     useEffect(() => {
-        fetchTrips();
-    }, [fetchTrips]);
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            fetchTrips();
+        }
+        // Cancel any pending request when unmounting
+        return () => {
+            cancelPendingRequest();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Fetch user's bookings to determine which trips are already booked
     useEffect(() => {
-        if (isAuthenticated && !hideBooking) {
-            api.getMyBookings()
-                .then((res) => {
-                    const bookings = (res.data || []) as Booking[];
-                    const ids = new Set<string>(
-                        bookings
-                            .filter((b) => b.status !== 'CANCELLED')
-                            .map((b) => b.tripId)
-                    );
-                    setBookedTripIds(ids);
-                })
-                .catch(() => {});
-        }
+        if (!isAuthenticated || hideBooking) return;
+
+        const controller = new AbortController();
+        api.getMyBookings()
+            .then((res) => {
+                if (controller.signal.aborted) return;
+                const bookings = (res.data || []) as Booking[];
+                const ids = new Set<string>(
+                    bookings
+                        .filter((b) => b.status !== 'CANCELLED')
+                        .map((b) => b.tripId)
+                );
+                setBookedTripIds(ids);
+            })
+            .catch((err) => {
+                if (isAbortError(err)) return;
+                // Non-critical — silently fail, user just won't see "already booked" badges
+            });
+
+        return () => controller.abort();
     }, [isAuthenticated, hideBooking]);
+
+    // Error state icons and messages based on error kind
+    const renderErrorState = () => {
+        const isNetworkError = errorKind === 'network';
+        const isServerError = errorKind === 'server';
+
+        return (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/30">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+                    {isNetworkError ? (
+                        <WifiOff className="h-6 w-6 text-red-500" />
+                    ) : isServerError ? (
+                        <ServerCrash className="h-6 w-6 text-red-500" />
+                    ) : (
+                        <ServerCrash className="h-6 w-6 text-red-500" />
+                    )}
+                </div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                    {isNetworkError
+                        ? 'Unable to connect. Please check your internet connection.'
+                        : isServerError
+                            ? 'Server is temporarily unavailable. Please try again.'
+                            : error}
+                </p>
+                <button
+                    onClick={fetchTrips}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
+                >
+                    <RefreshCw className="h-4 w-4" />
+                    Try Again
+                </button>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-6">
@@ -47,7 +98,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             <TripFilters />
 
             {/* Results Count */}
-            {meta && (
+            {meta && !isLoading && !error && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         Showing{' '}
@@ -74,17 +125,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             )}
 
             {/* Error State */}
-            {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/30">
-                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                    <button
-                        onClick={fetchTrips}
-                        className="mt-3 rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300"
-                    >
-                        Try Again
-                    </button>
-                </div>
-            )}
+            {!isLoading && error && renderErrorState()}
 
             {/* Empty State */}
             {!isLoading && !error && trips.length === 0 && (
@@ -100,7 +141,7 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             )}
 
             {/* Trip Cards Grid */}
-            {!isLoading && trips.length > 0 && (
+            {!isLoading && !error && trips.length > 0 && (
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {trips.map((trip) => (
                         <TripCard

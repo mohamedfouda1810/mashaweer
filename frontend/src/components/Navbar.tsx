@@ -91,13 +91,7 @@ export function Navbar() {
         }
     }, [socket]);
 
-    // Restore token on mount
-    useEffect(() => {
-        const state = useAuthStore.getState();
-        if (state.token) {
-            api.setToken(state.token);
-        }
-    }, []);
+    // Token sync is now handled by useAuthStore onRehydrateStorage — no manual sync needed
 
     const closeMobileMenu = useCallback(() => {
         if (mobileOpen) {

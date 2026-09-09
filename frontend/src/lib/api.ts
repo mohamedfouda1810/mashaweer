@@ -1,6 +1,49 @@
 import { TripFilters, ApiResponse, Trip, Booking, Wallet, Notification, Rating, User } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// ─── Production-safe API base URL ──────────────────────────────────
+// NEVER fall back to localhost in production builds.
+const API_BASE = (() => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) return envUrl;
+  // Only allow localhost fallback in development
+  if (process.env.NODE_ENV === 'development') return 'http://localhost:3001/api';
+  // In production without env var, use empty string — requests will fail visibly
+  // rather than silently hitting localhost
+  console.error('[Mashaweer] NEXT_PUBLIC_API_URL is not set. API requests will fail.');
+  return '';
+})();
+
+/** Default request timeout in milliseconds (30 seconds — generous for cold starts + slow mobile) */
+const DEFAULT_TIMEOUT_MS = 30_000;
+
+// ─── Error Types ───────────────────────────────────────────────────
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export class NetworkError extends Error {
+  constructor(message: string = 'Network error. Please check your connection.') {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
+export class TimeoutError extends Error {
+  constructor(message: string = 'Request timed out. Please try again.') {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────
 
 /** Resolve an image path from the backend (e.g. "/uploads/x.jpg") to a full URL */
 export function getImageUrl(path?: string | null): string | undefined {
@@ -12,6 +55,13 @@ export function getImageUrl(path?: string | null): string | undefined {
   return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
+/** Check if an error is an abort/cancellation — these should be silently ignored */
+export function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
+// ─── API Client ────────────────────────────────────────────────────
+
 class ApiClient {
   private token: string | null = null;
 
@@ -19,46 +69,128 @@ class ApiClient {
     this.token = token;
   }
 
+  getToken(): string | null {
+    return this.token;
+  }
+
+  /**
+   * Core request method with:
+   * - Timeout protection via AbortController
+   * - External signal support for request cancellation
+   * - Network error detection
+   * - JSON parse protection
+   * - Comprehensive HTTP status handling
+   */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: RequestInit & { signal?: AbortSignal; timeoutMs?: number } = {},
   ): Promise<ApiResponse<T>> {
+    const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+
+    // Fail clearly if API URL is not configured
+    if (!API_BASE) {
+      throw new ApiError(
+        'API is not configured. Contact support.',
+        0,
+        'CONFIG_ERROR',
+      );
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      ...options.headers,
+      ...fetchOptions.headers,
     };
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    // Create timeout AbortController
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
+    // Combine external signal (if any) with timeout signal
+    let combinedSignal: AbortSignal;
+    if (fetchOptions.signal) {
+      // If an external signal is already provided, we need to abort on either
+      const combinedController = new AbortController();
+      const onExternalAbort = () => combinedController.abort();
+      const onTimeoutAbort = () => combinedController.abort();
+      fetchOptions.signal.addEventListener('abort', onExternalAbort, { once: true });
+      timeoutController.signal.addEventListener('abort', onTimeoutAbort, { once: true });
+      combinedSignal = combinedController.signal;
+    } else {
+      combinedSignal = timeoutController.signal;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE}${endpoint}`, {
+        ...fetchOptions,
+        headers,
+        signal: combinedSignal,
+      });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+
+      // Request was intentionally cancelled — let caller handle silently
+      if (isAbortError(error)) {
+        // Determine if it was a timeout or external cancellation
+        if (timeoutController.signal.aborted && !fetchOptions.signal?.aborted) {
+          throw new TimeoutError();
+        }
+        throw error; // Re-throw DOMException for external abort
+      }
+
+      // Network failure (offline, DNS failure, CORS block, etc.)
+      throw new NetworkError();
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    // ── Handle HTTP errors ──────────────────────────────────────────
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      // Extract the best error message
-      let msg = error.message || error.error || '';
+      let errorBody: Record<string, unknown> = {};
+      try {
+        errorBody = await response.json();
+      } catch {
+        // Response body wasn't JSON — that's fine, use defaults
+      }
+
+      let msg = (errorBody.message || errorBody.error || '') as string;
       if (Array.isArray(msg)) msg = msg.join(', ');
-      
+
       switch (response.status) {
         case 400:
-          throw new Error(msg || 'Invalid request. Please check your input.');
+          throw new ApiError(msg || 'Invalid request. Please check your input.', 400, 'BAD_REQUEST');
         case 401:
-          throw new Error(msg || 'Session expired. Please log in again.');
+          throw new ApiError(msg || 'Session expired. Please log in again.', 401, 'UNAUTHORIZED');
         case 403:
-          throw new Error(msg || 'You do not have permission for this action.');
+          throw new ApiError(msg || 'You do not have permission for this action.', 403, 'FORBIDDEN');
         case 404:
-          throw new Error(msg || 'The requested resource was not found.');
+          throw new ApiError(msg || 'The requested resource was not found.', 404, 'NOT_FOUND');
+        case 408:
+          throw new TimeoutError(msg || 'Request timed out. Please try again.');
         case 409:
-          throw new Error(msg || 'This action conflicts with existing data.');
+          throw new ApiError(msg || 'This action conflicts with existing data.', 409, 'CONFLICT');
+        case 422:
+          throw new ApiError(msg || 'Invalid data submitted.', 422, 'VALIDATION_ERROR');
+        case 429:
+          throw new ApiError(msg || 'Too many requests. Please wait a moment.', 429, 'RATE_LIMITED');
         case 500:
-          throw new Error(msg || 'Server error. Please try again later.');
+          throw new ApiError(msg || 'Server error. Please try again later.', 500, 'SERVER_ERROR');
+        case 502:
+          throw new ApiError(msg || 'Server is temporarily unavailable. Please try again.', 502, 'BAD_GATEWAY');
+        case 503:
+          throw new ApiError(msg || 'Service unavailable. Please try again later.', 503, 'SERVICE_UNAVAILABLE');
         default:
-          throw new Error(msg || `Request failed (${response.status})`);
+          throw new ApiError(msg || `Request failed (${response.status})`, response.status, 'UNKNOWN');
       }
     }
 
-    return response.json();
+    // ── Parse response JSON safely ──────────────────────────────────
+    try {
+      return await response.json();
+    } catch {
+      throw new ApiError('Invalid response from server.', response.status, 'PARSE_ERROR');
+    }
   }
 
   // ─── Auth ────────────────────────────────────────────────────────
@@ -93,7 +225,7 @@ class ApiClient {
 
   //  ─── Trips ──────────────────────────────────────────────────────
 
-  async getTrips(filters?: TripFilters) {
+  async getTrips(filters?: TripFilters, signal?: AbortSignal) {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -102,7 +234,7 @@ class ApiClient {
         }
       });
     }
-    return this.request<Trip[]>(`/trips?${params.toString()}`);
+    return this.request<Trip[]>(`/trips?${params.toString()}`, { signal });
   }
 
   async getTrip(id: string) {
@@ -171,18 +303,31 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE}/upload`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    const timeoutController = new AbortController();
+    // Uploads get a longer timeout (60s)
+    const timeoutId = setTimeout(() => timeoutController.abort(), 60_000);
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-      throw new Error(error.message || 'Upload failed');
+    try {
+      const response = await fetch(`${API_BASE}/upload`, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: timeoutController.signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      return response.json();
+    } catch (error) {
+      if (isAbortError(error)) throw new TimeoutError('Upload timed out. Please try again.');
+      if (error instanceof Error && error.message === 'Upload failed') throw error;
+      throw new NetworkError('Upload failed. Please check your connection.');
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    return response.json();
   }
 
   // ─── Bookings ────────────────────────────────────────────────────

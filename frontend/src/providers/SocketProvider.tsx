@@ -18,6 +18,16 @@ const SocketContext = createContext<SocketContextType>({
 export const useSocket = () => useContext(SocketContext);
 
 /**
+ * Detect if we're running inside an in-app browser (Instagram, Facebook, etc.)
+ * These WebViews often restrict Service Workers and push notifications.
+ */
+function isInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /FBAN|FBAV|Instagram|Line\/|Twitter|MicroMessenger|Snapchat/i.test(ua);
+}
+
+/**
  * SocketProvider — handles real-time WebSocket + polling fallback.
  * In production (Vercel), WebSocket is disabled but we poll for notifications.
  */
@@ -27,12 +37,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuthStore();
 
   // Auto-subscribe to Web Push Notifications on login
+  // Skip in WebViews where service workers are often blocked
   useEffect(() => {
     if (!user?.id) return;
     if (!isPushSupported()) return;
+    if (isInAppBrowser()) return; // Don't attempt push in Instagram/Facebook WebViews
 
     const timer = setTimeout(() => {
-      subscribeToPush().catch(() => {});
+      subscribeToPush().catch(() => {
+        // Push subscription failed — non-critical, ignore silently
+      });
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -57,12 +71,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     socketInstance.on('connect', () => {
-      console.log('Connected to socket server');
       setIsConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from socket server');
       setIsConnected(false);
     });
 
@@ -71,6 +83,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       socketInstance.disconnect();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   return (
@@ -84,6 +97,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
  * Hook for polling-based notification count updates.
  * Used in components that need real-time unread count (e.g., Navbar badge).
  * Falls back to polling when WebSocket is not available (production).
+ *
+ * FIXED: Uses the api client instead of raw fetch + wrong localStorage key.
  */
 export function useNotificationPolling(intervalMs: number = 30000) {
   const { socket, isConnected } = useSocket();
@@ -94,17 +109,12 @@ export function useNotificationPolling(intervalMs: number = 30000) {
   const fetchUnread = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/notifications/unread-count`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data?.data?.count ?? 0);
-      }
+      // Use the API client which already has the correct token
+      const { api } = await import('@/lib/api');
+      const res = await api.getUnreadCount();
+      setUnreadCount(res.data?.count ?? 0);
     } catch {
-      // silently fail
+      // Non-critical — silently fail
     }
   }, [user?.id]);
 

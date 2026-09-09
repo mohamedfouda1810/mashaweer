@@ -6,12 +6,9 @@ import { Trip } from '@/types';
 import { getImageUrl } from '@/lib/api';
 import { useBookingStore } from '@/stores/useBookingStore';
 import {
-    MapPin,
     Clock,
     Users,
-    Star,
     Car,
-    CreditCard,
     Navigation,
     CalendarDays,
 } from 'lucide-react';
@@ -92,13 +89,13 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                         />
                     )}
                 </div>
-                <div className="flex-1">
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                         {trip.driver?.firstName} {trip.driver?.lastName}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        <Car className="h-3.5 w-3.5" />
-                        <span>
+                    <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 truncate">
+                        <Car className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">
                             {trip.driver?.driverProfile?.carModel}
                             {trip.driver?.driverProfile?.carColor
                                 ? ` • ${trip.driver.driverProfile.carColor}`
@@ -106,7 +103,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                         </span>
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                     <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-mono font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                         {trip.driver?.driverProfile?.plateNumber}
                     </span>
@@ -165,20 +162,20 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <Navigation className="h-4 w-4 text-pink-500" />
-                        <div>
+                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 min-w-0 dark:bg-zinc-800/50">
+                        <Navigation className="h-4 w-4 shrink-0 text-pink-500" />
+                        <div className="min-w-0 flex-1">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                 Meeting Point
                             </p>
-                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px]">
+                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate" title={trip.gatheringLocation}>
                                 {trip.gatheringLocation}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <Users className="h-4 w-4 text-teal-500" />
-                        <div>
+                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 min-w-0 dark:bg-zinc-800/50">
+                        <Users className="h-4 w-4 shrink-0 text-teal-500" />
+                        <div className="min-w-0 flex-1">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">Seats</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                 <span
@@ -196,8 +193,8 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
             </div>
 
             {/* Footer: Price + Actions */}
-            <div className="flex items-center justify-between border-t border-zinc-100 p-4 dark:border-zinc-800">
-                <div className="flex items-baseline gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 p-4 dark:border-zinc-800">
+                <div className="flex items-baseline gap-1 shrink-0">
                     <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                         {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
                     </span>
@@ -205,8 +202,9 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                         EGP/seat
                     </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
+                        type="button"
                         onClick={() => onViewDetails?.(trip.id)}
                         className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     >
@@ -219,6 +217,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                             </span>
                         ) : (
                             <button
+                                type="button"
                                 onClick={() => onBook?.(trip.id)}
                                 disabled={isFull || isBooking}
                                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull

@@ -57,7 +57,7 @@ export function BottomNav() {
                 })}
             </div>
             {/* Safe area for iOS */}
-            <div className="h-[env(safe-area-inset-bottom)]" />
+            <div style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
         </nav>
     );
 }
