@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -48,8 +48,11 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const isRefreshingRef = useRef(false);
 
     const fetchNotifications = useCallback(async () => {
+        if (isRefreshingRef.current) return;
+        isRefreshingRef.current = true;
         setIsLoading(true);
         try {
             const res = await api.getNotifications(page);
@@ -58,6 +61,7 @@ export default function NotificationsPage() {
             // ignore
         } finally {
             setIsLoading(false);
+            isRefreshingRef.current = false;
         }
     }, [page]);
 
@@ -68,7 +72,10 @@ export default function NotificationsPage() {
     // Polling fallback — auto-refresh every 30s when socket is NOT connected
     useEffect(() => {
         if (isConnected || !isAuthenticated) return; // Socket handles it
-        const interval = setInterval(fetchNotifications, 30000);
+        const refreshWhenVisible = () => {
+            if (document.visibilityState === 'visible') fetchNotifications();
+        };
+        const interval = setInterval(refreshWhenVisible, 30000);
         return () => clearInterval(interval);
     }, [isConnected, isAuthenticated, fetchNotifications]);
 

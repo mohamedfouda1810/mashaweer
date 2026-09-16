@@ -332,10 +332,14 @@ export default function ChatPage() {
     }
   }, [cursor, hasMore, loadingMore]);
 
-  // ── Poll every 10 s (fallback when socket unavailable) ───────
+  // Refresh only when realtime is unavailable. This keeps serverless HTTP
+  // delivery reliable without issuing a request every 10 seconds.
   useEffect(() => {
-    if (!hasHydrated || !isAuthenticated) return;
-    const timer = setInterval(async () => {
+    if (!hasHydrated || !isAuthenticated || socket?.connected) return;
+    let requestInFlight = false;
+    const refresh = async () => {
+      if (requestInFlight || document.visibilityState !== 'visible') return;
+      requestInFlight = true;
       try {
         const res = await api.getChatMessages(undefined, LIMIT);
         const latest = (Array.isArray(res.data) ? res.data : []) as ChatMessage[];
@@ -348,9 +352,11 @@ export default function ChatPage() {
           );
         });
       } catch { /* silent */ }
-    }, 10_000);
+      finally { requestInFlight = false; }
+    };
+    const timer = setInterval(refresh, 30_000);
     return () => clearInterval(timer);
-  }, [hasHydrated, isAuthenticated]);
+  }, [hasHydrated, isAuthenticated, socket?.connected]);
 
   // ── Socket real-time events ───────────────────────────────────
   useEffect(() => {

@@ -52,7 +52,7 @@ export class ChatGateway {
       const message = await this.chatService.createMessage(userId, data.content);
 
       // Broadcast new message to everyone in chat_room
-      this.server.to('chat_room').emit('newChatMessage', message);
+      this.server?.to('chat_room').emit('newChatMessage', message);
 
       // Notify all OTHER users so their notification bell badge increments
       const senderName = message.user
@@ -81,19 +81,19 @@ export class ChatGateway {
   }
 
   broadcastMessageDeleted(messageId: string) {
-    this.server.to('chat_room').emit('chatMessageDeleted', { messageId });
+    this.server?.to('chat_room').emit('chatMessageDeleted', { messageId });
   }
 
   broadcastMessage(message: unknown) {
-    this.server.to('chat_room').emit('newChatMessage', message);
+    this.server?.to('chat_room').emit('newChatMessage', message);
   }
 
   broadcastUserBlocked(userId: string) {
-    this.server.to('chat_room').emit('chatUserBlocked', { userId });
+    this.server?.to('chat_room').emit('chatUserBlocked', { userId });
   }
 
   broadcastUserUnblocked(userId: string) {
-    this.server.to('chat_room').emit('chatUserUnblocked', { userId });
+    this.server?.to('chat_room').emit('chatUserUnblocked', { userId });
   }
 
   /**
@@ -102,7 +102,7 @@ export class ChatGateway {
    */
   broadcastNotificationExcept(excludeUserId: string, payload: Record<string, unknown>) {
     // Fetch all sockets in chat_room then skip the sender's sockets
-    this.server.in('chat_room').fetchSockets().then((sockets) => {
+    this.server?.in('chat_room').fetchSockets().then((sockets) => {
       for (const sock of sockets) {
         if ((sock as any).userId !== excludeUserId) {
           sock.emit('newNotification', payload);

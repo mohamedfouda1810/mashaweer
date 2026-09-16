@@ -41,7 +41,7 @@ const ADMIN_ITEMS = [
 export function Navbar() {
     const pathname = usePathname();
     const { user, isAuthenticated, logout } = useAuthStore();
-    const { socket } = useSocket();
+    const { socket, isConnected } = useSocket();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -70,9 +70,9 @@ export function Navbar() {
         }
     }, [isAuthenticated, pathname]);
 
-    // Polling fallback — keep badge updated when socket is NOT connected
+    // Polling fallback — keep badge updated whenever realtime is unavailable.
     useEffect(() => {
-        if (socket || !isAuthenticated) return;
+        if (isConnected || !isAuthenticated) return;
         const interval = setInterval(() => {
             api.getUnreadCount().then((res) => {
                 const data = res.data as { count: number } | undefined;
@@ -80,10 +80,10 @@ export function Navbar() {
             }).catch(() => { });
         }, 30000);
         return () => clearInterval(interval);
-    }, [socket, isAuthenticated]);
+    }, [isConnected, isAuthenticated]);
 
     useEffect(() => {
-        if (socket) {
+        if (socket && isConnected) {
             const handleNewNotification = () => setUnreadCount((prev) => prev + 1);
             socket.on('newNotification', handleNewNotification);
             
@@ -91,7 +91,7 @@ export function Navbar() {
                 socket.off('newNotification', handleNewNotification);
             };
         }
-    }, [socket]);
+    }, [socket, isConnected]);
 
     // Token sync is now handled by useAuthStore onRehydrateStorage — no manual sync needed
 

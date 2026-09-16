@@ -131,21 +131,21 @@ export class NotificationGateway
    * Send a notification to a specific user
    */
   sendNotificationToUser(userId: string, notification: any) {
-    this.server.to(`user_${userId}`).emit('newNotification', notification);
+    this.server?.to(`user_${userId}`).emit('newNotification', notification);
   }
 
   /**
    * Broadcast trip updates
    */
   broadcastTripUpdate(tripId: string, data: any) {
-    this.server.emit('tripUpdate', { tripId, ...data });
+    this.server?.emit('tripUpdate', { tripId, ...data });
   }
 
   /**
    * Send driver location update to all users watching a trip
    */
   broadcastDriverLocation(tripId: string, lat: number, lng: number) {
-    this.server.emit('driverLocation', { tripId, lat, lng });
+    this.server?.emit('driverLocation', { tripId, lat, lng });
   }
 
   /**

@@ -52,24 +52,27 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearTimeout(timer);
   }, [user?.id]);
 
-  // ── WebSocket connection ──
-  // Enabled in all environments (needed for real-time group chat)
+  // Socket.IO requires a persistent server. The API deployment is serverless,
+  // so only connect when a dedicated realtime endpoint is explicitly supplied.
+  // All features retain their HTTP polling fallback when it is unavailable.
   useEffect(() => {
-    if (!user?.id || !token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
+    const realtimeUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    if (!user?.id || !token || !realtimeUrl) {
+      setSocket((currentSocket) => {
+        currentSocket?.disconnect();
+        return null;
+      });
+      setIsConnected(false);
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
-
-    const socketInstance = io(API_URL, {
+    const socketInstance = io(realtimeUrl.replace(/\/api\/?$/, ''), {
       // Pass JWT token for authentication (needed for chat)
       auth: { token },
-      transports: ['polling', 'websocket'],
+      transports: ['websocket'],
+      timeout: 5_000,
+      reconnectionDelay: 1_000,
+      reconnectionDelayMax: 10_000,
     });
 
     socketInstance.on('connect', () => {
@@ -84,8 +87,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       socketInstance.disconnect();
+      setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
+      setIsConnected(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, token]);
 
   return (
