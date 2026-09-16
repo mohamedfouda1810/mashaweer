@@ -167,8 +167,8 @@ function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmClass = 'b
 
 export default function ChatPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
-  const { socket, isConnected } = useSocket();
+  const { user, isAuthenticated, hasHydrated } = useAuthStore();
+  const { socket } = useSocket();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -193,11 +193,11 @@ export default function ChatPage() {
   const LIMIT = 50;
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login');
-  }, [isAuthenticated, router]);
+    if (hasHydrated && !isAuthenticated) router.replace('/login?redirect=/chat');
+  }, [hasHydrated, isAuthenticated, router]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!hasHydrated || !isAuthenticated) return;
     const load = async () => {
       setIsLoading(true);
       try {
@@ -214,7 +214,31 @@ export default function ChatPage() {
       }
     };
     load();
-  }, [isAuthenticated]);
+  }, [hasHydrated, isAuthenticated]);
+
+  // Serverless deployments may not support a persistent WebSocket. Refresh the
+  // latest page periodically and merge by id so delivery remains reliable.
+  useEffect(() => {
+    if (!hasHydrated || !isAuthenticated) return;
+    const refresh = async () => {
+      try {
+        const response = await api.getChatMessages(undefined, LIMIT);
+        const latest = ((response.data as ChatMessage[]) || []).reverse();
+        setMessages((previous) => {
+          const byId = new Map(previous.map((message) => [message.id, message]));
+          latest.forEach((message) => byId.set(message.id, message));
+          const merged = Array.from(byId.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          if (merged.length === previous.length && merged.every((message, index) => {
+            const old = previous[index];
+            return old?.id === message.id && old.content === message.content && old.isDeleted === message.isDeleted;
+          })) return previous;
+          return merged;
+        });
+      } catch { /* socket remains the primary real-time path */ }
+    };
+    const timer = setInterval(refresh, 10000);
+    return () => clearInterval(timer);
+  }, [hasHydrated, isAuthenticated]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -273,22 +297,11 @@ export default function ChatPage() {
     if (content.length > 500) { toast.error('Message too long. Max 500 characters.'); return; }
     setIsSending(true);
     try {
-      if (socket && isConnected) {
-        const result = await new Promise<{ ok: boolean; message?: ChatMessage; error?: string }>((resolve, reject) => {
-          socket.timeout(8000).emit('sendChatMessage', { content }, (error: Error | null, response: { ok: boolean; message?: ChatMessage; error?: string }) => {
-            if (error) reject(new Error('Message delivery timed out. Please try again.'));
-            else resolve(response);
-          });
-        });
-        if (!result?.ok || !result.message) throw new Error(result?.error || 'Failed to send message');
-        addMessageOnce(result.message);
-      } else {
-        // Keep chat usable while a socket reconnects; the server broadcasts this
-        // message to all currently connected members.
-        const response = await api.sendChatMessage(content);
-        const message = response.data as ChatMessage;
-        if (message) addMessageOnce(message);
-      }
+      // HTTP is canonical and works on Vercel/serverless. The backend emits a
+      // socket event after persistence for connected users.
+      const response = await api.sendChatMessage(content);
+      const message = response.data as ChatMessage;
+      if (message) addMessageOnce(message);
       setInputText('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to send message');

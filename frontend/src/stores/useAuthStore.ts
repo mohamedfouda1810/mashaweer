@@ -7,6 +7,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
 
   // Actions
   login: (token: string, user: User) => void;
@@ -21,15 +22,16 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      hasHydrated: false,
 
       login: (token: string, user: User) => {
         api.setToken(token);
-        set({ user, token, isAuthenticated: true });
+        set({ user, token, isAuthenticated: true, hasHydrated: true });
       },
 
       logout: () => {
         api.setToken(null);
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false, hasHydrated: true });
       },
 
       setUser: (user: User) => {
@@ -52,9 +54,8 @@ export const useAuthStore = create<AuthState>()(
       // 401 errors for any request made before the user explicitly logs in again.
       onRehydrateStorage: () => {
         return (state) => {
-          if (state?.token) {
-            api.setToken(state.token);
-          }
+          if (state?.token) api.setToken(state.token);
+          useAuthStore.setState({ hasHydrated: true });
         };
       },
     },
