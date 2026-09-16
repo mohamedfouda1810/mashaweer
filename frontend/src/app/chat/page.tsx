@@ -9,18 +9,19 @@ import toast from 'react-hot-toast';
 import { Send, Loader2, Trash2, Ban, Shield, MessageCircle, UsersRound, UserCheck, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+// ── Role styling ──────────────────────────────────────────────────
 const ROLE_STYLE: Record<string, string> = {
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
   DRIVER: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   PASSENGER: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
-
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Admin',
   DRIVER: 'Driver',
   PASSENGER: 'Passenger',
 };
 
+// ── Admin context menu ────────────────────────────────────────────
 interface AdminMenuProps {
   message: ChatMessage;
   onDelete: (id: string) => void;
@@ -30,57 +31,63 @@ interface AdminMenuProps {
 }
 
 function AdminMenu({ message, onDelete, onBlock, onClose, position }: AdminMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
   const name = message.user ? `${message.user.firstName} ${message.user.lastName}` : 'Unknown';
 
   return (
     <div
-      ref={menuRef}
+      ref={ref}
       className="fixed z-50 min-w-[180px] overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
-      style={{ top: Math.min(position.y, window.innerHeight - 120), left: Math.min(position.x, window.innerWidth - 200) }}
+      style={{
+        top: Math.min(position.y, window.innerHeight - 130),
+        left: Math.min(position.x, window.innerWidth - 200),
+      }}
     >
       <div className="border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
-        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Admin Actions</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Admin Actions</p>
       </div>
       <button
         onClick={() => { onDelete(message.id); onClose(); }}
         className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
       >
-        <Trash2 className="h-4 w-4" />
-        Delete message
+        <Trash2 className="h-4 w-4" /> Delete message
       </button>
       {message.user?.role !== 'ADMIN' && (
         <button
           onClick={() => { onBlock(message.userId, name); onClose(); }}
           className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
         >
-          <Ban className="h-4 w-4" />
-          Block from chat
+          <Ban className="h-4 w-4" /> Block from chat
         </button>
       )}
     </div>
   );
 }
 
-interface MessageBubbleProps {
+// ── Message bubble ────────────────────────────────────────────────
+interface BubbleProps {
   message: ChatMessage;
   isOwn: boolean;
   isAdmin: boolean;
-  onAdminClick: (message: ChatMessage, e: React.MouseEvent) => void;
+  onAdminClick: (m: ChatMessage, e: React.MouseEvent) => void;
 }
 
-function MessageBubble({ message, isOwn, isAdmin, onAdminClick }: MessageBubbleProps) {
-  const initials = message.user ? `${message.user.firstName[0]}${message.user.lastName[0]}` : '?';
-  const formattedTime = new Date(message.createdAt).toLocaleTimeString('en-EG', { hour: '2-digit', minute: '2-digit' });
+function MessageBubble({ message, isOwn, isAdmin, onAdminClick }: BubbleProps) {
+  const initials = message.user
+    ? `${message.user.firstName[0] ?? ''}${message.user.lastName[0] ?? ''}`
+    : '?';
+  const time = new Date(message.createdAt).toLocaleTimeString('en-EG', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   if (message.isDeleted) {
     return (
@@ -93,52 +100,64 @@ function MessageBubble({ message, isOwn, isAdmin, onAdminClick }: MessageBubbleP
     );
   }
 
+  const avatarGradient =
+    message.user?.role === 'ADMIN'
+      ? 'bg-gradient-to-br from-red-500 to-rose-600'
+      : message.user?.role === 'DRIVER'
+      ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
+      : 'bg-gradient-to-br from-teal-500 to-emerald-600';
+
   return (
-    <div className={`flex items-end gap-2 group ${isOwn ? 'flex-row-reverse' : ''}`}>
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
-        message.user?.role === 'ADMIN' ? 'bg-gradient-to-br from-red-500 to-rose-600'
-        : message.user?.role === 'DRIVER' ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
-        : 'bg-gradient-to-br from-teal-500 to-emerald-600'
-      }`}>
+    <div className={`group flex items-end gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
+      {/* Avatar */}
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${avatarGradient}`}>
         {initials}
       </div>
-      <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+
+      {/* Content */}
+      <div className={`flex max-w-[70%] flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'}`}>
         {!isOwn && (
           <div className="flex items-center gap-2 px-1">
             <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
               {message.user?.firstName} {message.user?.lastName}
             </span>
             {message.user?.role && (
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLE[message.user.role] || ''}`}>
-                {ROLE_LABEL[message.user.role] || message.user.role}
+              <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLE[message.user.role] ?? ''}`}>
+                {ROLE_LABEL[message.user.role] ?? message.user.role}
               </span>
             )}
           </div>
         )}
+
         <div className="flex items-end gap-2">
-          <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${
-            isOwn ? 'rounded-br-md bg-gradient-to-br from-teal-500 to-emerald-600 text-white'
-            : 'rounded-bl-md bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
-          }`}>
-            <p className="text-sm leading-relaxed break-words">{message.content}</p>
+          <div
+            className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+              isOwn
+                ? 'rounded-br-md bg-gradient-to-br from-teal-500 to-emerald-600 text-white'
+                : 'rounded-bl-md bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
+            }`}
+          >
+            <p className="break-words text-sm leading-relaxed">{message.content}</p>
           </div>
-          {isAdmin && !message.isDeleted && (
+          {isAdmin && (
             <button
               onClick={(e) => onAdminClick(message, e)}
-              className="opacity-0 group-hover:opacity-100 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition-all hover:bg-red-100 hover:text-red-600 dark:bg-zinc-700 dark:text-zinc-400"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 opacity-0 transition-all hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:bg-zinc-700 dark:text-zinc-400"
               title="Admin actions"
             >
               <Shield className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
-        <span className={`px-1 text-[10px] text-zinc-400 ${isOwn ? 'self-end' : ''}`}>{formattedTime}</span>
+
+        <span className={`px-1 text-[10px] text-zinc-400 ${isOwn ? 'self-end' : ''}`}>{time}</span>
       </div>
     </div>
   );
 }
 
-interface ConfirmDialogProps {
+// ── Confirm dialog ────────────────────────────────────────────────
+interface ConfirmProps {
   isOpen: boolean;
   title: string;
   message: string;
@@ -148,7 +167,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmClass = 'bg-red-600 hover:bg-red-700', onConfirm, onCancel }: ConfirmDialogProps) {
+function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmClass = 'bg-red-600 hover:bg-red-700', onConfirm, onCancel }: ConfirmProps) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -157,14 +176,46 @@ function ConfirmDialog({ isOpen, title, message, confirmLabel, confirmClass = 'b
         <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>
         <div className="mt-4 flex gap-3">
-          <button onClick={onCancel} className="flex-1 rounded-xl border border-zinc-200 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</button>
-          <button onClick={onConfirm} className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors ${confirmClass}`}>{confirmLabel}</button>
+          <button onClick={onCancel} className="flex-1 rounded-xl border border-zinc-200 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors ${confirmClass}`}>
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+// ── Page skeleton (shown while Zustand hydrates) ──────────────────
+function ChatSkeleton() {
+  return (
+    <div className="flex flex-col bg-zinc-50 dark:bg-zinc-950" style={{ height: 'calc(100dvh - 56px)' }}>
+      <div className="border-b border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-950/80">
+        <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
+          <div className="h-9 w-9 animate-pulse rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+          <div className="space-y-1.5">
+            <div className="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-2.5 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 p-4">
+        <div className="mx-auto max-w-3xl space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className={`flex items-end gap-2 ${i % 2 ? 'flex-row-reverse' : ''}`}>
+              <div className="h-8 w-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+              <div className={`h-12 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700 ${i % 2 ? 'w-48' : 'w-64'}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main chat page ────────────────────────────────────────────────
 export default function ChatPage() {
   const router = useRouter();
   const { user, isAuthenticated, hasHydrated } = useAuthStore();
@@ -189,136 +240,207 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const atBottomRef = useRef(true); // track if user is scrolled to bottom
   const isAdmin = user?.role === 'ADMIN';
   const LIMIT = 50;
 
+  // ── Auth guard ────────────────────────────────────────────────
   useEffect(() => {
-    if (hasHydrated && !isAuthenticated) router.replace('/login?redirect=/chat');
+    if (hasHydrated && !isAuthenticated) {
+      router.replace('/login?redirect=/chat');
+    }
   }, [hasHydrated, isAuthenticated, router]);
 
+  // ── Initial load ──────────────────────────────────────────────
   useEffect(() => {
     if (!hasHydrated || !isAuthenticated) return;
+    let cancelled = false;
+
     const load = async () => {
       setIsLoading(true);
       try {
-        const [msgRes, statusRes] = await Promise.all([api.getChatMessages(undefined, LIMIT), api.getChatStatus()]);
-        const msgs = ((msgRes.data as ChatMessage[]) || []);
-        setMessages(msgs.reverse());
+        const [msgRes, statusRes] = await Promise.all([
+          api.getChatMessages(undefined, LIMIT),
+          api.getChatStatus(),
+        ]);
+
+        if (cancelled) return;
+
+        // Server returns newest-first; we reverse to show oldest at top
+        const msgs = (Array.isArray(msgRes.data) ? msgRes.data : []) as ChatMessage[];
+        const ordered = [...msgs].reverse();
+        setMessages(ordered);
         setHasMore(msgs.length >= LIMIT);
-        if (msgs.length > 0) setCursor(msgs[0]?.id);
-        setIsBlocked((statusRes.data as any)?.blocked ?? false);
-      } catch {
-        toast.error('Failed to load chat messages');
+        // cursor = the oldest message id (now first after reverse = ordered[0])
+        if (ordered.length > 0) setCursor(ordered[0].id);
+        setIsBlocked(Boolean((statusRes.data as any)?.blocked));
+      } catch (err: any) {
+        if (!cancelled) toast.error(err?.message ?? 'Failed to load chat messages');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
+
     load();
+    return () => { cancelled = true; };
   }, [hasHydrated, isAuthenticated]);
 
-  // Serverless deployments may not support a persistent WebSocket. Refresh the
-  // latest page periodically and merge by id so delivery remains reliable.
+  // ── Scroll to bottom after initial load & new messages ───────
   useEffect(() => {
-    if (!hasHydrated || !isAuthenticated) return;
-    const refresh = async () => {
-      try {
-        const response = await api.getChatMessages(undefined, LIMIT);
-        const latest = ((response.data as ChatMessage[]) || []).reverse();
-        setMessages((previous) => {
-          const byId = new Map(previous.map((message) => [message.id, message]));
-          latest.forEach((message) => byId.set(message.id, message));
-          const merged = Array.from(byId.values()).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-          if (merged.length === previous.length && merged.every((message, index) => {
-            const old = previous[index];
-            return old?.id === message.id && old.content === message.content && old.isDeleted === message.isDeleted;
-          })) return previous;
-          return merged;
-        });
-      } catch { /* socket remains the primary real-time path */ }
-    };
-    const timer = setInterval(refresh, 10000);
-    return () => clearInterval(timer);
-  }, [hasHydrated, isAuthenticated]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (atBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
-  useEffect(() => {
-    if (!socket) return;
-    const handleNew = (msg: ChatMessage) => setMessages((prev) =>
-      prev.some((existing) => existing.id === msg.id) ? prev : [...prev, msg],
-    );
-    const handleDeleted = ({ messageId }: { messageId: string }) =>
-      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, isDeleted: true, user: null } : m));
-    const handleBlocked = ({ userId }: { userId: string }) => {
-      if (userId === user?.id) { setIsBlocked(true); toast.error('You have been blocked from the group chat.', { duration: 6000 }); }
-    };
-    const handleUnblocked = ({ userId }: { userId: string }) => {
-      if (userId === user?.id) { setIsBlocked(false); toast.success('You have been unblocked. You can chat again!'); }
-    };
-    socket.on('newChatMessage', handleNew);
-    socket.on('chatMessageDeleted', handleDeleted);
-    socket.on('chatUserBlocked', handleBlocked);
-    socket.on('chatUserUnblocked', handleUnblocked);
-    return () => {
-      socket.off('newChatMessage', handleNew);
-      socket.off('chatMessageDeleted', handleDeleted);
-      socket.off('chatUserBlocked', handleBlocked);
-      socket.off('chatUserUnblocked', handleUnblocked);
-    };
-  }, [socket, user?.id]);
+  // ── Track whether user is near the bottom ────────────────────
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
 
+    // User is "at bottom" if within 150px of bottom
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+
+    // Load older messages when scrolled to very top
+    if (el.scrollTop < 60) loadMore();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Load older messages ───────────────────────────────────────
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || !cursor) return;
     setLoadingMore(true);
+    const prevScrollHeight = messagesContainerRef.current?.scrollHeight ?? 0;
+
     try {
       const res = await api.getChatMessages(cursor, LIMIT);
-      const older = ((res.data as ChatMessage[]) || []);
+      const older = (Array.isArray(res.data) ? res.data : []) as ChatMessage[];
       setHasMore(older.length >= LIMIT);
-      setMessages((prev) => [...older.reverse(), ...prev]);
-      if (older.length > 0) setCursor(older[0]?.id);
-    } catch { toast.error('Failed to load older messages'); }
-    finally { setLoadingMore(false); }
+
+      // older[] comes back newest-first; reverse → oldest first
+      const reversed = [...older].reverse();
+      setMessages((prev) => [...reversed, ...prev]);
+      if (reversed.length > 0) setCursor(reversed[0].id);
+
+      // Preserve scroll position after prepending older messages
+      requestAnimationFrame(() => {
+        const el = messagesContainerRef.current;
+        if (el) el.scrollTop = el.scrollHeight - prevScrollHeight;
+      });
+    } catch {
+      toast.error('Failed to load older messages');
+    } finally {
+      setLoadingMore(false);
+    }
   }, [cursor, hasMore, loadingMore]);
 
-  const handleScroll = useCallback(() => {
-    if (!messagesContainerRef.current) return;
-    if (messagesContainerRef.current.scrollTop < 60) loadMore();
-  }, [loadMore]);
+  // ── Poll every 10 s (fallback when socket unavailable) ───────
+  useEffect(() => {
+    if (!hasHydrated || !isAuthenticated) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await api.getChatMessages(undefined, LIMIT);
+        const latest = (Array.isArray(res.data) ? res.data : []) as ChatMessage[];
+        const ordered = [...latest].reverse();
+        setMessages((prev) => {
+          const byId = new Map(prev.map((m) => [m.id, m]));
+          ordered.forEach((m) => byId.set(m.id, m));
+          return Array.from(byId.values()).sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
+        });
+      } catch { /* silent */ }
+    }, 10_000);
+    return () => clearInterval(timer);
+  }, [hasHydrated, isAuthenticated]);
 
-  const addMessageOnce = useCallback((message: ChatMessage) => {
-    setMessages((prev) => prev.some((existing) => existing.id === message.id) ? prev : [...prev, message]);
-  }, []);
+  // ── Socket real-time events ───────────────────────────────────
+  useEffect(() => {
+    if (!socket) return;
 
+    const onNew = (msg: ChatMessage) =>
+      setMessages((prev) =>
+        prev.some((m) => m.id === msg.id) ? prev : [...prev, msg],
+      );
+
+    const onDeleted = ({ messageId }: { messageId: string }) =>
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, isDeleted: true, user: null } : m,
+        ),
+      );
+
+    const onBlocked = ({ userId }: { userId: string }) => {
+      if (userId === user?.id) {
+        setIsBlocked(true);
+        toast.error('You have been blocked from the group chat.', { duration: 6000 });
+      }
+    };
+
+    const onUnblocked = ({ userId }: { userId: string }) => {
+      if (userId === user?.id) {
+        setIsBlocked(false);
+        toast.success('You can now send messages again!');
+      }
+    };
+
+    socket.on('newChatMessage', onNew);
+    socket.on('chatMessageDeleted', onDeleted);
+    socket.on('chatUserBlocked', onBlocked);
+    socket.on('chatUserUnblocked', onUnblocked);
+
+    return () => {
+      socket.off('newChatMessage', onNew);
+      socket.off('chatMessageDeleted', onDeleted);
+      socket.off('chatUserBlocked', onBlocked);
+      socket.off('chatUserUnblocked', onUnblocked);
+    };
+  }, [socket, user?.id]);
+
+  // ── Send message ──────────────────────────────────────────────
   const handleSend = async () => {
-    if (!inputText.trim() || isSending || isBlocked) return;
     const content = inputText.trim();
-    if (content.length > 500) { toast.error('Message too long. Max 500 characters.'); return; }
+    if (!content || isSending || isBlocked) return;
+    if (content.length > 500) { toast.error('Message too long (max 500 characters).'); return; }
+
     setIsSending(true);
-    try {
-      // HTTP is canonical and works on Vercel/serverless. The backend emits a
-      // socket event after persistence for connected users.
-      const response = await api.sendChatMessage(content);
-      const message = response.data as ChatMessage;
-      if (message) addMessageOnce(message);
-      setInputText('');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send message');
-    } finally {
-      setIsSending(false);
-      inputRef.current?.focus();
+    setInputText('');
+
+    // If socket is connected, send via WebSocket; server will broadcast back
+    if (socket?.connected) {
+      socket.emit('sendChatMessage', { content });
+    } else {
+      // HTTP fallback — server broadcasts via socket after persisting
+      try {
+        const res = await api.sendChatMessage(content);
+        if (res.data) {
+          setMessages((prev) => {
+            const msg = res.data as ChatMessage;
+            return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
+          });
+        }
+      } catch (err: any) {
+        toast.error(err?.message ?? 'Failed to send message');
+        setInputText(content); // restore on error
+      }
     }
+
+    setIsSending(false);
+    atBottomRef.current = true;
+    inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
+  // ── Admin: manage blocked users ───────────────────────────────
   const openBlockedUsers = async () => {
     setShowBlockedUsers(true);
     setIsLoadingBlockedUsers(true);
     try {
-      const response = await api.getBlockedChatUsers();
-      setBlockedUsers((response.data as ChatBlock[]) || []);
+      const res = await api.getBlockedChatUsers();
+      setBlockedUsers((Array.isArray(res.data) ? res.data : []) as ChatBlock[]);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to load blocked users');
+      toast.error(err?.message ?? 'Failed to load blocked users');
     } finally {
       setIsLoadingBlockedUsers(false);
     }
@@ -327,30 +449,29 @@ export default function ChatPage() {
   const handleUnblockUser = async (block: ChatBlock) => {
     try {
       await api.unblockChatUser(block.userId);
-      setBlockedUsers((users) => users.filter((item) => item.userId !== block.userId));
+      setBlockedUsers((list) => list.filter((b) => b.userId !== block.userId));
       toast.success(`${block.user.firstName} ${block.user.lastName} can chat again`);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to unblock user');
+      toast.error(err?.message ?? 'Failed to unblock user');
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
-
+  // ── Admin: delete / block ─────────────────────────────────────
   const handleDeleteMessage = (messageId: string) => {
     setConfirmState({
       open: true,
       title: 'Delete Message',
-      message: 'Are you sure you want to delete this message? This cannot be undone.',
+      message: 'Delete this message permanently?',
       confirmLabel: 'Delete',
       action: async () => {
         setConfirmState(null);
         try {
           await api.deleteChatMessage(messageId);
-          setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, isDeleted: true, user: null } : m));
+          setMessages((prev) =>
+            prev.map((m) => m.id === messageId ? { ...m, isDeleted: true, user: null } : m),
+          );
           toast.success('Message deleted');
-        } catch (err: any) { toast.error(err.message || 'Failed to delete message'); }
+        } catch (err: any) { toast.error(err?.message ?? 'Failed to delete'); }
       },
     });
   };
@@ -359,15 +480,15 @@ export default function ChatPage() {
     setConfirmState({
       open: true,
       title: 'Block User from Chat',
-      message: `Block ${userName} from the group chat? They will not be able to send messages until unblocked.`,
+      message: `Block ${userName}? They cannot send messages until unblocked.`,
       confirmLabel: 'Block',
       confirmClass: 'bg-amber-600 hover:bg-amber-700',
       action: async () => {
         setConfirmState(null);
         try {
           await api.blockChatUser(userId);
-          toast.success(`${userName} has been blocked from chat`);
-        } catch (err: any) { toast.error(err.message || 'Failed to block user'); }
+          toast.success(`${userName} blocked from chat`);
+        } catch (err: any) { toast.error(err?.message ?? 'Failed to block'); }
       },
     });
   };
@@ -378,11 +499,16 @@ export default function ChatPage() {
     setAdminMenu({ message, position: { x: rect.left, y: rect.bottom + 4 } });
   };
 
+  // ── Hydration guard ───────────────────────────────────────────
+  // Show skeleton while Zustand rehydrates from localStorage
+  if (!hasHydrated) return <ChatSkeleton />;
+  // While redirecting unauthenticated users, render nothing
   if (!isAuthenticated) return null;
 
+  // ── Render ────────────────────────────────────────────────────
   return (
     <div className="flex flex-col bg-zinc-50 dark:bg-zinc-950" style={{ height: 'calc(100dvh - 56px)' }}>
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="border-b border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
@@ -394,53 +520,73 @@ export default function ChatPage() {
               <p className="text-xs text-zinc-500">Drivers, Passengers &amp; Admins</p>
             </div>
           </div>
+
           {isAdmin && (
             <div className="flex items-center gap-2">
-              <button onClick={openBlockedUsers} className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:border-teal-300 hover:text-teal-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300" title="Manage blocked users">
-                <UsersRound className="h-3.5 w-3.5" /> Manage
+              <button
+                onClick={openBlockedUsers}
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:border-teal-300 hover:text-teal-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                title="Manage blocked users"
+              >
+                <UsersRound className="h-3.5 w-3.5" />
+                Manage
               </button>
-              <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">Admin Mode</span>
+              <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                Admin Mode
+              </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Blocked banner */}
+      {/* ── Blocked banner ── */}
       {isBlocked && (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/50 dark:bg-amber-950/30">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
             <Ban className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              You have been blocked from this chat by an admin. You can read messages but cannot send any.
+              You have been blocked from this chat by an admin. You can read but not send messages.
             </p>
           </div>
         </div>
       )}
 
-      {/* Messages */}
-      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+      {/* ── Messages ── */}
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+      >
         <div className="mx-auto max-w-3xl space-y-4 p-4 pb-2">
+          {/* Load-more indicator / button */}
           {loadingMore && (
-            <div className="flex justify-center py-2"><Loader2 className="h-5 w-5 animate-spin text-zinc-400" /></div>
+            <div className="flex justify-center py-2">
+              <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+            </div>
           )}
           {hasMore && !loadingMore && messages.length >= LIMIT && (
             <div className="flex justify-center">
-              <button onClick={loadMore} className="rounded-full bg-zinc-100 px-4 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700">
+              <button
+                onClick={loadMore}
+                className="rounded-full bg-zinc-100 px-4 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+              >
                 Load older messages
               </button>
             </div>
           )}
+
+          {/* Content */}
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className={`flex items-end gap-2 ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
-                  <div className="h-8 w-8 rounded-full bg-zinc-200 animate-pulse dark:bg-zinc-700" />
-                  <div className={`h-12 rounded-2xl bg-zinc-200 animate-pulse dark:bg-zinc-700 ${i % 2 === 0 ? 'w-48' : 'w-64'}`} />
+                <div key={i} className={`flex items-end gap-2 ${i % 2 ? 'flex-row-reverse' : ''}`}>
+                  <div className="h-8 w-8 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-700" />
+                  <div className={`h-12 animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-700 ${i % 2 ? 'w-48' : 'w-64'}`} />
                 </div>
               ))}
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-md">
                 <MessageCircle className="h-8 w-8 text-white" />
               </div>
@@ -449,18 +595,26 @@ export default function ChatPage() {
             </div>
           ) : (
             messages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} isOwn={msg.userId === user?.id} isAdmin={isAdmin} onAdminClick={handleAdminMenuClick} />
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                isOwn={msg.userId === user?.id}
+                isAdmin={isAdmin}
+                onAdminClick={handleAdminMenuClick}
+              />
             ))
           )}
+
+          {/* Scroll anchor */}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
+      {/* ── Input ── */}
       <div className="border-t border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto max-w-3xl p-3">
           {isBlocked ? (
-            <div className="flex items-center justify-center rounded-2xl bg-zinc-100 py-3 dark:bg-zinc-800">
+            <div className="flex items-center justify-center rounded-2xl bg-zinc-100 py-3.5 dark:bg-zinc-800">
               <Ban className="mr-2 h-4 w-4 text-zinc-400" />
               <span className="text-sm text-zinc-500">You are blocked from sending messages</span>
             </div>
@@ -472,7 +626,7 @@ export default function ChatPage() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message... (Enter to send)"
+                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
                   rows={1}
                   maxLength={500}
                   disabled={isSending}
@@ -493,7 +647,7 @@ export default function ChatPage() {
               <button
                 onClick={handleSend}
                 disabled={!inputText.trim() || isSending}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-sm transition-all hover:shadow-md hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-sm transition-all hover:scale-105 hover:shadow-md active:scale-95 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>
@@ -503,23 +657,65 @@ export default function ChatPage() {
         <div style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
       </div>
 
+      {/* ── Admin context menu ── */}
       {adminMenu && (
-        <AdminMenu message={adminMenu.message} onDelete={handleDeleteMessage} onBlock={handleBlockUser} onClose={() => setAdminMenu(null)} position={adminMenu.position} />
+        <AdminMenu
+          message={adminMenu.message}
+          onDelete={handleDeleteMessage}
+          onBlock={handleBlockUser}
+          onClose={() => setAdminMenu(null)}
+          position={adminMenu.position}
+        />
       )}
+
+      {/* ── Confirm dialog ── */}
       {confirmState && (
-        <ConfirmDialog isOpen={confirmState.open} title={confirmState.title} message={confirmState.message} confirmLabel={confirmState.confirmLabel} confirmClass={confirmState.confirmClass} onConfirm={confirmState.action} onCancel={() => setConfirmState(null)} />
+        <ConfirmDialog
+          isOpen={confirmState.open}
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          confirmClass={confirmState.confirmClass}
+          onConfirm={confirmState.action}
+          onCancel={() => setConfirmState(null)}
+        />
       )}
+
+      {/* ── Blocked users panel (admin) ── */}
       {showBlockedUsers && (
         <div className="fixed inset-0 z-[80] flex justify-end bg-black/30 backdrop-blur-sm" onClick={() => setShowBlockedUsers(false)}>
-          <aside className="h-full w-full max-w-sm bg-white p-5 shadow-2xl dark:bg-zinc-900" onClick={(event) => event.stopPropagation()}>
+          <aside className="h-full w-full max-w-sm bg-white p-5 shadow-2xl dark:bg-zinc-900" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <div><h2 className="font-bold text-zinc-900 dark:text-white">Blocked users</h2><p className="text-xs text-zinc-500">Restore group-chat access anytime.</p></div>
-              <button onClick={() => setShowBlockedUsers(false)} className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X className="h-5 w-5" /></button>
+              <div>
+                <h2 className="font-bold text-zinc-900 dark:text-white">Blocked users</h2>
+                <p className="text-xs text-zinc-500">Restore group-chat access anytime.</p>
+              </div>
+              <button onClick={() => setShowBlockedUsers(false)} className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <X className="h-5 w-5" />
+              </button>
             </div>
             <div className="mt-6 space-y-3">
-              {isLoadingBlockedUsers ? <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-zinc-400" /></div>
-                : blockedUsers.length === 0 ? <p className="rounded-xl bg-zinc-50 p-4 text-center text-sm text-zinc-500 dark:bg-zinc-800">No users are currently blocked.</p>
-                : blockedUsers.map((block) => <div key={block.id} className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3 dark:border-zinc-800"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{block.user.firstName[0]}{block.user.lastName[0]}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">{block.user.firstName} {block.user.lastName}</p><p className="text-xs text-zinc-500">{ROLE_LABEL[block.user.role]}</p></div><button onClick={() => handleUnblockUser(block)} className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300"><UserCheck className="h-3.5 w-3.5" /> Unblock</button></div>) }
+              {isLoadingBlockedUsers ? (
+                <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-zinc-400" /></div>
+              ) : blockedUsers.length === 0 ? (
+                <p className="rounded-xl bg-zinc-50 p-4 text-center text-sm text-zinc-500 dark:bg-zinc-800">No users are currently blocked.</p>
+              ) : blockedUsers.map((block) => (
+                <div key={block.id} className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3 dark:border-zinc-800">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    {block.user.firstName[0]}{block.user.lastName[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">{block.user.firstName} {block.user.lastName}</p>
+                    <p className="text-xs text-zinc-500">{ROLE_LABEL[block.user.role] ?? block.user.role}</p>
+                  </div>
+                  <button
+                    onClick={() => handleUnblockUser(block)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-2 text-xs font-semibold text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300"
+                  >
+                    <UserCheck className="h-3.5 w-3.5" /> Unblock
+                  </button>
+                </div>
+              ))}
             </div>
           </aside>
         </div>

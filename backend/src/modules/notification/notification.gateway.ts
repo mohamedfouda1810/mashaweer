@@ -98,6 +98,8 @@ export class NotificationGateway
 
       // Join a room specific to the user for easy broadcasting
       client.join(`user_${userId}`);
+      // Join the global chat room so chat broadcasts reach this client
+      client.join('chat_room');
       this.logger.log(`User ${userId} connected (socket ${client.id})`);
     } catch (err: any) {
       this.logger.warn(

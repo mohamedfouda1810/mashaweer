@@ -39,9 +39,11 @@ function getNotificationUrl(type: NotificationType, metadata?: Record<string, an
     case 'ACCOUNT_BANNED':
       return '/';
     default:
+      if ((type as string) === 'CHAT_MESSAGE') return '/chat';
       return tripId ? `/trips/${tripId}` : '/notifications';
   }
 }
+
 
 @Injectable()
 export class NotificationService {

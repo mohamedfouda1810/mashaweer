@@ -393,6 +393,7 @@ enum NotificationType {
   COMMISSION_ADDED
   COMMISSION_PAYMENT_APPROVED
   COMMISSION_PAYMENT_REJECTED
+  CHAT_MESSAGE
 }
 
 enum CommissionPaymentStatus {

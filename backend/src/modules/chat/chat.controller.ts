@@ -44,7 +44,27 @@ export class ChatController {
     @Body('content') content: string,
   ) {
     const message = await this.chatService.createMessage(userId, content);
+    // Broadcast message to all chat_room members
     this.chatGateway.broadcastMessage(message);
+
+    // Notify all OTHER members so their bell badge increments
+    const senderName = message.user
+      ? `${message.user.firstName} ${message.user.lastName}`
+      : 'Someone';
+    const preview =
+      message.content.length > 60
+        ? message.content.substring(0, 60) + '…'
+        : message.content;
+    this.chatGateway.broadcastNotificationExcept(userId, {
+      id: `chat-${message.id}`,
+      type: 'CHAT_MESSAGE',
+      title: `${senderName} in Group Chat`,
+      message: preview,
+      isRead: false,
+      createdAt: message.createdAt,
+      metadata: { chatMessageId: message.id },
+    });
+
     return ApiResponseDto.success(message, 'Message sent');
   }
 
