@@ -895,25 +895,43 @@ export default function AdminPage() {
                                             </thead>
                                             <tbody className="divide-y divide-zinc-100 bg-white dark:divide-zinc-800 dark:bg-zinc-900">
                                                 {allTrips.map((t) => (
-                                                    <tr key={t.id}>
+                                                    <tr key={t.id} className={t.status === 'CANCELLED' ? 'bg-red-50/20 dark:bg-red-950/10' : ''}>
                                                         <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
                                                             {t.fromCity} → {t.toCity}
                                                         </td>
                                                         <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
-                                                            {t.driver?.firstName} {t.driver?.lastName}
+                                                            <p className="font-medium text-zinc-800 dark:text-zinc-200">{t.driver?.firstName} {t.driver?.lastName}</p>
+                                                            {t.driver?.phone && (
+                                                                <p className="font-mono text-xs text-zinc-400">{t.driver.phone}</p>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                                                             {new Date(t.departureTime).toLocaleString()}
                                                         </td>
                                                         <td className="px-4 py-3">
-                                                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                                t.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                t.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                                                t.status === 'CANCELLED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
-                                                            }`}>
-                                                                {t.status.replace('_', ' ')}
-                                                            </span>
+                                                            <div className="flex flex-col items-start gap-1">
+                                                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                                    t.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                                    t.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                                    t.status === 'CANCELLED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                                    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
+                                                                }`}>
+                                                                    {t.status === 'CANCELLED' && <span>✕</span>}
+                                                                    {t.status.replace('_', ' ')}
+                                                                </span>
+
+                                                                {/* Driver cancellation reason display */}
+                                                                {t.status === 'CANCELLED' && (t.cancellationRequest?.reason || t.notes) && (
+                                                                    <div className="mt-1 flex max-w-xs flex-col rounded-lg border border-red-200/80 bg-red-50/80 px-2.5 py-1.5 text-xs text-red-800 shadow-sm dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300" dir="auto">
+                                                                        <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">
+                                                                            سبب الإلغاء:
+                                                                        </span>
+                                                                        <span className="font-medium text-red-900 dark:text-red-200 select-all">
+                                                                            {t.cancellationRequest?.reason || t.notes}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
                                                             <div className="flex items-center justify-end gap-2">
@@ -1724,11 +1742,18 @@ export default function AdminPage() {
                                     <h3 className="mb-2 text-sm font-bold text-zinc-900 dark:text-white">🚗 Trips as Driver ({selectedUserDetail.tripsAsDriver.length})</h3>
                                     <div className="space-y-1">
                                         {selectedUserDetail.tripsAsDriver.slice(0, 8).map((t: any) => (
-                                            <div key={t.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-xs dark:bg-zinc-800/50">
-                                                <span>{t.fromCity} → {t.toCity} ({t._count?.bookings || 0} bookings)</span>
-                                                <span className={`rounded-full px-2 py-0.5 font-semibold ${t.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : t.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700'}`}>
-                                                    {t.status}
-                                                </span>
+                                            <div key={t.id} className="flex flex-col gap-1 rounded-lg bg-zinc-50 px-3 py-2 text-xs dark:bg-zinc-800/50">
+                                                <div className="flex items-center justify-between">
+                                                    <span>{t.fromCity} → {t.toCity} ({t._count?.bookings || 0} bookings)</span>
+                                                    <span className={`rounded-full px-2 py-0.5 font-semibold ${t.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : t.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700'}`}>
+                                                        {t.status}
+                                                    </span>
+                                                </div>
+                                                {t.status === 'CANCELLED' && (t.cancellationRequest?.reason || t.notes) && (
+                                                    <p className="text-[11px] text-red-600 dark:text-red-400" dir="auto">
+                                                        <span className="font-semibold">سبب الإلغاء:</span> {t.cancellationRequest?.reason || t.notes}
+                                                    </p>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

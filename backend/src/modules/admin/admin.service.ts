@@ -377,6 +377,14 @@ export class AdminService {
           driver: {
             select: { id: true, firstName: true, lastName: true, phone: true },
           },
+          cancellationRequest: {
+            select: {
+              id: true,
+              reason: true,
+              status: true,
+              createdAt: true,
+            },
+          },
           _count: {
             select: {
               bookings: { where: { status: { in: ['CONFIRMED', 'PENDING'] } } },
@@ -603,6 +611,9 @@ export class AdminService {
             price: true,
             totalSeats: true,
             availableSeats: true,
+            cancellationRequest: {
+              select: { id: true, reason: true, status: true },
+            },
             _count: { select: { bookings: { where: { status: 'CONFIRMED' } } } },
           },
         },
