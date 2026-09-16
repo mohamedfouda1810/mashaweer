@@ -36,6 +36,18 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
   const { user, token } = useAuthStore();
 
+  useEffect(() => {
+    let active = true;
+
+    void Promise.resolve(useAuthStore.persist.rehydrate()).finally(() => {
+      if (active) useAuthStore.setState({ hasHydrated: true });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Auto-subscribe to Web Push Notifications on login
   // Skip in WebViews where service workers are often blocked
   useEffect(() => {
