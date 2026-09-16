@@ -32,7 +32,7 @@ export class TripService {
 
   /**
    * Check whether a requesting user can see phone numbers for a given trip.
-   * Authorized: trip driver, any confirmed/pending passenger, any admin.
+   * Authorized: the trip driver, a confirmed passenger, or an admin.
    */
   private async canSeePhones(
     tripId: string,
@@ -44,12 +44,12 @@ export class TripService {
     if (requestingRole === 'ADMIN') return true;
     if (requestingUserId === driverId) return true;
 
-    // Check if the user has a confirmed or pending booking on this trip
+    // Only a confirmed reservation unlocks the driver's contact details.
     const booking = await this.prisma.booking.findFirst({
       where: {
         tripId,
         userId: requestingUserId,
-        status: { in: ['CONFIRMED', 'PENDING'] },
+        status: 'CONFIRMED',
       },
       select: { id: true },
     });
@@ -333,7 +333,9 @@ export class TripService {
 
   /**
    * Get a single trip by ID with full details.
-   * Phone numbers are only returned to the driver, confirmed/pending passengers, or admins.
+   * Contact details are intentionally scoped to the reservation relationship:
+   * drivers see confirmed passengers; confirmed passengers see their driver;
+   * admins see all contacts. Other passengers never see each other's phone.
    */
   async findOne(id: string, requestingUserId?: string, requestingRole?: string) {
     const trip = await this.prisma.trip.findUnique({
@@ -376,26 +378,26 @@ export class TripService {
       throw new NotFoundException('Trip not found');
     }
 
-    // Check if the requesting user is authorized to see phone numbers
-    const showPhones = await this.canSeePhones(
-      trip.id,
-      trip.driverId,
-      requestingUserId,
-      requestingRole,
+    const isAdmin = requestingRole === 'ADMIN';
+    const isDriver = requestingUserId === trip.driverId;
+    const isConfirmedPassenger = await this.canSeePhones(
+      trip.id, trip.driverId, requestingUserId, requestingRole,
     );
 
-    if (!showPhones) {
-      return {
-        ...trip,
-        driver: this.stripPhone(trip.driver),
-        bookings: trip.bookings.map((b) => ({
-          ...b,
-          user: this.stripPhone(b.user),
-        })),
-      };
-    }
-
-    return trip;
+    return {
+      ...trip,
+      driver: isAdmin || isConfirmedPassenger || isDriver
+        ? trip.driver
+        : this.stripPhone(trip.driver),
+      bookings: trip.bookings.map((booking) => ({
+        ...booking,
+        // A driver may contact confirmed clients in their own trip. A passenger
+        // never receives another passenger's number (including through this API).
+        user: isAdmin || (isDriver && booking.status === 'CONFIRMED')
+          ? booking.user
+          : this.stripPhone(booking.user),
+      })),
+    };
   }
 
   /**

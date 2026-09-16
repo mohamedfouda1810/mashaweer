@@ -446,6 +446,7 @@ export class BookingService {
    * Authorization: only the trip's driver, a booked passenger, or an admin can view.
    */
   async getTripBookings(tripId: string, requestingUserId?: string, requestingRole?: string) {
+    let tripDriverId: string | undefined;
     // If authorization params are provided, verify access
     if (requestingUserId && requestingRole !== 'ADMIN') {
       const trip = await this.prisma.trip.findUnique({
@@ -454,6 +455,7 @@ export class BookingService {
       });
 
       if (!trip) throw new NotFoundException('Trip not found');
+      tripDriverId = trip.driverId;
 
       const isDriver = trip.driverId === requestingUserId;
       if (!isDriver) {
@@ -462,7 +464,7 @@ export class BookingService {
           where: {
             tripId,
             userId: requestingUserId,
-            status: { in: ['CONFIRMED', 'PENDING'] },
+            status: 'CONFIRMED',
           },
         });
         if (!userBooking) {
@@ -472,7 +474,7 @@ export class BookingService {
     }
 
     const bookings = await this.prisma.booking.findMany({
-      where: { tripId, status: { in: ['CONFIRMED', 'PENDING'] } },
+      where: { tripId, status: 'CONFIRMED' },
       include: {
         user: {
           select: {
@@ -486,12 +488,10 @@ export class BookingService {
       },
     });
 
-    // Phone privacy: only the trip driver and admins can see full phone numbers
-    const showPhone = requestingRole === 'ADMIN' || (!!requestingUserId && await (async () => {
-      if (!requestingUserId) return false;
-      const trip = await this.prisma.trip.findUnique({ where: { id: tripId }, select: { driverId: true } });
-      return trip?.driverId === requestingUserId;
-    })());
+    // Phone privacy: this endpoint lists passengers, so only the trip driver
+    // and admins can receive their phone numbers. The trip was already loaded
+    // for non-admin requests, avoiding an unnecessary second query.
+    const showPhone = requestingRole === 'ADMIN' || tripDriverId === requestingUserId;
 
     if (!showPhone) {
       return bookings.map((b) => ({

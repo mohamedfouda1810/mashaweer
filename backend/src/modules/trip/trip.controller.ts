@@ -17,6 +17,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { Public } from '../../common/decorators/public.decorator';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @Controller('trips')
 export class TripController {
@@ -97,6 +98,7 @@ export class TripController {
 
   @Public()
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   async findOne(@Param('id') id: string, @Request() req: any) {
     // req.user is populated by JwtAuthGuard when a valid token is present
     const userId = req.user?.id ?? req.user?.sub;

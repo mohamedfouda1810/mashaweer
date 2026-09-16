@@ -50,7 +50,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.handshake.auth?.token ||
         client.handshake.query?.token;
 
-      if (!token || typeof token !== 'string') return;
+      if (!token || typeof token !== 'string') {
+        client.disconnect(true);
+        return;
+      }
 
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
@@ -70,7 +73,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`User ${userId} joined chat_room (socket ${client.id})`);
 
     } catch {
-      // Invalid token - proceed without userId
+      client.disconnect(true);
     }
   }
 
@@ -103,13 +106,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const message = await this.chatService.createMessage(userId, data.content);
       this.server.to('chat_room').emit('newChatMessage', message);
+      return { ok: true, message };
     } catch (err: any) {
       client.emit('chatError', { message: err.message || 'Failed to send message.' });
+      return { ok: false, error: err.message || 'Failed to send message.' };
     }
   }
 
   broadcastMessageDeleted(messageId: string) {
     this.server.to('chat_room').emit('chatMessageDeleted', { messageId });
+  }
+
+  broadcastMessage(message: unknown) {
+    this.server.to('chat_room').emit('newChatMessage', message);
   }
 
   broadcastUserBlocked(userId: string) {

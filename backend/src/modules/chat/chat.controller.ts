@@ -37,6 +37,17 @@ export class ChatController {
     return ApiResponseDto.success({ blocked });
   }
 
+  // HTTP fallback for clients whose WebSocket is temporarily unavailable.
+  @Post('messages')
+  async createMessage(
+    @CurrentUser('id') userId: string,
+    @Body('content') content: string,
+  ) {
+    const message = await this.chatService.createMessage(userId, content);
+    this.chatGateway.broadcastMessage(message);
+    return ApiResponseDto.success(message, 'Message sent');
+  }
+
   @Delete('messages/:id')
   @Roles('ADMIN')
   @UseGuards(RolesGuard)

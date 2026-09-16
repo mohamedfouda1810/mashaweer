@@ -15,7 +15,9 @@ export class ChatService {
     const messages = await this.prisma.chatMessage.findMany({
       take,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-      orderBy: { createdAt: 'desc' },
+      // A stable secondary sort prevents duplicate/gapped pages when multiple
+      // messages have the same timestamp.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         user: {
           select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true },
@@ -32,8 +34,11 @@ export class ChatService {
     }));
   }
 
-  async createMessage(userId: string, content: string) {
-    const trimmed = (content || '').trim();
+  async createMessage(userId: string, content: unknown) {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Messages must contain text only.');
+    }
+    const trimmed = content.trim();
     if (!trimmed) throw new BadRequestException('Message cannot be empty.');
     if (trimmed.length > 500) throw new BadRequestException('Message is too long. Max 500 characters.');
     const block = await this.prisma.chatBlock.findUnique({ where: { userId } });

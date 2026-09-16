@@ -835,6 +835,13 @@ class ApiClient {
     return this.request('/chat/status');
   }
 
+  async sendChatMessage(content: string) {
+    return this.request('/chat/messages', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
   async deleteChatMessage(messageId: string) {
     return this.request(`/chat/messages/${messageId}`, { method: 'DELETE' });
   }
