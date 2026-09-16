@@ -32,7 +32,8 @@ async function bootstrap() {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      if (origin.endsWith('.vercel.app')) return callback(null, true);
+      // Only allow your specific Vercel preview deployments
+      if (origin.endsWith('.vercel.app') && origin.includes('frontend-ivory-pi-80')) return callback(null, true);
       callback(null, false);
     },
     credentials: true,
@@ -62,7 +63,7 @@ export default async function handler(req: any, res: any) {
   const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
     .split(',')
     .map((o: string) => o.trim());
-  const isAllowed = !origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+  const isAllowed = !origin || allowedOrigins.includes(origin) || (origin.endsWith('.vercel.app') && origin.includes('frontend-ivory-pi-80'));
 
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', isAllowed ? (origin || allowedOrigins[0]) : allowedOrigins[0]);

@@ -5,6 +5,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from './email.service';
@@ -22,11 +23,15 @@ export class AuthService {
     private jwtService: JwtService,
     private notificationService: NotificationService,
     private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   async login(dto: LoginDto) {
+    // Normalize email for case-insensitive lookup
+    const normalizedEmail = dto.email.toLowerCase().trim();
+
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: normalizedEmail },
       include: { driverProfile: true },
     });
 
@@ -83,9 +88,12 @@ export class AuthService {
       throw new BadRequestException('Cannot register as an admin');
     }
 
+    // Normalize email for case-insensitive uniqueness
+    const normalizedEmail = dto.email.toLowerCase().trim();
+
     // Check if email or phone exists
     const existingEmail = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: normalizedEmail },
     });
     if (existingEmail) throw new ConflictException('Email already in use');
 
@@ -111,7 +119,7 @@ export class AuthService {
       data: {
         firstName: dto.firstName,
         lastName: dto.lastName,
-        email: dto.email,
+        email: normalizedEmail,
         phone: dto.phone,
         passwordHash,
         role: dto.role || Role.PASSENGER,
@@ -145,6 +153,7 @@ export class AuthService {
       // Notify admins
       const admins = await this.prisma.user.findMany({
         where: { role: Role.ADMIN },
+        select: { id: true },
       });
       for (const admin of admins) {
         await this.notificationService.create({
@@ -155,6 +164,27 @@ export class AuthService {
           metadata: { driverId: user.id },
         });
       }
+    }
+
+    // Sync new registration to Google Sheet (non-blocking on failure)
+    try {
+      const webhookUrl = this.configService.get<string>('GOOGLE_SHEET_WEBHOOK_URL');
+      if (webhookUrl) {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            createdAt: new Date().toISOString(),
+          }),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to sync registration to Google Sheet:', error);
     }
 
     const { passwordHash: _, emailVerificationToken: __, ...userWithoutSensitive } = user;

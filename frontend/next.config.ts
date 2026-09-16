@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    // Enable Next.js image optimization (was fully disabled with unoptimized: true)
     formats: ['image/webp', 'image/avif'],
     remotePatterns: [
       {
@@ -13,6 +12,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '*.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
       },
     ],
   },

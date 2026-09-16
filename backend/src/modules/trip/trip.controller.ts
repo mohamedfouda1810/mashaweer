@@ -127,8 +127,12 @@ export class TripController {
   @Delete(':id')
   @Roles('DRIVER', 'ADMIN')
   @UseGuards(RolesGuard)
-  async cancel(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    const trip = await this.tripService.cancelTrip(id, userId);
+  async cancel(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body('reason') reason?: string,
+  ) {
+    const trip = await this.tripService.cancelTrip(id, userId, reason);
     return ApiResponseDto.success(trip, 'Trip cancelled successfully');
   }
 

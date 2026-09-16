@@ -14,7 +14,7 @@ const API_BASE = (() => {
 })();
 
 /** Default request timeout in milliseconds (30 seconds — generous for cold starts + slow mobile) */
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 // ─── Error Types ───────────────────────────────────────────────────
 
@@ -402,9 +402,10 @@ class ApiClient {
     });
   }
 
-  async cancelTrip(tripId: string) {
+  async cancelTrip(tripId: string, reason?: string) {
     return this.request(`/trips/${tripId}`, {
       method: 'DELETE',
+      body: JSON.stringify({ reason: reason || '' }),
     });
   }
 

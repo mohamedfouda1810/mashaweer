@@ -110,10 +110,17 @@ function RegisterFormContent() {
 
                 const upload = async (file: File) => (await api.uploadFile(file)).url;
 
-                photoUrls.personalPhotoUrl = await upload(files.personalPhoto);
-                photoUrls.identityPhotos = await Promise.all(files.identityPhotos.map(f => upload(f)));
-                photoUrls.drivingLicensePhotos = await Promise.all(files.drivingLicensePhotos.map(f => upload(f)));
-                photoUrls.carLicensePhotos = await Promise.all(files.carLicensePhotos.map(f => upload(f)));
+                // Upload all files in parallel for faster registration
+                const [personalUrl, identityUrls, licenseUrls, carUrls] = await Promise.all([
+                  upload(files.personalPhoto),
+                  Promise.all(files.identityPhotos.map(f => upload(f))),
+                  Promise.all(files.drivingLicensePhotos.map(f => upload(f))),
+                  Promise.all(files.carLicensePhotos.map(f => upload(f))),
+                ]);
+                photoUrls.personalPhotoUrl = personalUrl;
+                photoUrls.identityPhotos = identityUrls;
+                photoUrls.drivingLicensePhotos = licenseUrls;
+                photoUrls.carLicensePhotos = carUrls;
             }
 
             await api.register({

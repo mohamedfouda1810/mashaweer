@@ -38,6 +38,9 @@ import {
     ArrowUpDown,
     Image,
     ZoomIn,
+    Copy,
+    Check,
+    Mail,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 'financials' | 'transactions' | 'commissionPayments' | 'cancellations' | 'settings';
@@ -79,6 +82,31 @@ export default function AdminPage() {
     // User Detail Modal
     const [selectedUserDetail, setSelectedUserDetail] = useState<any>(null);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
+
+    const copyToClipboard = async (text: string, field: 'email' | 'phone') => {
+        if (!text) return;
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            setCopiedField(field);
+            toast.success(field === 'email' ? 'Email copied to clipboard' : 'Phone number copied to clipboard');
+            setTimeout(() => setCopiedField(null), 2000);
+        } catch {
+            toast.error('Failed to copy');
+        }
+    };
     // Cancellation Requests
     const [cancellationRequests, setCancellationRequests] = useState<any[]>([]);
     // Driver Documents Gallery
@@ -1330,22 +1358,175 @@ export default function AdminPage() {
                 {selectedUserDetail && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedUserDetail(null)}>
                         <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900" onClick={(e) => e.stopPropagation()}>
-                            <div className="mb-6 flex items-center justify-between">
-                                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
-                                    👤 {selectedUserDetail.firstName} {selectedUserDetail.lastName}
-                                </h2>
-                                <button onClick={() => setSelectedUserDetail(null)} className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                            {/* Modal Header */}
+                            <div className="mb-6 flex flex-col gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
+                                <div className="flex items-center gap-3.5">
+                                    {selectedUserDetail.avatarUrl ? (
+                                        <img
+                                            src={getImageUrl(selectedUserDetail.avatarUrl) || selectedUserDetail.avatarUrl}
+                                            alt={selectedUserDetail.firstName}
+                                            className="h-14 w-14 rounded-2xl object-cover ring-2 ring-zinc-100 dark:ring-zinc-800"
+                                        />
+                                    ) : (
+                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 text-lg font-bold text-white shadow-md shadow-teal-500/20">
+                                            {selectedUserDetail.firstName?.[0]?.toUpperCase() || ''}{selectedUserDetail.lastName?.[0]?.toUpperCase() || ''}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
+                                                {selectedUserDetail.firstName} {selectedUserDetail.lastName}
+                                            </h2>
+                                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                selectedUserDetail.role === 'ADMIN'
+                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                                    : selectedUserDetail.role === 'DRIVER'
+                                                        ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
+                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                            }`}>
+                                                {selectedUserDetail.role === 'ADMIN' && <Shield className="h-3 w-3" />}
+                                                {selectedUserDetail.role === 'DRIVER' && <Car className="h-3 w-3" />}
+                                                {selectedUserDetail.role === 'PASSENGER' && <UserIcon className="h-3 w-3" />}
+                                                {selectedUserDetail.role}
+                                            </span>
+                                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                selectedUserDetail.isBanned
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            }`}>
+                                                {selectedUserDetail.isBanned ? (
+                                                    <>
+                                                        <Ban className="h-3 w-3" />
+                                                        Banned
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle2 className="h-3 w-3" />
+                                                        Active
+                                                    </>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                            User ID: <span className="font-mono text-zinc-600 dark:text-zinc-300">{selectedUserDetail.id}</span>
+                                            {selectedUserDetail.createdAt && (
+                                                <> &bull; Member since {new Date(selectedUserDetail.createdAt).toLocaleDateString()}</>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedUserDetail(null)}
+                                    className="self-start rounded-xl p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 sm:self-center dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                                >
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
 
-                            {/* User Info */}
-                            <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-800/50">
-                                <div><span className="text-xs text-zinc-500">Email:</span><p className="text-sm font-medium">{selectedUserDetail.email}</p></div>
-                                <div><span className="text-xs text-zinc-500">Phone:</span><p className="text-sm font-medium">{selectedUserDetail.phone}</p></div>
-                                <div><span className="text-xs text-zinc-500">Role:</span><p className="text-sm font-medium">{selectedUserDetail.role}</p></div>
-                                <div><span className="text-xs text-zinc-500">Status:</span><p className={`text-sm font-medium ${selectedUserDetail.isBanned ? 'text-red-500' : 'text-emerald-500'}`}>{selectedUserDetail.isBanned ? 'Banned' : 'Active'}</p></div>
+                            {/* Contact Details (Email & Phone with Copy Buttons) */}
+                            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {/* Email Card */}
+                                <div className="group flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 transition-all hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700 dark:hover:bg-zinc-900">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                            <Mail className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                                Email Address
+                                            </p>
+                                            <p
+                                                className="truncate text-sm font-medium text-zinc-900 select-all dark:text-zinc-100"
+                                                title={selectedUserDetail.email}
+                                            >
+                                                {selectedUserDetail.email || '—'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {selectedUserDetail.email && (
+                                        <button
+                                            type="button"
+                                            onClick={() => copyToClipboard(selectedUserDetail.email, 'email')}
+                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all active:scale-95 ${
+                                                copiedField === 'email'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                                                    : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                                            }`}
+                                            title="Copy email address"
+                                        >
+                                            {copiedField === 'email' ? (
+                                                <Check className="h-4 w-4" />
+                                            ) : (
+                                                <Copy className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Phone Card */}
+                                <div className="group flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 transition-all hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700 dark:hover:bg-zinc-900">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                            <Phone className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                                Phone Number
+                                            </p>
+                                            <p
+                                                className="font-mono text-sm font-medium text-zinc-900 select-all dark:text-zinc-100"
+                                                dir="ltr"
+                                                title={selectedUserDetail.phone}
+                                            >
+                                                {selectedUserDetail.phone || '—'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {selectedUserDetail.phone && (
+                                        <button
+                                            type="button"
+                                            onClick={() => copyToClipboard(selectedUserDetail.phone, 'phone')}
+                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all active:scale-95 ${
+                                                copiedField === 'phone'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                                                    : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                                            }`}
+                                            title="Copy phone number"
+                                        >
+                                            {copiedField === 'phone' ? (
+                                                <Check className="h-4 w-4" />
+                                            ) : (
+                                                <Copy className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Banned Alert */}
+                            {selectedUserDetail.isBanned && (
+                                <div className="mb-4 rounded-xl border border-red-200 bg-red-50/70 p-3.5 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                                    <p className="font-semibold">⚠️ Account is Banned</p>
+                                    {selectedUserDetail.banReason && (
+                                        <p className="mt-1">Reason: <span className="font-normal">{selectedUserDetail.banReason}</span></p>
+                                    )}
+                                    {selectedUserDetail.banUntil && (
+                                        <p className="mt-0.5">Banned until: <span className="font-normal">{new Date(selectedUserDetail.banUntil).toLocaleDateString()}</span></p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Driver Vehicle Profile */}
+                            {selectedUserDetail.driverProfile && (
+                                <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">🚗 Vehicle & Driver Details</h3>
+                                    <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+                                        <div><span className="text-zinc-400">Car Model:</span> <p className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedUserDetail.driverProfile.carModel || '—'}</p></div>
+                                        <div><span className="text-zinc-400">Plate Number:</span> <p className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedUserDetail.driverProfile.plateNumber || '—'}</p></div>
+                                        <div><span className="text-zinc-400">License Number:</span> <p className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedUserDetail.driverProfile.licenseNumber || '—'}</p></div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Wallet */}
                             {selectedUserDetail.wallet && (

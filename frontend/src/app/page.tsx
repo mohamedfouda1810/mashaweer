@@ -92,9 +92,9 @@ export default function Home() {
         </div>
 
         <h1 className="animate-fade-in-up mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight">
-          طريقك الأذكى <br className="hidden sm:block" />
+          مشوارك  <br className="hidden sm:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-mint-light via-emerald-300 to-mint animate-gradient-shift">
-            والأقرب
+            و ناسك
           </span>
         </h1>
 

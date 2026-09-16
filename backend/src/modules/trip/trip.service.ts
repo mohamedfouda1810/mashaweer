@@ -410,8 +410,9 @@ export class TripService {
 
   /**
    * Cancel a trip (Driver only, within 1 hour = direct cancel)
+   * Now stores the cancellation reason so admin can review it.
    */
-  async cancelTrip(tripId: string, userId: string) {
+  async cancelTrip(tripId: string, userId: string, reason?: string) {
     const trip = await this.prisma.trip.findUnique({ where: { id: tripId } });
 
     if (!trip) {
@@ -442,6 +443,25 @@ export class TripService {
         where: { id: tripId },
         data: { status: TripStatus.CANCELLED },
       });
+
+      // Store cancellation record for admin visibility (auto-approved since within 1 hour)
+      if (reason) {
+        await tx.cancellationRequest.upsert({
+          where: { tripId },
+          create: {
+            tripId,
+            driverId: userId,
+            reason,
+            status: 'APPROVED',
+            reviewedAt: new Date(),
+          },
+          update: {
+            reason,
+            status: 'APPROVED',
+            reviewedAt: new Date(),
+          },
+        });
+      }
 
       // Cancel all bookings and notify passengers
       const bookings = await tx.booking.findMany({
