@@ -45,14 +45,99 @@ export class TimeoutError extends Error {
 
 // ─── Helpers ───────────────────────────────────────────────────────
 
-/** Resolve an image path from the backend (e.g. "/uploads/x.jpg") to a full URL */
-export function getImageUrl(path?: string | null): string | undefined {
+/**
+ * Resolve an image path from the backend to a full URL.
+ * Automatically applies Cloudinary performance optimizations (f_auto, q_auto, responsive resizing)
+ * unless raw is requested or non-Cloudinary URL.
+ */
+export function getImageUrl(
+  path?: string | null,
+  options?: { width?: number; quality?: string | number; raw?: boolean },
+): string | undefined {
   if (!path) return undefined;
-  // Already absolute
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Strip /api suffix to get the backend origin
-  const origin = API_BASE.replace(/\/api\/?$/, '');
-  return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+
+  let fullUrl = path;
+  // Already absolute or backend relative
+  if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+    const origin = API_BASE.replace(/\/api\/?$/, '');
+    fullUrl = `${origin}${fullUrl.startsWith('/') ? '' : '/'}${fullUrl}`;
+  }
+
+  // If raw is explicitly requested (e.g. for original full-resolution download), return as-is
+  if (options?.raw) {
+    return fullUrl;
+  }
+
+  // Optimize Cloudinary URLs with auto-format (WebP/AVIF), auto-quality compression, and optional max width
+  if (fullUrl.includes('cloudinary.com') && fullUrl.includes('/image/upload/')) {
+    if (!fullUrl.includes('/f_auto') && !fullUrl.includes('/w_')) {
+      const transforms = [
+        'f_auto',
+        'q_auto:eco',
+        options?.width ? `w_${options.width},c_limit` : '',
+      ].filter(Boolean).join(',');
+
+      return fullUrl.replace('/image/upload/', `/image/upload/${transforms}/`);
+    }
+  }
+
+  return fullUrl;
+}
+
+/**
+ * Trigger download of any image URL (including cross-origin Cloudinary images).
+ * Uses fetch blob when possible, with automatic fallback to Cloudinary fl_attachment header.
+ */
+export async function downloadImage(url: string, filename?: string): Promise<boolean> {
+  if (!url) return false;
+  try {
+    const rawUrl = getImageUrl(url, { raw: true }) || url;
+
+    // 1. Try client-side fetch + blob download (works for CORS-enabled resources)
+    try {
+      const res = await fetch(rawUrl, { mode: 'cors' });
+      if (res.ok) {
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename || 'driver-document.jpg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+        return true;
+      }
+    } catch {
+      // Fall through to attachment header / link fallback
+    }
+
+    // 2. If Cloudinary, insert fl_attachment transformation to force browser download via Content-Disposition header
+    let downloadUrl = rawUrl;
+    if (downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/image/upload/')) {
+      const cleanName = (filename || 'driver-document')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
+      downloadUrl = downloadUrl.replace(
+        '/image/upload/',
+        `/image/upload/fl_attachment:${cleanName}/`,
+      );
+    }
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename || 'driver-document.jpg';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+  } catch (err) {
+    console.error('Failed to download image:', err);
+    window.open(url, '_blank');
+    return false;
+  }
 }
 
 /** Check if an error is an abort/cancellation — these should be silently ignored */

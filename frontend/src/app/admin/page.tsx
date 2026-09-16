@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { api, getImageUrl } from '@/lib/api';
+import { api, getImageUrl, downloadImage } from '@/lib/api';
 import { User, AdminAlert, DepositRequest } from '@/types';
 import toast from 'react-hot-toast';
 import {
@@ -41,6 +41,7 @@ import {
     Copy,
     Check,
     Mail,
+    RefreshCw,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 'financials' | 'transactions' | 'commissionPayments' | 'cancellations' | 'settings';
@@ -113,6 +114,60 @@ export default function AdminPage() {
     const [docGallery, setDocGallery] = useState<any>(null);
     const [docGalleryLoading, setDocGalleryLoading] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+    const [downloadingImage, setDownloadingImage] = useState<string | null>(null);
+
+    const handleDownloadImage = async (url: string, filename?: string) => {
+        if (!url) return;
+        setDownloadingImage(url);
+        const toastId = toast.loading('Preparing download...');
+        try {
+            const ok = await downloadImage(url, filename || 'driver-document.jpg');
+            if (ok) {
+                toast.success('Download started', { id: toastId });
+            } else {
+                toast.error('Could not download image', { id: toastId });
+            }
+        } catch {
+            toast.error('Download failed', { id: toastId });
+        } finally {
+            setDownloadingImage(null);
+        }
+    };
+
+    const handleDownloadAllDriverDocs = async (driver: any) => {
+        const driverName = `${driver.user?.firstName || 'driver'}_${driver.user?.lastName || ''}`.trim() || 'driver';
+        const queue: { url: string; name: string }[] = [];
+
+        if (driver.personalPhotoUrl) {
+            queue.push({ url: driver.personalPhotoUrl, name: `${driverName}_personal_photo.jpg` });
+        }
+        if (driver.carPhotoUrl) {
+            queue.push({ url: driver.carPhotoUrl, name: `${driverName}_car_photo.jpg` });
+        }
+        (driver.identityPhotos || []).forEach((u: string, idx: number) => {
+            queue.push({ url: u, name: `${driverName}_identity_${idx + 1}.jpg` });
+        });
+        (driver.drivingLicensePhotos || []).forEach((u: string, idx: number) => {
+            queue.push({ url: u, name: `${driverName}_driving_license_${idx + 1}.jpg` });
+        });
+        (driver.carLicensePhotos || []).forEach((u: string, idx: number) => {
+            queue.push({ url: u, name: `${driverName}_car_license_${idx + 1}.jpg` });
+        });
+
+        if (queue.length === 0) {
+            toast.error('No documents found for this driver');
+            return;
+        }
+
+        const toastId = toast.loading(`Downloading ${queue.length} documents...`);
+        let completed = 0;
+        for (const item of queue) {
+            const ok = await downloadImage(item.url, item.name);
+            if (ok) completed++;
+            await new Promise((r) => setTimeout(r, 400));
+        }
+        toast.success(`Downloaded ${completed} of ${queue.length} files`, { id: toastId });
+    };
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -614,108 +669,208 @@ export default function AdminPage() {
                                     <div className="py-12 text-center text-sm text-zinc-500">No pending driver applications</div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {pendingDrivers.map((d) => (
-                                            <div key={d.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                                <div className="p-5">
-                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                                        <div className="flex items-start gap-4">
-                                                            {d.personalPhotoUrl ? (
-                                                                <img src={d.personalPhotoUrl} alt="Driver" className="h-16 w-16 rounded-full object-cover" />
-                                                            ) : (
-                                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                                                    <UserIcon className="h-6 w-6 text-zinc-400" />
-                                                                </div>
-                                                            )}
-                                                            <div>
-                                                                <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
-                                                                    {d.user?.firstName} {d.user?.lastName}
-                                                                </h3>
-                                                                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                                                    <p>Email: {d.user?.email}</p>
-                                                                    <p>Phone: {d.user?.phone}</p>
-                                                                    <p>Vehicle: {d.carModel} ({d.plateNumber})</p>
+                                        {pendingDrivers.map((d) => {
+                                            const driverName = `${d.user?.firstName || 'driver'}_${d.user?.lastName || ''}`.trim();
+                                            return (
+                                                <div key={d.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                                    <div className="p-5">
+                                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                                            <div className="flex items-start gap-4">
+                                                                {d.personalPhotoUrl ? (
+                                                                    <div className="group relative shrink-0">
+                                                                        <img
+                                                                            src={getImageUrl(d.personalPhotoUrl, { width: 160 }) || d.personalPhotoUrl}
+                                                                            alt="Driver"
+                                                                            loading="lazy"
+                                                                            decoding="async"
+                                                                            className="h-16 w-16 rounded-2xl object-cover ring-2 ring-zinc-100 dark:ring-zinc-800"
+                                                                        />
+                                                                        <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-2xl bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setLightboxUrl(getImageUrl(d.personalPhotoUrl, { width: 1600 }) || d.personalPhotoUrl)}
+                                                                                className="rounded-lg bg-white/90 p-1 text-zinc-800 hover:bg-white"
+                                                                                title="Zoom photo"
+                                                                            >
+                                                                                <ZoomIn className="h-3.5 w-3.5" />
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleDownloadImage(d.personalPhotoUrl, `${driverName}_personal_photo.jpg`)}
+                                                                                className="rounded-lg bg-white/90 p-1 text-zinc-800 hover:bg-white"
+                                                                                title="Download photo"
+                                                                            >
+                                                                                <Download className="h-3.5 w-3.5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+                                                                        <UserIcon className="h-6 w-6 text-zinc-400" />
+                                                                    </div>
+                                                                )}
+                                                                <div>
+                                                                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                                                                        {d.user?.firstName} {d.user?.lastName}
+                                                                    </h3>
+                                                                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                                                                        <p>Email: {d.user?.email}</p>
+                                                                        <p>Phone: {d.user?.phone}</p>
+                                                                        <p>Vehicle: {d.carModel} ({d.plateNumber})</p>
+                                                                    </div>
                                                                 </div>
                                                             </div>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDownloadAllDriverDocs(d)}
+                                                                    className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white"
+                                                                    title="Download all documents submitted by this driver"
+                                                                >
+                                                                    <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                                    Download All Docs
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleApproveDriver(d.id)}
+                                                                    disabled={actionLoading === d.id}
+                                                                    className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                                                                >
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeclineDriver(d.id)}
+                                                                    disabled={actionLoading === d.id}
+                                                                    className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
+                                                                >
+                                                                    <XCircle className="h-4 w-4" />
+                                                                    Decline
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleApproveDriver(d.id)}
-                                                                disabled={actionLoading === d.id}
-                                                                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
-                                                            >
-                                                                <CheckCircle2 className="h-4 w-4" />
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeclineDriver(d.id)}
-                                                                disabled={actionLoading === d.id}
-                                                                className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
-                                                            >
-                                                                <XCircle className="h-4 w-4" />
-                                                                Decline
-                                                            </button>
-                                                        </div>
-                                                    </div>
 
-                                                    <div className="mt-6 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-                                                        <h4 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Documents</h4>
-                                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                                            {d.identityPhotos && d.identityPhotos.length > 0 && (
-                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
-                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Identity</p>
-                                                                    <div className="flex gap-2 overflow-x-auto">
-                                                                        {d.identityPhotos.map((url: string, i: number) => (
-                                                                            <div key={i} className="shrink-0 flex flex-col gap-1">
-                                                                                <a href={getImageUrl(url) || url} target="_blank" rel="noreferrer">
-                                                                                    <img src={getImageUrl(url) || url} alt="ID" className="h-16 w-24 rounded border object-cover" />
-                                                                                </a>
-                                                                                <a href={getImageUrl(url) || url} download className="flex items-center justify-center gap-1 text-[10px] text-indigo-600 hover:underline">
-                                                                                    <Download className="h-2.5 w-2.5" /> Download
-                                                                                </a>
-                                                                            </div>
-                                                                        ))}
+                                                        <div className="mt-6 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                                                            <h4 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Documents</h4>
+                                                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                                {/* Identity Photos */}
+                                                                {d.identityPhotos && d.identityPhotos.length > 0 && (
+                                                                    <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                                                                        <p className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Identity Documents ({d.identityPhotos.length})</p>
+                                                                        <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                                                            {d.identityPhotos.map((url: string, i: number) => (
+                                                                                <div key={i} className="flex flex-col gap-1.5">
+                                                                                    <DriverDocThumbnail
+                                                                                        url={url}
+                                                                                        alt="Identity"
+                                                                                        filename={`${driverName}_identity_${i + 1}.jpg`}
+                                                                                        onZoom={(fullUrl) => setLightboxUrl(fullUrl)}
+                                                                                        onDownload={(u, name) => handleDownloadImage(u, name)}
+                                                                                        isDownloading={downloadingImage === url}
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleDownloadImage(url, `${driverName}_identity_${i + 1}.jpg`)}
+                                                                                        disabled={downloadingImage === url}
+                                                                                        className="flex items-center justify-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400"
+                                                                                    >
+                                                                                        <Download className="h-3 w-3" /> Download
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                            {d.drivingLicensePhotos && d.drivingLicensePhotos.length > 0 && (
-                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
-                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Driving License</p>
-                                                                    <div className="flex gap-2 overflow-x-auto">
-                                                                        {d.drivingLicensePhotos.map((url: string, i: number) => (
-                                                                            <div key={i} className="shrink-0 flex flex-col gap-1">
-                                                                                <a href={getImageUrl(url) || url} target="_blank" rel="noreferrer">
-                                                                                    <img src={getImageUrl(url) || url} alt="Driving License" className="h-16 w-24 rounded border object-cover" />
-                                                                                </a>
-                                                                                <a href={getImageUrl(url) || url} download className="flex items-center justify-center gap-1 text-[10px] text-indigo-600 hover:underline">
-                                                                                    <Download className="h-2.5 w-2.5" /> Download
-                                                                                </a>
-                                                                            </div>
-                                                                        ))}
+                                                                )}
+
+                                                                {/* Driving License Photos */}
+                                                                {d.drivingLicensePhotos && d.drivingLicensePhotos.length > 0 && (
+                                                                    <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                                                                        <p className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Driving License ({d.drivingLicensePhotos.length})</p>
+                                                                        <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                                                            {d.drivingLicensePhotos.map((url: string, i: number) => (
+                                                                                <div key={i} className="flex flex-col gap-1.5">
+                                                                                    <DriverDocThumbnail
+                                                                                        url={url}
+                                                                                        alt="Driving License"
+                                                                                        filename={`${driverName}_driving_license_${i + 1}.jpg`}
+                                                                                        onZoom={(fullUrl) => setLightboxUrl(fullUrl)}
+                                                                                        onDownload={(u, name) => handleDownloadImage(u, name)}
+                                                                                        isDownloading={downloadingImage === url}
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleDownloadImage(url, `${driverName}_driving_license_${i + 1}.jpg`)}
+                                                                                        disabled={downloadingImage === url}
+                                                                                        className="flex items-center justify-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400"
+                                                                                    >
+                                                                                        <Download className="h-3 w-3" /> Download
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                            {d.carLicensePhotos && d.carLicensePhotos.length > 0 && (
-                                                                <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
-                                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Car License</p>
-                                                                    <div className="flex gap-2 overflow-x-auto">
-                                                                        {d.carLicensePhotos.map((url: string, i: number) => (
-                                                                            <div key={i} className="shrink-0 flex flex-col gap-1">
-                                                                                <a href={getImageUrl(url) || url} target="_blank" rel="noreferrer">
-                                                                                    <img src={getImageUrl(url) || url} alt="Car License" className="h-16 w-24 rounded border object-cover" />
-                                                                                </a>
-                                                                                <a href={getImageUrl(url) || url} download className="flex items-center justify-center gap-1 text-[10px] text-indigo-600 hover:underline">
-                                                                                    <Download className="h-2.5 w-2.5" /> Download
-                                                                                </a>
-                                                                            </div>
-                                                                        ))}
+                                                                )}
+
+                                                                {/* Car License Photos */}
+                                                                {d.carLicensePhotos && d.carLicensePhotos.length > 0 && (
+                                                                    <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                                                                        <p className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Car License ({d.carLicensePhotos.length})</p>
+                                                                        <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                                                            {d.carLicensePhotos.map((url: string, i: number) => (
+                                                                                <div key={i} className="flex flex-col gap-1.5">
+                                                                                    <DriverDocThumbnail
+                                                                                        url={url}
+                                                                                        alt="Car License"
+                                                                                        filename={`${driverName}_car_license_${i + 1}.jpg`}
+                                                                                        onZoom={(fullUrl) => setLightboxUrl(fullUrl)}
+                                                                                        onDownload={(u, name) => handleDownloadImage(u, name)}
+                                                                                        isDownloading={downloadingImage === url}
+                                                                                    />
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleDownloadImage(url, `${driverName}_car_license_${i + 1}.jpg`)}
+                                                                                        disabled={downloadingImage === url}
+                                                                                        className="flex items-center justify-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400"
+                                                                                    >
+                                                                                        <Download className="h-3 w-3" /> Download
+                                                                                    </button>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
+                                                                )}
+
+                                                                {/* Vehicle Photo if present */}
+                                                                {d.carPhotoUrl && (
+                                                                    <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+                                                                        <p className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Vehicle Photo</p>
+                                                                        <div className="flex gap-2.5 overflow-x-auto pb-1">
+                                                                            <div className="flex flex-col gap-1.5">
+                                                                                <DriverDocThumbnail
+                                                                                    url={d.carPhotoUrl}
+                                                                                    alt="Vehicle"
+                                                                                    filename={`${driverName}_vehicle_photo.jpg`}
+                                                                                    onZoom={(fullUrl) => setLightboxUrl(fullUrl)}
+                                                                                    onDownload={(u, name) => handleDownloadImage(u, name)}
+                                                                                    isDownloading={downloadingImage === d.carPhotoUrl}
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleDownloadImage(d.carPhotoUrl, `${driverName}_vehicle_photo.jpg`)}
+                                                                                    disabled={downloadingImage === d.carPhotoUrl}
+                                                                                    className="flex items-center justify-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400"
+                                                                                >
+                                                                                    <Download className="h-3 w-3" /> Download
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -1628,23 +1783,44 @@ export default function AdminPage() {
             {docGallery && (
                 <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
                     <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
-                        <button
-                            onClick={() => setDocGallery(null)}
-                            className="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-                        <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy/10 dark:bg-mint/10">
-                                <Image className="h-5 w-5 text-navy dark:text-mint" />
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy/10 dark:bg-mint/10">
+                                    <Image className="h-5 w-5 text-navy dark:text-mint" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                                        Driver Documents
+                                    </h2>
+                                    <p className="text-sm text-zinc-500">
+                                        {docGallery.profile?.driver?.firstName} {docGallery.profile?.driver?.lastName} — {docGallery.profile?.carModel} ({docGallery.profile?.plateNumber})
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                                    Driver Documents
-                                </h2>
-                                <p className="text-sm text-zinc-500">
-                                    {docGallery.profile?.driver?.firstName} {docGallery.profile?.driver?.lastName} — {docGallery.profile?.carModel} ({docGallery.profile?.plateNumber})
-                                </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownloadAllDriverDocs({
+                                        user: docGallery.profile?.driver,
+                                        personalPhotoUrl: docGallery.profile?.personalPhotoUrl,
+                                        carPhotoUrl: docGallery.profile?.carPhotoUrl,
+                                        identityPhotos: docGallery.documents?.find((c: any) => c.category === 'Identity Documents')?.urls || [],
+                                        drivingLicensePhotos: docGallery.documents?.find((c: any) => c.category === 'Driving License')?.urls || [],
+                                        carLicensePhotos: docGallery.documents?.find((c: any) => c.category === 'Car License')?.urls || [],
+                                    })}
+                                    className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                                    title="Download all documents"
+                                >
+                                    <Download className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                    Download All
+                                </button>
+                                <button
+                                    onClick={() => setDocGallery(null)}
+                                    className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+                                    title="Close gallery"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
                         </div>
 
@@ -1655,26 +1831,35 @@ export default function AdminPage() {
                                         {cat.category}
                                     </h3>
                                     {cat.urls.length === 0 ? (
-                                        <p className="text-xs text-zinc-400 italic">No documents uploaded</p>
+                                        <p className="text-xs italic text-zinc-400">No documents uploaded</p>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                            {cat.urls.map((url: string, i: number) => (
-                                                <div
-                                                    key={i}
-                                                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-zinc-200 transition-all hover:shadow-lg dark:border-zinc-700"
-                                                    onClick={() => setLightboxUrl(getImageUrl(url) || url)}
-                                                >
-                                                    <img
-                                                        src={getImageUrl(url) || url}
-                                                        alt={`${cat.category} ${i + 1}`}
-                                                        loading="lazy"
-                                                        className="h-40 w-full object-cover transition-transform group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/30">
-                                                        <ZoomIn className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                                            {cat.urls.map((url: string, i: number) => {
+                                                const catName = cat.category.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                                                const driverName = `${docGallery.profile?.driver?.firstName || 'driver'}_${docGallery.profile?.driver?.lastName || ''}`.trim();
+                                                const filename = `${driverName}_${catName}_${i + 1}.jpg`;
+                                                return (
+                                                    <div key={i} className="flex flex-col gap-1.5">
+                                                        <DriverDocThumbnail
+                                                            url={url}
+                                                            alt={`${cat.category} ${i + 1}`}
+                                                            filename={filename}
+                                                            className="h-40 w-full"
+                                                            onZoom={(fullUrl) => setLightboxUrl(fullUrl)}
+                                                            onDownload={(u, name) => handleDownloadImage(u, name)}
+                                                            isDownloading={downloadingImage === url}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDownloadImage(url, filename)}
+                                                            disabled={downloadingImage === url}
+                                                            className="flex items-center justify-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5" /> Download
+                                                        </button>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -1703,12 +1888,26 @@ export default function AdminPage() {
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
                     onClick={() => setLightboxUrl(null)}
                 >
-                    <button
-                        onClick={() => setLightboxUrl(null)}
-                        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
+                    <div className="absolute right-4 top-4 z-10 flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(lightboxUrl, 'driver_document_full.jpg');
+                            }}
+                            className="flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/30 active:scale-95"
+                            title="Download original document"
+                        >
+                            <Download className="h-4 w-4" /> Download
+                        </button>
+                        <button
+                            onClick={() => setLightboxUrl(null)}
+                            className="rounded-full bg-white/10 p-2.5 text-white transition-colors hover:bg-white/20"
+                            title="Close preview"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                    </div>
                     <img
                         src={lightboxUrl}
                         alt="Full size document"
@@ -1732,6 +1931,112 @@ function StatCard({ icon, label, value, bg }: { icon: React.ReactNode; label: st
                     <p className="text-sm text-zinc-500">{label}</p>
                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{value}</p>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function DriverDocThumbnail({
+    url,
+    alt,
+    filename,
+    className = 'h-24 w-36',
+    onZoom,
+    onDownload,
+    isDownloading,
+}: {
+    url: string;
+    alt: string;
+    filename: string;
+    className?: string;
+    onZoom: (fullUrl: string) => void;
+    onDownload: (url: string, filename: string) => void;
+    isDownloading?: boolean;
+}) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const [retryKey, setRetryKey] = useState(0);
+
+    // Optimized thumbnail URL (max-width 360px, auto WebP/AVIF format, auto-quality compression)
+    const thumbUrl = useMemo(() => {
+        return getImageUrl(url, { width: 360 }) || url;
+    }, [url, retryKey]);
+
+    // Full high-resolution URL for zoom/lightbox
+    const fullUrl = useMemo(() => {
+        return getImageUrl(url, { width: 1600 }) || url;
+    }, [url]);
+
+    return (
+        <div className={`group relative shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 transition-all hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:border-zinc-700 ${className}`}>
+            {/* Loading Skeleton */}
+            {!isLoaded && !hasError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-200/70 dark:bg-zinc-800/70 animate-pulse">
+                    <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+                </div>
+            )}
+
+            {/* Error Fallback */}
+            {hasError ? (
+                <div className="flex h-full w-full flex-col items-center justify-center p-2 text-center text-zinc-400">
+                    <p className="text-[11px] font-medium text-red-500">Failed to load</p>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setHasError(false);
+                            setIsLoaded(false);
+                            setRetryKey((k) => k + 1);
+                        }}
+                        className="mt-1 inline-flex items-center gap-1 rounded bg-zinc-200 px-2 py-0.5 text-[10px] text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200"
+                    >
+                        <RefreshCw className="h-3 w-3" /> Retry
+                    </button>
+                </div>
+            ) : (
+                <img
+                    key={retryKey}
+                    src={thumbUrl}
+                    alt={alt}
+                    loading="lazy"
+                    decoding="async"
+                    onLoad={() => setIsLoaded(true)}
+                    onError={() => {
+                        setIsLoaded(true);
+                        setHasError(true);
+                    }}
+                    className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                        isLoaded ? 'opacity-100' : 'opacity-0'
+                    }`}
+                />
+            )}
+
+            {/* Hover Actions Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 backdrop-blur-[2px] transition-all group-hover:opacity-100">
+                <button
+                    type="button"
+                    onClick={() => onZoom(fullUrl)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-sm transition-all hover:bg-white active:scale-95"
+                    title="Zoom in"
+                >
+                    <ZoomIn className="h-4 w-4" />
+                </button>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload(url, filename);
+                    }}
+                    disabled={isDownloading}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-zinc-800 shadow-sm transition-all hover:bg-white active:scale-95 disabled:opacity-50"
+                    title="Download document"
+                >
+                    {isDownloading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                    ) : (
+                        <Download className="h-4 w-4" />
+                    )}
+                </button>
             </div>
         </div>
     );
