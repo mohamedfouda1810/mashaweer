@@ -471,7 +471,7 @@ export class BookingService {
       }
     }
 
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: { tripId, status: { in: ['CONFIRMED', 'PENDING'] } },
       include: {
         user: {
@@ -485,6 +485,22 @@ export class BookingService {
         },
       },
     });
+
+    // Phone privacy: only the trip driver and admins can see full phone numbers
+    const showPhone = requestingRole === 'ADMIN' || (!!requestingUserId && await (async () => {
+      if (!requestingUserId) return false;
+      const trip = await this.prisma.trip.findUnique({ where: { id: tripId }, select: { driverId: true } });
+      return trip?.driverId === requestingUserId;
+    })());
+
+    if (!showPhone) {
+      return bookings.map((b) => ({
+        ...b,
+        user: { ...b.user, phone: null },
+      }));
+    }
+
+    return bookings;
   }
 }
 

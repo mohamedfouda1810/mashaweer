@@ -29,12 +29,12 @@ function isInAppBrowser(): boolean {
 
 /**
  * SocketProvider — handles real-time WebSocket + polling fallback.
- * In production (Vercel), WebSocket is disabled but we poll for notifications.
+ * WebSocket is enabled in all environments for the group chat feature.
  */
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
 
   // Auto-subscribe to Web Push Notifications on login
   // Skip in WebViews where service workers are often blocked
@@ -52,9 +52,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearTimeout(timer);
   }, [user?.id]);
 
-  // ── WebSocket connection (dev/staging only) ──
+  // ── WebSocket connection ──
+  // Enabled in all environments (needed for real-time group chat)
   useEffect(() => {
-    if (!user?.id || process.env.NODE_ENV === 'production') {
+    if (!user?.id || !token) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -63,11 +64,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    
+    const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+
     const socketInstance = io(API_URL, {
-      query: { userId: user.id },
-      transports: ['polling'],
+      // Pass JWT token for authentication (needed for chat)
+      auth: { token },
+      transports: ['polling', 'websocket'],
     });
 
     socketInstance.on('connect', () => {
@@ -84,7 +86,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socketInstance.disconnect();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, token]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

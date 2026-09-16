@@ -206,3 +206,32 @@ export interface ApiResponse<T> {
     totalPages: number;
   };
 }
+
+// ─── Chat Types ─────────────────────────────────────────────────────
+
+export interface ChatMessageUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  avatarUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  content: string;
+  isDeleted: boolean;
+  createdAt: string;
+  user: ChatMessageUser | null;
+}
+
+export interface ChatBlock {
+  id: string;
+  userId: string;
+  blockedBy: string;
+  reason?: string;
+  createdAt: string;
+  user: Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role'>;
+  admin: Pick<User, 'id' | 'firstName' | 'lastName'>;
+}

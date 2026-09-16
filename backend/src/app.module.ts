@@ -16,6 +16,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { CommissionModule } from './modules/commission/commission.module';
 import { PushModule } from './modules/push/push.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -45,6 +46,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UploadModule,
     CommissionModule,
     PushModule,
+    ChatModule,
 
     // Static files (uploads) - Local only, Vercel Serverless crashes if the directory is missing
     ...(process.env.VERCEL ? [] : [

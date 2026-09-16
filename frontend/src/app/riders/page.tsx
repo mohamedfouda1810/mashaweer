@@ -89,7 +89,7 @@ export default function RidersLandingPage() {
 
                     {/* Sub-headline */}
                     <p className="mt-4 text-lg sm:text-2xl font-black leading-relaxed max-w-3xl mx-auto" style={{ color: '#f1f5f9' }}>
-                        احجز مكانك مع زميل جامعي موثق بنفس خط سيرك — أرخص من أي مواصلة وأسرع من أي ميكروباص 🎓🚗
+                        احجز مكانك مع زميل جامعي موثق بنفس خط سيرك — اشتري راحتك 🎓🚗
                     </p>
                     <p className="mt-3 text-base sm:text-lg font-semibold leading-relaxed max-w-2xl mx-auto" style={{ color: '#cbd5e1' }}>
                         بدل ما تستنى في المحطة أو تدفع أجرة غالية، اركب مع حد من جامعتك على نفس طريقك بأمان وراحة.

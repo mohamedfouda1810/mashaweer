@@ -4,11 +4,12 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { MapPin, HelpCircle, Wallet, Ticket } from 'lucide-react';
+import { MapPin, HelpCircle, Wallet, Ticket, MessageCircle } from 'lucide-react';
 
 const BOTTOM_ITEMS = [
     { href: '/trips', label: 'Trips', icon: MapPin },
     { href: '/bookings', label: 'Bookings', icon: Ticket },
+    { href: '/chat', label: 'Chat', icon: MessageCircle },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/help', label: 'Help', icon: HelpCircle },
 ];

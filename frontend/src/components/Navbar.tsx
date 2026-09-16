@@ -19,12 +19,14 @@ import {
     Menu,
     X,
     Plus,
+    MessageCircle,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
     { href: '/trips', label: 'Trips', icon: MapPin },
     { href: '/bookings', label: 'Bookings', icon: Ticket },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/chat', label: 'Chat', icon: MessageCircle },
 ];
 
 const DRIVER_ITEMS = [

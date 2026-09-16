@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Delete,
+  Request,
 } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { CreateTripDto, FilterTripsDto } from './dto/trip.dto';
@@ -96,8 +97,11 @@ export class TripController {
 
   @Public()
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const trip = await this.tripService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req: any) {
+    // req.user is populated by JwtAuthGuard when a valid token is present
+    const userId = req.user?.id ?? req.user?.sub;
+    const role = req.user?.role;
+    const trip = await this.tripService.findOne(id, userId, role);
     return ApiResponseDto.success(trip);
   }
 

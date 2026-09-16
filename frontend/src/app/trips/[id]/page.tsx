@@ -397,10 +397,15 @@ export default function TripDetailPage() {
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <p className="text-xs text-zinc-500">{b.seats} seat(s)</p>
-                                                    {(b as any).user?.phone && (
+                                                    {(b as any).user?.phone ? (
                                                         <p className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400">
                                                             <Phone className="h-3 w-3" />
                                                             {(b as any).user.phone}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-600">
+                                                            <Phone className="h-3 w-3" />
+                                                            Hidden
                                                         </p>
                                                     )}
                                                 </div>
@@ -554,10 +559,15 @@ export default function TripDetailPage() {
                                         {trip.driver.driverProfile.plateNumber}
                                     </span>
                                 )}
-                                {trip.driver?.phone && (
+                                {trip.driver?.phone ? (
                                     <p className="mt-1 flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400">
                                         <Phone className="h-3 w-3" />
                                         {trip.driver.phone}
+                                    </p>
+                                ) : (
+                                    <p className="mt-1 flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-600">
+                                        <Phone className="h-3 w-3" />
+                                        Visible after booking
                                     </p>
                                 )}
                             </div>

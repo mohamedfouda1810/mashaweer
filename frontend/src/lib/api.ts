@@ -821,6 +821,38 @@ class ApiClient {
       body: JSON.stringify({ endpoint }),
     });
   }
+
+  // ─── Group Chat ───────────────────────────────────────────────────
+
+  async getChatMessages(cursor?: string, limit = 50) {
+    const params = new URLSearchParams();
+    if (cursor) params.set('cursor', cursor);
+    params.set('limit', String(limit));
+    return this.request(`/chat/messages?${params.toString()}`);
+  }
+
+  async getChatStatus() {
+    return this.request('/chat/status');
+  }
+
+  async deleteChatMessage(messageId: string) {
+    return this.request(`/chat/messages/${messageId}`, { method: 'DELETE' });
+  }
+
+  async blockChatUser(userId: string, reason?: string) {
+    return this.request(`/chat/block/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async unblockChatUser(userId: string) {
+    return this.request(`/chat/block/${userId}`, { method: 'DELETE' });
+  }
+
+  async getBlockedChatUsers() {
+    return this.request('/chat/blocked');
+  }
 }
 
 export const api = new ApiClient();
