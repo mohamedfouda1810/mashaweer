@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { TermsModal } from '@/components/TermsModal';
 import {
     Mail,
@@ -517,6 +518,25 @@ function RegisterFormContent() {
 }
 
 export default function RegisterPage() {
+    const router = useRouter();
+    const { isAuthenticated, hasHydrated } = useAuthStore();
+    
+    useEffect(() => {
+        if (hasHydrated && isAuthenticated) {
+            router.replace('/trips');
+        }
+    }, [hasHydrated, isAuthenticated, router]);
+    
+    if (!hasHydrated) {
+        return (
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-mint" />
+            </div>
+        );
+    }
+    
+    if (isAuthenticated) return null;
+
     return (
         <Suspense fallback={
             <div className="flex min-h-[60vh] items-center justify-center">

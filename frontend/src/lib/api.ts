@@ -552,9 +552,12 @@ class ApiClient {
     return this.request(`/admin/alerts?resolved=${resolved}`);
   }
 
-  async getUsers(role?: string) {
-    const query = role ? `?role=${role}` : '';
-    return this.request(`/admin/users${query}`);
+  async getUsers(role?: string, page = 1, limit = 20) {
+    const params = new URLSearchParams();
+    if (role) params.set('role', role);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    return this.request(`/admin/users?${params.toString()}`);
   }
 
   async banUser(userId: string, reason?: string) {
@@ -643,8 +646,8 @@ class ApiClient {
     });
   }
 
-  async getAllTripsAdmin(page = 1) {
-    return this.request(`/admin/trips?page=${page}`);
+  async getAllTripsAdmin(page = 1, limit = 20) {
+    return this.request(`/admin/trips?page=${page}&limit=${limit}`);
   }
 
   async cancelTripAdmin(tripId: string) {
@@ -683,7 +686,9 @@ class ApiClient {
     });
   }
 
-
+  async getTripDetailAdmin(tripId: string) {
+    return this.request(`/admin/trips/${tripId}/detail`);
+  }
 
   async getFinancials() {
     return this.request('/admin/financials');

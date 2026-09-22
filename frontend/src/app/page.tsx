@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useRef, useState } from "react";
 import { ShieldCheck, MapPin, Wallet, Star, Users, Zap, ArrowRight, CheckCircle, Clock, Route, Sparkles, ChevronRight, Car, Globe, Award, HeartHandshake } from "lucide-react";
 
@@ -54,6 +55,7 @@ const TESTIMONIALS = [
 export default function Home() {
   const sectionRef = useRevealOnScroll();
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -112,14 +114,16 @@ export default function Home() {
             Find a Ride
             <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
-          <Link
-            href="/register"
-            id="hero-become-driver"
-            className="group flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-white/25 bg-white/8 px-10 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/15 hover:border-white/40 hover:shadow-lg sm:w-auto"
-          >
-            Become a Driver
-            <Car className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
-          </Link>
+          {!isAuthenticated && (
+            <Link
+              href="/register"
+              id="hero-become-driver"
+              className="group flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-white/25 bg-white/8 px-10 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/15 hover:border-white/40 hover:shadow-lg sm:w-auto"
+            >
+              Become a Driver
+              <Car className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+            </Link>
+          )}
         </div>
 
         {/* Stats Bar */}
@@ -326,72 +330,74 @@ export default function Home() {
       </section>
 
       {/* ══════════ Driver CTA Section ══════════ */}
-      <section className="bg-zinc-50 py-20 sm:py-28 dark:bg-zinc-900 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 items-center">
-            {/* Left - Photo */}
-            <div className="reveal-on-scroll relative order-2 lg:order-1">
-              <div className="relative overflow-hidden rounded-3xl shadow-2xl">
-                <Image
-                  src="/verified-driver.png"
-                  alt="Verified Mashaweer driver"
-                  width={600}
-                  height={400}
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-navy/30 to-transparent" />
-              </div>
-              {/* Floating Earning Card */}
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 rounded-2xl bg-white p-4 shadow-xl border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10">
-                    <Wallet className="h-6 w-6 text-mint" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-extrabold text-zinc-900 dark:text-white">+5K EGP</p>
-                    <p className="text-xs text-zinc-500">Avg. monthly earning</p>
+      {!isAuthenticated && (
+        <section className="bg-zinc-50 py-20 sm:py-28 dark:bg-zinc-900 overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-12 lg:grid-cols-2 items-center">
+              {/* Left - Photo */}
+              <div className="reveal-on-scroll relative order-2 lg:order-1">
+                <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                  <Image
+                    src="/verified-driver.png"
+                    alt="Verified Mashaweer driver"
+                    width={600}
+                    height={400}
+                    className="w-full h-auto object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/30 to-transparent" />
+                </div>
+                {/* Floating Earning Card */}
+                <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 rounded-2xl bg-white p-4 shadow-xl border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-mint/10">
+                      <Wallet className="h-6 w-6 text-mint" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-extrabold text-zinc-900 dark:text-white">+5K EGP</p>
+                      <p className="text-xs text-zinc-500">Avg. monthly earning</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right - Content */}
-            <div className="reveal-on-scroll stagger-2 order-1 lg:order-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-mint/10 px-4 py-1.5 text-sm font-semibold text-mint">
-                <Car className="h-3.5 w-3.5" />
-                For Drivers
-              </span>
-              <h2 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
-                Drive with Mashaweer,<br />earn your way
-              </h2>
-              <p className="mt-4 text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Turn your daily commute into an earning opportunity. Set your own schedule, 
-                pick your routes, and get paid for the trips you're already making.
-              </p>
-              <ul className="mt-6 space-y-3">
-                {[
-                  'Set your own schedule and routes',
-                  'Transparent commission structure',
-                  'Instant wallet payouts',
-                  'Interactive map for easy trip creation',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-                    <CheckCircle className="h-5 w-5 flex-shrink-0 text-mint" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/register"
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-navy to-navy-light px-8 py-4 text-sm font-bold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
-              >
-                Start Driving Today
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              {/* Right - Content */}
+              <div className="reveal-on-scroll stagger-2 order-1 lg:order-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-mint/10 px-4 py-1.5 text-sm font-semibold text-mint">
+                  <Car className="h-3.5 w-3.5" />
+                  For Drivers
+                </span>
+                <h2 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
+                  Drive with Mashaweer,<br />earn your way
+                </h2>
+                <p className="mt-4 text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  Turn your daily commute into an earning opportunity. Set your own schedule, 
+                  pick your routes, and get paid for the trips you're already making.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {[
+                    'Set your own schedule and routes',
+                    'Transparent commission structure',
+                    'Instant wallet payouts',
+                    'Interactive map for easy trip creation',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                      <CheckCircle className="h-5 w-5 flex-shrink-0 text-mint" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/register"
+                  className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-navy to-navy-light px-8 py-4 text-sm font-bold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+                >
+                  Start Driving Today
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ══════════ Testimonials ══════════ */}
       <section className="bg-white py-20 sm:py-28 dark:bg-zinc-950">
@@ -469,13 +475,23 @@ export default function Home() {
             Join thousands of riders and drivers across Egypt. Your next trip is just a click away.
           </p>
           <div className="reveal-on-scroll mt-10 sm:mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/register"
-              id="cta-get-started"
-              className="flex w-full items-center justify-center rounded-2xl bg-white px-10 py-4 text-base font-bold text-navy shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl sm:w-auto"
-            >
-              Get Started Free
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/trips"
+                id="cta-get-started"
+                className="flex w-full items-center justify-center rounded-2xl bg-white px-10 py-4 text-base font-bold text-navy shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl sm:w-auto"
+              >
+                Browse Trips
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                id="cta-get-started"
+                className="flex w-full items-center justify-center rounded-2xl bg-white px-10 py-4 text-base font-bold text-navy shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl sm:w-auto"
+              >
+                Get Started Free
+              </Link>
+            )}
             <Link
               href="/trips"
               id="cta-browse-trips"

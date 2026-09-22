@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,11 +11,27 @@ import toast from 'react-hot-toast';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuthStore();
+    const { login, isAuthenticated, hasHydrated } = useAuthStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (hasHydrated && isAuthenticated) {
+            router.replace('/trips');
+        }
+    }, [hasHydrated, isAuthenticated, router]);
+
+    if (!hasHydrated) {
+        return (
+            <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-mint" />
+            </div>
+        );
+    }
+
+    if (isAuthenticated) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

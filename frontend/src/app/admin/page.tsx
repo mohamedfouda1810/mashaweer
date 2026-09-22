@@ -42,15 +42,18 @@ import {
     Check,
     Mail,
     RefreshCw,
+    ArrowLeft,
+    ChevronLeft,
+    Info,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 'financials' | 'transactions' | 'commissionPayments' | 'cancellations' | 'settings';
+type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 'financials' | 'transactions' | 'commissionPayments' | 'cancellations' | 'settings' | null;
 
 export default function AdminPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
-    const [tab, setTab] = useState<Tab>('overview');
-    const [isLoading, setIsLoading] = useState(true);
+    const [tab, setTab] = useState<Tab>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Dashboard stats
     const [stats, setStats] = useState<any>(null);
@@ -60,12 +63,19 @@ export default function AdminPage() {
     // Users
     const [users, setUsers] = useState<User[]>([]);
     const [userRole, setUserRole] = useState('');
+    const [usersPage, setUsersPage] = useState(1);
+    const [usersMeta, setUsersMeta] = useState<{ total: number; totalPages: number } | null>(null);
     // Deposits
     const [deposits, setDeposits] = useState<DepositRequest[]>([]);
     // Drivers
     const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
     // Trips
     const [allTrips, setAllTrips] = useState<any[]>([]);
+    const [tripsPage, setTripsPage] = useState(1);
+    const [tripsMeta, setTripsMeta] = useState<{ total: number; totalPages: number } | null>(null);
+    // Trip Detail Modal
+    const [selectedTripDetail, setSelectedTripDetail] = useState<any>(null);
+    const [tripDetailLoading, setTripDetailLoading] = useState(false);
     // Financials
     const [financials, setFinancials] = useState<any>(null);
     // Platform Settings
@@ -170,6 +180,7 @@ export default function AdminPage() {
     };
 
     const loadData = useCallback(async () => {
+        if (tab === null) return;
         setIsLoading(true);
         try {
             if (tab === 'overview') {
@@ -179,8 +190,11 @@ export default function AdminPage() {
                 const res = await api.getAdminAlerts(showResolved);
                 setAlerts((res.data as AdminAlert[]) || []);
             } else if (tab === 'users') {
-                const res = await api.getUsers(userRole || undefined);
+                const res = await api.getUsers(userRole || undefined, usersPage);
                 setUsers((res.data as User[]) || []);
+                if ((res as any).meta) {
+                    setUsersMeta({ total: (res as any).meta.total, totalPages: (res as any).meta.totalPages });
+                }
             } else if (tab === 'deposits') {
                 const res = await api.getPendingDeposits();
                 setDeposits((res.data as DepositRequest[]) || []);
@@ -188,8 +202,11 @@ export default function AdminPage() {
                 const res = await api.getPendingDrivers();
                 setPendingDrivers((res.data as any[]) || []);
             } else if (tab === 'trips') {
-                const res = await api.getAllTripsAdmin();
+                const res = await api.getAllTripsAdmin(tripsPage);
                 setAllTrips((res.data as any[]) || []);
+                if ((res as any).meta) {
+                    setTripsMeta({ total: (res as any).meta.total, totalPages: (res as any).meta.totalPages });
+                }
             } else if (tab === 'financials') {
                 const res = await api.getFinancials();
                 setFinancials(res.data);
@@ -217,7 +234,7 @@ export default function AdminPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [tab, showResolved, userRole]);
+    }, [tab, showResolved, userRole, usersPage, tripsPage]);
 
     useEffect(() => {
         if (isAuthenticated && user?.role === 'ADMIN') loadData();
@@ -336,19 +353,26 @@ export default function AdminPage() {
         setActionLoading(null);
     };
 
-    const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-        { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-        { key: 'alerts', label: 'Alerts', icon: <AlertTriangle className="h-4 w-4" /> },
-        { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
-        { key: 'deposits', label: 'Deposits', icon: <CreditCard className="h-4 w-4" /> },
-        { key: 'drivers', label: 'Drivers', icon: <Car className="h-4 w-4" /> },
-        { key: 'trips', label: 'Trips', icon: <Ticket className="h-4 w-4" /> },
-        { key: 'financials', label: 'Financials', icon: <DollarSign className="h-4 w-4" /> },
-        { key: 'transactions', label: 'Transactions', icon: <ArrowUpDown className="h-4 w-4" /> },
-        { key: 'commissionPayments', label: 'Commissions', icon: <Percent className="h-4 w-4" /> },
-        { key: 'cancellations', label: 'Cancellations', icon: <AlertTriangle className="h-4 w-4" /> },
-        { key: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
+    const tabs: { key: Tab; label: string; icon: React.ReactNode; iconLarge: React.ReactNode; desc: string; gradient: string; iconBg: string }[] = [
+        { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" />, iconLarge: <BarChart3 className="h-10 w-10" />, desc: 'Dashboard stats & summary', gradient: 'from-teal-500 to-emerald-500', iconBg: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' },
+        { key: 'alerts', label: 'Alerts', icon: <AlertTriangle className="h-4 w-4" />, iconLarge: <AlertTriangle className="h-10 w-10" />, desc: 'Platform alerts & warnings', gradient: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
+        { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, iconLarge: <Users className="h-10 w-10" />, desc: 'Manage all platform users', gradient: 'from-indigo-500 to-violet-500', iconBg: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
+        { key: 'deposits', label: 'Deposits', icon: <CreditCard className="h-4 w-4" />, iconLarge: <CreditCard className="h-10 w-10" />, desc: 'Pending deposit requests', gradient: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' },
+        { key: 'drivers', label: 'Drivers', icon: <Car className="h-4 w-4" />, iconLarge: <Car className="h-10 w-10" />, desc: 'Driver applications & docs', gradient: 'from-emerald-500 to-green-500', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' },
+        { key: 'trips', label: 'Trips', icon: <Ticket className="h-4 w-4" />, iconLarge: <Ticket className="h-10 w-10" />, desc: 'All trips & route management', gradient: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+        { key: 'financials', label: 'Financials', icon: <DollarSign className="h-4 w-4" />, iconLarge: <DollarSign className="h-10 w-10" />, desc: 'Revenue & financial reports', gradient: 'from-green-500 to-emerald-500', iconBg: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+        { key: 'transactions', label: 'Transactions', icon: <ArrowUpDown className="h-4 w-4" />, iconLarge: <ArrowUpDown className="h-10 w-10" />, desc: 'Platform transaction ledger', gradient: 'from-sky-500 to-blue-500', iconBg: 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' },
+        { key: 'commissionPayments', label: 'Commissions', icon: <Percent className="h-4 w-4" />, iconLarge: <Percent className="h-10 w-10" />, desc: 'Commission payment requests', gradient: 'from-pink-500 to-rose-500', iconBg: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' },
+        { key: 'cancellations', label: 'Cancellations', icon: <AlertTriangle className="h-4 w-4" />, iconLarge: <AlertTriangle className="h-10 w-10" />, desc: 'Trip cancellation requests', gradient: 'from-red-500 to-rose-500', iconBg: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+        { key: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" />, iconLarge: <Settings className="h-10 w-10" />, desc: 'Platform configuration', gradient: 'from-zinc-500 to-slate-500', iconBg: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' },
     ];
+
+    const getDisplayStatus = (trip: any) => {
+        if ((trip.status === 'SCHEDULED' || trip.status === 'DRIVER_CONFIRMED') && new Date(trip.departureTime) < new Date()) {
+            return 'OVERDUE';
+        }
+        return trip.status;
+    };
 
     return (
         <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -363,37 +387,56 @@ export default function AdminPage() {
                             <p className="text-sm text-zinc-600 dark:text-zinc-400">Manage the platform</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreateUser(true)}
-                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-teal-600 hover:to-indigo-700"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Create User
-                    </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
-                    {tabs.map((t) => (
+                    <div className="flex items-center gap-2">
+                        {tab !== null && (
+                            <button
+                                onClick={() => setTab(null)}
+                                className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Back to Dashboard
+                            </button>
+                        )}
                         <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
-                            className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${tab === t.key
-                                ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
-                                : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                                }`}
+                            onClick={() => setShowCreateUser(true)}
+                            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-teal-600 hover:to-indigo-700"
                         >
-                            {t.icon}
-                            <span className="hidden sm:inline">{t.label}</span>
+                            <Plus className="h-4 w-4" />
+                            Create User
                         </button>
-                    ))}
+                    </div>
                 </div>
 
-                {isLoading ? (
+                {/* ═══ Landing Page — Section Card Grid ═══ */}
+                {tab === null && (
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        {tabs.map((t, i) => (
+                            <button
+                                key={t.key}
+                                onClick={() => setTab(t.key)}
+                                className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-2xl"
+                                style={{ animationDelay: `${i * 60}ms`, animation: 'fadeInUp 0.5s ease-out forwards', opacity: 0 }}
+                            >
+                                {/* Gradient glow on hover */}
+                                <div className={`absolute inset-0 bg-gradient-to-br ${t.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-[0.06] dark:group-hover:opacity-[0.12]`} />
+                                <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl ${t.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                                    {t.iconLarge}
+                                </div>
+                                <div className="relative">
+                                    <h3 className="text-base font-bold text-zinc-900 dark:text-white">{t.label}</h3>
+                                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{t.desc}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* ═══ Section Content ═══ */}
+                {tab !== null && isLoading ? (
                     <div className="flex items-center justify-center py-20">
                         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
                     </div>
-                ) : (
+                ) : tab !== null && (
                     <>
                         {/* OVERVIEW */}
                         {tab === 'overview' && stats && (
@@ -594,6 +637,30 @@ export default function AdminPage() {
                                                 ))}
                                             </tbody>
                                         </table>
+                                    </div>
+                                )}
+                                {/* Users Pagination */}
+                                {usersMeta && usersMeta.totalPages > 1 && (
+                                    <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                            Page {usersPage} of {usersMeta.totalPages} ({usersMeta.total} total users)
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => { setUsersPage((p) => Math.max(1, p - 1)); }}
+                                                disabled={usersPage <= 1}
+                                                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" /> Previous
+                                            </button>
+                                            <button
+                                                onClick={() => { setUsersPage((p) => Math.min(usersMeta.totalPages, p + 1)); }}
+                                                disabled={usersPage >= usersMeta.totalPages}
+                                                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                            >
+                                                Next <ChevronLeft className="h-4 w-4 rotate-180" />
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -910,15 +977,22 @@ export default function AdminPage() {
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <div className="flex flex-col items-start gap-1">
-                                                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                                                    t.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                    t.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                                                    t.status === 'CANCELLED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
-                                                                }`}>
-                                                                    {t.status === 'CANCELLED' && <span>✕</span>}
-                                                                    {t.status.replace('_', ' ')}
-                                                                </span>
+                                                                {(() => {
+                                                                    const displayStatus = getDisplayStatus(t);
+                                                                    return (
+                                                                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                                            displayStatus === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                                            displayStatus === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                                                                            displayStatus === 'CANCELLED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                                            displayStatus === 'OVERDUE' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                                            'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
+                                                                        }`}>
+                                                                            {displayStatus === 'CANCELLED' && <span>✕</span>}
+                                                                            {displayStatus === 'OVERDUE' && <span>⚠</span>}
+                                                                            {displayStatus.replace('_', ' ')}
+                                                                        </span>
+                                                                    );
+                                                                })()}
 
                                                                 {/* Driver cancellation reason display */}
                                                                 {t.status === 'CANCELLED' && (t.cancellationRequest?.reason || t.notes) && (
@@ -935,6 +1009,22 @@ export default function AdminPage() {
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
                                                             <div className="flex items-center justify-end gap-2">
+                                                                {/* Details Button */}
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        setTripDetailLoading(true);
+                                                                        try {
+                                                                            const res = await api.getTripDetailAdmin(t.id);
+                                                                            setSelectedTripDetail(res.data);
+                                                                        } catch (err: any) { toast.error(err.message || 'Failed to load trip details'); }
+                                                                        setTripDetailLoading(false);
+                                                                    }}
+                                                                    disabled={tripDetailLoading}
+                                                                    className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                                                                >
+                                                                    <Info className="h-3 w-3" />
+                                                                    Details
+                                                                </button>
                                                                 {(t.status === 'SCHEDULED' || t.status === 'DRIVER_CONFIRMED') && (
                                                                     <button
                                                                         onClick={async () => {
@@ -983,6 +1073,30 @@ export default function AdminPage() {
                                                 ))}
                                             </tbody>
                                         </table>
+                                    </div>
+                                )}
+                                {/* Trips Pagination */}
+                                {tripsMeta && tripsMeta.totalPages > 1 && (
+                                    <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                            Page {tripsPage} of {tripsMeta.totalPages} ({tripsMeta.total} total trips)
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => { setTripsPage((p) => Math.max(1, p - 1)); }}
+                                                disabled={tripsPage <= 1}
+                                                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" /> Previous
+                                            </button>
+                                            <button
+                                                onClick={() => { setTripsPage((p) => Math.min(tripsMeta.totalPages, p + 1)); }}
+                                                disabled={tripsPage >= tripsMeta.totalPages}
+                                                className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                            >
+                                                Next <ChevronLeft className="h-4 w-4 rotate-180" />
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -1803,6 +1917,141 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
+
+            {/* ─── Trip Detail Modal ─────────────────────────────────── */}
+            {selectedTripDetail && (
+                <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                                    <Ticket className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Trip Details</h2>
+                                    <p className="text-sm text-zinc-500">{selectedTripDetail.fromCity} → {selectedTripDetail.toCity}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedTripDetail(null)} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* Trip Info */}
+                        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Status</p>
+                                {(() => {
+                                    const ds = getDisplayStatus(selectedTripDetail);
+                                    return (
+                                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                            ds === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                            ds === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-700' :
+                                            ds === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                            ds === 'OVERDUE' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-zinc-100 text-zinc-700'
+                                        }`}>{ds.replace('_', ' ')}</span>
+                                    );
+                                })()}
+                            </div>
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Departure</p>
+                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{new Date(selectedTripDetail.departureTime).toLocaleString()}</p>
+                            </div>
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Price</p>
+                                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{Number(selectedTripDetail.price).toFixed(0)} EGP</p>
+                            </div>
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Total Seats</p>
+                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{selectedTripDetail.totalSeats}</p>
+                            </div>
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Available</p>
+                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{selectedTripDetail.availableSeats}</p>
+                            </div>
+                            <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Meeting Point</p>
+                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{selectedTripDetail.meetingPoint || '—'}</p>
+                            </div>
+                        </div>
+
+                        {/* Notes */}
+                        {selectedTripDetail.notes && (
+                            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs dark:border-amber-900/50 dark:bg-amber-950/30">
+                                <p className="font-semibold text-amber-700 dark:text-amber-400">Notes:</p>
+                                <p className="text-amber-900 dark:text-amber-200">{selectedTripDetail.notes}</p>
+                            </div>
+                        )}
+
+                        {/* Driver Info */}
+                        {selectedTripDetail.driver && (
+                            <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-800/40">
+                                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">🚗 Driver</h3>
+                                <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+                                    <div><span className="text-zinc-400">Name:</span> <p className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.firstName} {selectedTripDetail.driver.lastName}</p></div>
+                                    <div><span className="text-zinc-400">Phone:</span> <p className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.phone || '—'}</p></div>
+                                    <div><span className="text-zinc-400">Email:</span> <p className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.email || '—'}</p></div>
+                                    {selectedTripDetail.driver.driverProfile && (
+                                        <>
+                                            <div><span className="text-zinc-400">Car:</span> <p className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.driverProfile.carModel || '—'}</p></div>
+                                            <div><span className="text-zinc-400">Plate:</span> <p className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.driverProfile.plateNumber || '—'}</p></div>
+                                            <div><span className="text-zinc-400">License:</span> <p className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedTripDetail.driver.driverProfile.licenseNumber || '—'}</p></div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Bookings / Passengers */}
+                        {selectedTripDetail.bookings?.length > 0 && (
+                            <div className="mb-4">
+                                <h3 className="mb-2 text-sm font-bold text-zinc-900 dark:text-white">🎫 Bookings ({selectedTripDetail.bookings.length})</h3>
+                                <div className="space-y-2">
+                                    {selectedTripDetail.bookings.map((b: any) => (
+                                        <div key={b.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2.5 text-xs dark:bg-zinc-800/50">
+                                            <div>
+                                                <p className="font-semibold text-zinc-800 dark:text-zinc-200">{b.user?.firstName} {b.user?.lastName}</p>
+                                                <p className="text-zinc-400">{b.user?.phone || b.user?.email || '—'} · {b.seats} seat(s) · {b.paymentMethod || '—'}</p>
+                                            </div>
+                                            <span className={`rounded-full px-2 py-0.5 font-semibold ${
+                                                b.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-700' :
+                                                b.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                                b.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                                'bg-amber-100 text-amber-700'
+                                            }`}>{b.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Cancellation Request */}
+                        {selectedTripDetail.cancellationRequest && (
+                            <div className="mb-4 rounded-lg border border-red-200 bg-red-50/70 p-3 text-xs dark:border-red-900/50 dark:bg-red-950/30">
+                                <p className="font-semibold text-red-700 dark:text-red-400">Cancellation Request</p>
+                                <p className="text-red-900 dark:text-red-200">Reason: {selectedTripDetail.cancellationRequest.reason || '—'}</p>
+                                <p className="text-red-600 dark:text-red-400">Status: {selectedTripDetail.cancellationRequest.status} · {new Date(selectedTripDetail.cancellationRequest.createdAt).toLocaleString()}</p>
+                            </div>
+                        )}
+
+                        {/* Ratings */}
+                        {selectedTripDetail.ratings?.length > 0 && (
+                            <div className="mb-4">
+                                <h3 className="mb-2 text-sm font-bold text-zinc-900 dark:text-white">⭐ Ratings ({selectedTripDetail.ratings.length})</h3>
+                                <div className="space-y-1">
+                                    {selectedTripDetail.ratings.map((r: any) => (
+                                        <div key={r.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2 text-xs dark:bg-zinc-800/50">
+                                            <span>{r.rater?.firstName} {r.rater?.lastName}: {r.comment || 'No comment'}</span>
+                                            <span className="font-bold text-amber-600">{'⭐'.repeat(r.score)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ─── Driver Documents Gallery Modal ──────────────────── */}
             {docGallery && (

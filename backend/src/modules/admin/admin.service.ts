@@ -712,4 +712,67 @@ export class AdminService {
       ],
     };
   }
+
+  // ─── Trip Detail ───────────────────────────────────────────────────
+
+  /**
+   * Get detailed information about a specific trip
+   */
+  async getTripDetail(tripId: string) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: tripId },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            driverProfile: {
+              select: {
+                carModel: true,
+                plateNumber: true,
+                licenseNumber: true,
+              },
+            },
+          },
+        },
+        bookings: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                email: true,
+              },
+            },
+          },
+        },
+        cancellationRequest: {
+          select: {
+            id: true,
+            reason: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+        _count: {
+          select: {
+            bookings: { where: { status: 'CONFIRMED' } },
+          },
+        },
+        ratings: {
+          include: {
+            rater: true,
+          },
+        },
+      },
+    });
+
+    if (!trip) throw new NotFoundException('Trip not found');
+    return trip;
+  }
 }

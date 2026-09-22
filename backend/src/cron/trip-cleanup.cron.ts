@@ -58,4 +58,79 @@ export class TripCleanupCronService {
       this.logger.error(`Trip cleanup failed: ${error.message}`);
     }
   }
+
+  /**
+   * Runs every 15 minutes to auto-cancel trips that are more than 2 hours overdue.
+   */
+  @Cron('*/15 * * * *')
+  async handleTripExpiry() {
+    const twoHoursAgo = new Date();
+    twoHoursAgo.setHours(twoHoursAgo.getHours() - 2);
+
+    try {
+      const expiredTrips = await this.prisma.trip.findMany({
+        where: {
+          status: { in: [TripStatus.SCHEDULED, TripStatus.DRIVER_CONFIRMED] },
+          departureTime: { lt: twoHoursAgo },
+        },
+        include: {
+          bookings: {
+            where: { status: 'CONFIRMED' },
+            include: { user: { include: { wallet: true } } },
+          },
+        },
+      });
+
+      if (expiredTrips.length === 0) return;
+
+      let cancelledCount = 0;
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const trip of expiredTrips) {
+          // Update trip status
+          await tx.trip.update({
+            where: { id: trip.id },
+            data: {
+              status: TripStatus.CANCELLED,
+              notes: 'Auto-cancelled: departure time passed without driver starting the trip',
+            },
+          });
+
+          // Refund and cancel confirmed bookings
+          for (const booking of trip.bookings) {
+            const pricePerSeat = Number(trip.price) / trip.totalSeats;
+            const refundAmount = pricePerSeat * booking.seats;
+
+            if (booking.user.wallet) {
+              await tx.wallet.update({
+                where: { id: booking.user.wallet.id },
+                data: { balance: { increment: refundAmount } },
+              });
+
+              await tx.transaction.create({
+                data: {
+                  walletId: booking.user.wallet.id,
+                  amount: refundAmount,
+                  type: 'REFUND',
+                  status: 'COMPLETED',
+                  reference: `Refund: auto-cancelled trip ${trip.fromCity} → ${trip.toCity}`,
+                },
+              });
+            }
+
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: { status: 'CANCELLED' },
+            });
+          }
+
+          cancelledCount++;
+        }
+      });
+
+      this.logger.log(`Auto-expired ${cancelledCount} overdue trip(s)`);
+    } catch (error) {
+      this.logger.error(`Trip auto-expiry failed: ${error.message}`);
+    }
+  }
 }

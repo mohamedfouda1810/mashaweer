@@ -177,6 +177,12 @@ export class AdminController {
     return ApiResponseDto.success(result, 'Driver application declined');
   }
 
+  @Get('trips/:tripId/detail')
+  async tripDetail(@Param('tripId') tripId: string) {
+    const trip = await this.adminService.getTripDetail(tripId);
+    return ApiResponseDto.success(trip);
+  }
+
   @Get('trips')
   async trips(
     @Query('page') page?: number,
