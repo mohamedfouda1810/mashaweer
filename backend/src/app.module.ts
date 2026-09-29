@@ -19,6 +19,8 @@ import { PushModule } from './modules/push/push.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -57,6 +59,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     ]),
   ],
   providers: [
+    AppService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -66,5 +69,6 @@ import { RolesGuard } from './common/guards/roles.guard';
       useClass: RolesGuard,
     },
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

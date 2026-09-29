@@ -11,7 +11,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from './email.service';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
 import { Role } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '@prisma/client';
@@ -35,7 +40,7 @@ export class AuthService {
       include: { driverProfile: true },
     });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -65,7 +70,11 @@ export class AuthService {
     }
 
     // Block unapproved drivers
-    if (user.role === 'DRIVER' && user.driverProfile && !user.driverProfile.isApproved) {
+    if (
+      user.role === 'DRIVER' &&
+      user.driverProfile &&
+      !user.driverProfile.isApproved
+    ) {
       throw new UnauthorizedException(
         'Your driver application is pending admin approval. Please wait for an admin to review your documents.',
       );
@@ -75,7 +84,14 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     // Remove password hash and driverProfile from response (will be separate)
-    const { passwordHash, driverProfile, emailVerificationToken, passwordResetToken, passwordResetExpiry, ...userWithoutPassword } = user;
+    const {
+      passwordHash,
+      driverProfile,
+      emailVerificationToken,
+      passwordResetToken,
+      passwordResetExpiry,
+      ...userWithoutPassword
+    } = user;
 
     return {
       token,
@@ -168,7 +184,9 @@ export class AuthService {
 
     // Sync new registration to Google Sheet (non-blocking on failure)
     try {
-      const webhookUrl = this.configService.get<string>('GOOGLE_SHEET_WEBHOOK_URL');
+      const webhookUrl = this.configService.get<string>(
+        'GOOGLE_SHEET_WEBHOOK_URL',
+      );
       if (webhookUrl) {
         await fetch(webhookUrl, {
           method: 'POST',
@@ -187,11 +205,16 @@ export class AuthService {
       console.error('Failed to sync registration to Google Sheet:', error);
     }
 
-    const { passwordHash: _, emailVerificationToken: __, ...userWithoutSensitive } = user;
+    const {
+      passwordHash: _,
+      emailVerificationToken: __,
+      ...userWithoutSensitive
+    } = user;
 
-    const message = dto.role === Role.DRIVER
-      ? 'Registration submitted! Admin will review your request.'
-      : 'Registration successful!';
+    const message =
+      dto.role === Role.DRIVER
+        ? 'Registration submitted! Admin will review your request.'
+        : 'Registration successful!';
 
     return {
       message,
@@ -199,18 +222,20 @@ export class AuthService {
     };
   }
 
-
   /**
    * Forgot password — send reset email
    */
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: dto.email.toLowerCase().trim() },
     });
 
     // Always return success to prevent email enumeration
     if (!user) {
-      return { message: 'If an account exists with this email, a password reset link has been sent.' };
+      return {
+        message:
+          'If an account exists with this email, a password reset link has been sent.',
+      };
     }
 
     const resetToken = randomUUID();
@@ -226,7 +251,10 @@ export class AuthService {
 
     await this.emailService.sendPasswordResetEmail(user.email, resetToken);
 
-    return { message: 'If an account exists with this email, a password reset link has been sent.' };
+    return {
+      message:
+        'If an account exists with this email, a password reset link has been sent.',
+    };
   }
 
   /**
@@ -241,8 +269,13 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token.');
     }
 
-    if (user.passwordResetExpiry && new Date(user.passwordResetExpiry) < new Date()) {
-      throw new BadRequestException('Reset token has expired. Please request a new one.');
+    if (
+      user.passwordResetExpiry &&
+      new Date(user.passwordResetExpiry) < new Date()
+    ) {
+      throw new BadRequestException(
+        'Reset token has expired. Please request a new one.',
+      );
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -257,6 +290,9 @@ export class AuthService {
       },
     });
 
-    return { message: 'Password has been reset successfully. You can now sign in with your new password.' };
+    return {
+      message:
+        'Password has been reset successfully. You can now sign in with your new password.',
+    };
   }
 }

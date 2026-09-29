@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import * as bcrypt from 'bcrypt';
@@ -63,9 +67,9 @@ export class AdminService {
       totalBookings,
       pendingDriverApps,
     ] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.user.count({ where: { role: 'DRIVER' } }),
-      this.prisma.user.count({ where: { role: 'PASSENGER' } }),
+      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({ where: { role: 'DRIVER', deletedAt: null } }),
+      this.prisma.user.count({ where: { role: 'PASSENGER', deletedAt: null } }),
       this.prisma.trip.count(),
       this.prisma.trip.count({
         where: {
@@ -75,7 +79,7 @@ export class AdminService {
       this.prisma.trip.count({ where: { status: 'COMPLETED' } }),
       this.prisma.depositRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.adminAlert.count({ where: { isResolved: false } }),
-      this.prisma.user.count({ where: { isBanned: true } }),
+      this.prisma.user.count({ where: { isBanned: true, deletedAt: null } }),
       this.prisma.booking.count(),
       this.prisma.driverProfile.count({ where: { isApproved: false } }),
     ]);
@@ -102,7 +106,7 @@ export class AdminService {
    */
   async toggleBan(userId: string, ban: boolean, reason?: string) {
     return this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       data: {
         isBanned: ban,
         banReason: ban ? reason : null,
@@ -115,15 +119,18 @@ export class AdminService {
    * Temporary ban a user for N days
    */
   async tempBanUser(userId: string, days: number, reason?: string) {
+    const safeDays = Number.isFinite(days)
+      ? Math.min(Math.max(Math.trunc(days), 1), 365)
+      : 15;
     const banUntil = new Date();
-    banUntil.setDate(banUntil.getDate() + days);
+    banUntil.setDate(banUntil.getDate() + safeDays);
 
     const user = await this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       data: {
         isBanned: true,
         banUntil,
-        banReason: reason || `Temporarily banned for ${days} days`,
+        banReason: reason || `Temporarily banned for ${safeDays} days`,
       },
     });
 
@@ -131,7 +138,7 @@ export class AdminService {
     await this.notificationService.create({
       userId,
       type: 'ACCOUNT_BANNED',
-      title: `Account Suspended for ${days} Days ⚠️`,
+      title: `Account Suspended for ${safeDays} Days ⚠️`,
       message: `Your account has been suspended until ${banUntil.toLocaleDateString()}. Reason: ${reason || 'Policy violation'}`,
     });
 
@@ -142,59 +149,40 @@ export class AdminService {
    * Change user role
    */
   async changeRole(userId: string, role: string) {
+    if (role !== 'ADMIN' && role !== 'DRIVER' && role !== 'PASSENGER') {
+      throw new BadRequestException('Invalid user role');
+    }
     return this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       data: { role: role as any },
     });
   }
 
   /**
-   * Delete a user account and all related data
+   * Deactivate a user account without deleting historical records.
+   * Relations are intentionally preserved so past trips retain their driver.
    */
   async deleteUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    if (user.role === 'ADMIN') throw new BadRequestException('Cannot delete admin accounts');
+    if (user.role === 'ADMIN')
+      throw new BadRequestException('Cannot delete admin accounts');
+    if (user.deletedAt) return { deleted: true, softDeleted: true, userId };
 
-    // Prisma cascades will handle related records due to onDelete: Cascade
-    // But we need to manually clean up records without cascade
-    await this.prisma.$transaction(async (tx) => {
-      // Delete bookings
-      await tx.booking.deleteMany({ where: { userId } });
-      // Delete waitlists
-      await tx.waitlist.deleteMany({ where: { userId } });
-      // Delete notifications
-      await tx.notification.deleteMany({ where: { userId } });
-      // Delete ratings given
-      await tx.rating.deleteMany({ where: { raterId: userId } });
-      // Delete ratings received
-      await tx.rating.deleteMany({ where: { ratedId: userId } });
-      // Delete deposit requests
-      await tx.depositRequest.deleteMany({ where: { userId } });
-      // Delete transactions via wallet
-      const wallet = await tx.wallet.findUnique({ where: { userId } });
-      if (wallet) {
-        await tx.transaction.deleteMany({ where: { walletId: wallet.id } });
-        await tx.wallet.delete({ where: { userId } });
-      }
-      // Delete driver profile
-      await tx.driverProfile.deleteMany({ where: { userId } });
-      // Delete trips (and cascade their bookings/waitlists)
-      const trips = await tx.trip.findMany({ where: { driverId: userId }, select: { id: true } });
-      for (const trip of trips) {
-        await tx.booking.deleteMany({ where: { tripId: trip.id } });
-        await tx.waitlist.deleteMany({ where: { tripId: trip.id } });
-        await tx.adminAlert.deleteMany({ where: { tripId: trip.id } });
-        await tx.rating.deleteMany({ where: { tripId: trip.id } });
-      }
-      await tx.trip.deleteMany({ where: { driverId: userId } });
-      // Delete admin alerts for this driver
-      await tx.adminAlert.deleteMany({ where: { driverId: userId } });
-      // Finally delete the user
-      await tx.user.delete({ where: { id: userId } });
+    await this.prisma.user.update({
+      where: { id: userId, deletedAt: null },
+      data: {
+        deletedAt: new Date(),
+        isBanned: true,
+        banReason: 'Account deactivated by an administrator',
+        banUntil: null,
+        emailVerificationToken: null,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
+      },
     });
 
-    return { deleted: true, userId };
+    return { deleted: true, softDeleted: true, userId };
   }
 
   /**
@@ -208,10 +196,14 @@ export class AdminService {
     password: string;
     role: string;
   }) {
-    const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
     if (existing) throw new BadRequestException('Email already in use');
 
-    const existingPhone = await this.prisma.user.findUnique({ where: { phone: data.phone } });
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone: data.phone },
+    });
     if (existingPhone) throw new BadRequestException('Phone already in use');
 
     const salt = await bcrypt.genSalt(10);
@@ -246,16 +238,20 @@ export class AdminService {
    * Get all users with pagination and filters
    */
   async getUsers(role?: string, page = 1, limit = 20) {
-    const where: any = {};
+    const where: any = { deletedAt: null };
     if (role) where.role = role;
 
-    const skip = (page - 1) * limit;
+    const safePage = Number.isFinite(page) ? Math.max(Math.trunc(page), 1) : 1;
+    const safeLimit = Number.isFinite(limit)
+      ? Math.min(Math.max(Math.trunc(limit), 1), 100)
+      : 20;
+    const skip = (safePage - 1) * safeLimit;
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -325,7 +321,8 @@ export class AdminService {
       userId: profile.userId,
       type: 'DRIVER_ALERT',
       title: 'Application Approved! 🎉',
-      message: 'Your driver application has been approved. You can now log in and start creating trips!',
+      message:
+        'Your driver application has been approved. You can now log in and start creating trips!',
     });
 
     return updated;
@@ -347,7 +344,8 @@ export class AdminService {
       userId: profile.userId,
       type: 'DRIVER_ALERT',
       title: 'Application Declined ❌',
-      message: 'Your driver application has been declined. Please contact support for more information or re-apply with correct documents.',
+      message:
+        'Your driver application has been declined. Please contact support for more information or re-apply with correct documents.',
     });
 
     // Revert user role to passenger
@@ -404,7 +402,9 @@ export class AdminService {
    */
   async getFinancialReport(fromDate?: string, toDate?: string) {
     // Default to last 30 days if no date range provided
-    const dateFrom = fromDate ? new Date(fromDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const dateFrom = fromDate
+      ? new Date(fromDate)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const dateTo = toDate ? new Date(toDate) : new Date();
 
     // Get completed trips within the date range
@@ -468,10 +468,23 @@ export class AdminService {
     const totalCommission = totalRevenue * COMMISSION_RATE;
 
     // Get per-driver earnings breakdown
-    const driverEarnings: Record<string, { name: string; totalEarnings: number; totalTrips: number; totalCommission: number }> = {};
+    const driverEarnings: Record<
+      string,
+      {
+        name: string;
+        totalEarnings: number;
+        totalTrips: number;
+        totalCommission: number;
+      }
+    > = {};
     for (const td of tripDetails) {
       if (!driverEarnings[td.driverId]) {
-        driverEarnings[td.driverId] = { name: td.driver, totalEarnings: 0, totalTrips: 0, totalCommission: 0 };
+        driverEarnings[td.driverId] = {
+          name: td.driver,
+          totalEarnings: 0,
+          totalTrips: 0,
+          totalCommission: 0,
+        };
       }
       driverEarnings[td.driverId].totalEarnings += td.driverEarning;
       driverEarnings[td.driverId].totalTrips += 1;
@@ -525,9 +538,12 @@ export class AdminService {
     commissionRate?: number;
   }) {
     const updateData: any = {};
-    if (data.instapayNumber !== undefined) updateData.instapayNumber = data.instapayNumber;
-    if (data.vodafoneCashNumber !== undefined) updateData.vodafoneCashNumber = data.vodafoneCashNumber;
-    if (data.commissionRate !== undefined) updateData.commissionRate = data.commissionRate;
+    if (data.instapayNumber !== undefined)
+      updateData.instapayNumber = data.instapayNumber;
+    if (data.vodafoneCashNumber !== undefined)
+      updateData.vodafoneCashNumber = data.vodafoneCashNumber;
+    if (data.commissionRate !== undefined)
+      updateData.commissionRate = data.commissionRate;
 
     return this.prisma.platformSetting.upsert({
       where: { id: 'platform_settings' },
@@ -614,7 +630,9 @@ export class AdminService {
             cancellationRequest: {
               select: { id: true, reason: true, status: true },
             },
-            _count: { select: { bookings: { where: { status: 'CONFIRMED' } } } },
+            _count: {
+              select: { bookings: { where: { status: 'CONFIRMED' } } },
+            },
           },
         },
         commissions: {

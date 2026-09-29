@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { SocketProvider } from "@/providers/SocketProvider";
 import { Toaster } from "react-hot-toast";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export const metadata: Metadata = {
   title: 'Mashaweer | Inter-City Rides',
@@ -42,10 +43,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-white font-sans antialiased dark:bg-zinc-950">
+      <body className="bg-surface font-sans antialiased dark:bg-navy-dark">
         <SocketProvider>
           <GoogleAnalytics />
           <Navbar />
+          <div className="pointer-events-none fixed right-4 top-[4.5rem] z-40 sm:hidden">
+            <div className="pointer-events-auto"><LanguageToggle /></div>
+          </div>
           <main>{children}</main>
           <BottomNav />
           <Toaster position="top-center" />

@@ -76,12 +76,15 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-navy-dark/95 via-navy/90 to-navy-dark/95" />
         <div className="absolute inset-0 -z-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEuNSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIvPjwvc3ZnPg==')] opacity-60" />
 
+        <div className="liquid-orb -left-20 top-24 h-56 w-56 bg-mint/25 blur-3xl" />
+        <div className="liquid-orb right-[-5rem] top-1/3 h-72 w-72 bg-sky-300/15 blur-3xl" style={{ animationDelay: '-4s' }} />
+
         {/* Floating road decoration */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white/5 to-transparent -z-5" />
 
         {/* Logo */}
         <div className="animate-fade-in-up mb-8">
-          <div className="mx-auto flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-3xl bg-white/10 backdrop-blur-md shadow-2xl shadow-mint/20 border border-white/15 animate-pulse-glow">
+          <div className="mx-auto flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-[2rem] bg-white/10 backdrop-blur-xl shadow-2xl shadow-mint/20 border border-white/20 ring-1 ring-white/10 animate-pulse-glow">
             <Image
               src="/mashaweer-logo.png"
               alt="Mashaweer"
@@ -93,7 +96,7 @@ export default function Home() {
           </div>
         </div>
 
-        <h1 className="animate-fade-in-up mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight">
+        <h1 className="animate-fade-in-up mx-auto max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight [text-shadow:0_12px_40px_rgba(0,0,0,0.25)]">
           مشوارك  <br className="hidden sm:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-mint-light via-emerald-300 to-mint animate-gradient-shift">
             و ناسك
@@ -109,7 +112,7 @@ export default function Home() {
           <Link
             href="/trips"
             id="hero-find-ride"
-            className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-mint to-mint-light px-10 py-4 text-base font-bold text-white shadow-xl shadow-mint/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-mint/40 sm:w-auto"
+            className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-mint to-mint-light px-10 py-4 text-base font-bold text-white shadow-xl shadow-mint/30 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl hover:shadow-mint/40 sm:w-auto"
           >
             Find a Ride
             <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />

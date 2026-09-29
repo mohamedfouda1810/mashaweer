@@ -21,6 +21,7 @@ import {
     Plus,
     MessageCircle,
 } from 'lucide-react';
+import { LanguageToggle } from './LanguageToggle';
 
 const NAV_ITEMS = [
     { href: '/trips', label: 'Trips', icon: MapPin },
@@ -46,10 +47,21 @@ export function Navbar() {
     const [closing, setClosing] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
+    const closeMobileMenu = useCallback(() => {
+        if (mobileOpen) {
+            setClosing(true);
+            setTimeout(() => {
+                setMobileOpen(false);
+                setClosing(false);
+            }, 250);
+        }
+    }, [mobileOpen]);
+
     // Close mobile menu on route change
     useEffect(() => {
-        closeMobileMenu();
-    }, [pathname]);
+        const timer = window.setTimeout(closeMobileMenu, 0);
+        return () => window.clearTimeout(timer);
+    }, [pathname, closeMobileMenu]);
 
     // Prevent body scroll when menu is open
     useEffect(() => {
@@ -95,16 +107,6 @@ export function Navbar() {
 
     // Token sync is now handled by useAuthStore onRehydrateStorage — no manual sync needed
 
-    const closeMobileMenu = useCallback(() => {
-        if (mobileOpen) {
-            setClosing(true);
-            setTimeout(() => {
-                setMobileOpen(false);
-                setClosing(false);
-            }, 250);
-        }
-    }, [mobileOpen]);
-
     const toggleMobile = () => {
         if (mobileOpen) {
             closeMobileMenu();
@@ -129,7 +131,7 @@ export function Navbar() {
 
     return (
         <>
-            <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
+            <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 shadow-[0_8px_30px_rgba(15,45,79,0.06)] backdrop-blur-2xl dark:border-white/10 dark:bg-navy-dark/75">
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
@@ -167,6 +169,7 @@ export function Navbar() {
 
                     {/* Right Side */}
                     <div className="flex items-center gap-2">
+                        <div className="hidden sm:block"><LanguageToggle /></div>
                         {isAuthenticated ? (
                             <>
                                 {/* Notifications */}

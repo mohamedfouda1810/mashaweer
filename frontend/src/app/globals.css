@@ -2,9 +2,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  /* New Mashaweer Palette */
+  --background: #f5f8fb;
+  --foreground: #102a43;
+  --surface: #f5f8fb;
+  --surface-raised: #ffffff;
+  --border-soft: rgba(16, 42, 67, 0.10);
+  --shadow-soft: 0 20px 60px rgba(15, 45, 79, 0.10);
   --navy: #1A4270;
   --navy-light: #2B5A8C;
   --navy-dark: #0F2D4F;
@@ -28,6 +31,8 @@
   --color-slate: #8A9BA8;
   --color-slate-light: #B0BEC5;
   --color-slate-dark: #607D8B;
+  --color-surface: #f5f8fb;
+  --color-surface-raised: #ffffff;
   --font-sans: 'Cairo', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
@@ -51,6 +56,41 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(47, 191, 120, 0.08), transparent 28rem),
+    radial-gradient(circle at 92% 12%, rgba(43, 90, 140, 0.08), transparent 30rem),
+    var(--surface);
+}
+
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.surface-card {
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.liquid-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(1px);
+  opacity: 0.7;
+  pointer-events: none;
+  animation: liquidFloat 12s ease-in-out infinite;
+}
+
+.text-gradient {
+  color: transparent;
+  background: linear-gradient(110deg, #d8fff0, #42d28b 48%, #9ae6ff);
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 ::selection {
@@ -95,6 +135,12 @@ body {
   50% {
     transform: translateY(-8px);
   }
+}
+
+@keyframes liquidFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(18px, -14px, 0) scale(1.05); }
+  66% { transform: translate3d(-14px, 12px, 0) scale(0.96); }
 }
 
 @keyframes shimmer {
@@ -328,6 +374,15 @@ body {
   /* Use touch-optimized tap highlight */
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

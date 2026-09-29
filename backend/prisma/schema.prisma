@@ -30,6 +30,7 @@ model User {
   emailVerified          Boolean               @default(false)
   passwordResetExpiry    DateTime?
   passwordResetToken     String?
+  deletedAt              DateTime?
   adminAlerts            AdminAlert[]          @relation("AlertDriver")
   bookings               Booking[]
   cancellationRequests   CancellationRequest[]
@@ -50,6 +51,7 @@ model User {
 
   @@index([role])
   @@index([isBanned])
+  @@index([deletedAt])
   @@map("users")
 }
 

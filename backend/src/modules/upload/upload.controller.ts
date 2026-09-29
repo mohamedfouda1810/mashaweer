@@ -22,8 +22,18 @@ export class UploadController {
       storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|webp|gif|pdf)$/i;
-        if (!allowed.test(extname(file.originalname))) {
+        const allowedExtensions = /\.(jpg|jpeg|png|webp|gif|pdf)$/i;
+        const allowedMimeTypes = new Set([
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif',
+          'application/pdf',
+        ]);
+        if (
+          !allowedExtensions.test(extname(file.originalname)) ||
+          !allowedMimeTypes.has(file.mimetype)
+        ) {
           cb(
             new BadRequestException(
               'Only image files (jpg, png, webp, gif) and PDFs are allowed',
@@ -44,11 +54,15 @@ export class UploadController {
     try {
       const result = await this.cloudinaryService.uploadFile(file);
       // Return the public Cloudinary URL for the file
-      return { url: result.secure_url, filename: result.public_id, size: file.size };
+      return {
+        url: result.secure_url,
+        filename: result.public_id,
+        size: file.size,
+      };
     } catch (error: any) {
       console.error('Upload Error:', error);
       throw new BadRequestException(
-        error.message || 'Failed to upload file to Cloudinary'
+        error.message || 'Failed to upload file to Cloudinary',
       );
     }
   }
