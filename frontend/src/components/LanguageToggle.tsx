@@ -1,39 +1,25 @@
 'use client';
 
-import { Languages } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-type Locale = 'ar' | 'en';
+import { Globe } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function LanguageToggle() {
-    const [locale, setLocale] = useState<Locale>(() => {
-        if (typeof window === 'undefined') return 'ar';
-        return window.localStorage.getItem('mashaweer-locale') === 'en' ? 'en' : 'ar';
-    });
+    const { locale, setLocale } = useTranslation();
 
-    useEffect(() => {
-        document.documentElement.lang = locale;
-        document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
-        window.localStorage.setItem('mashaweer-locale', locale);
-    }, [locale]);
-
-    const toggle = () => {
-        const next: Locale = locale === 'ar' ? 'en' : 'ar';
-        setLocale(next);
-        window.localStorage.setItem('mashaweer-locale', next);
-        document.documentElement.lang = next;
-        document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
+    const toggleLanguage = () => {
+        setLocale(locale === 'ar' ? 'en' : 'ar');
     };
 
     return (
         <button
-            type="button"
-            onClick={toggle}
-            aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/70 px-3 py-2 text-xs font-bold text-slate-600 shadow-sm backdrop-blur-md transition-all hover:border-mint/40 hover:bg-white hover:text-navy dark:border-white/10 dark:bg-white/5 dark:text-slate-light dark:hover:bg-white/10"
+            onClick={toggleLanguage}
+            className="fixed bottom-20 left-4 z-50 flex h-10 items-center justify-center gap-2 rounded-full bg-white/70 px-4 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-white/90 hover:shadow-xl active:scale-95 dark:bg-zinc-800/70 dark:ring-white/10 dark:hover:bg-zinc-800/90 sm:bottom-6"
+            title={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
         >
-            <Languages className="h-4 w-4 text-mint" />
-            <span>{locale === 'ar' ? 'EN' : 'عربي'}</span>
+            <Globe className="h-4 w-4 text-zinc-600 transition-transform duration-300 group-hover:rotate-12 dark:text-zinc-300" />
+            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
+                {locale === 'ar' ? 'EN 🇬🇧' : 'عربي 🇪🇬'}
+            </span>
         </button>
     );
 }

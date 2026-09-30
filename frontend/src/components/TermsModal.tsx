@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { X, Shield, FileText } from 'lucide-react';
+import { X, Shield } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface TermsModalProps {
     isOpen: boolean;
@@ -64,50 +65,52 @@ const PASSENGER_TERMS = [
 ];
 
 export function TermsModal({ isOpen, onClose, role }: TermsModalProps) {
+    const { t, locale } = useTranslation();
+
     if (!isOpen) return null;
 
     const terms = role === 'DRIVER' ? DRIVER_TERMS : PASSENGER_TERMS;
-    const title = role === 'DRIVER' ? 'سياسات السائق' : 'سياسات الراكب';
+    const title = role === 'DRIVER' ? t('terms.driverTitle') : t('terms.passengerTitle');
 
     return (
-        <div className="animate-fade-in fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="animate-scale-in relative max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-900">
+        <div className="animate-fade-in fixed inset-0 z-[100] flex items-center justify-center bg-navy-900/50 p-4 backdrop-blur-md" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+            <div className="animate-scale-in relative max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl bg-white/90 shadow-2xl backdrop-blur-xl border border-white/20 dark:bg-navy-950/90 dark:border-white/10 flex flex-col">
                 {/* Header */}
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-gradient-to-r from-navy to-navy-light px-6 py-4 dark:border-zinc-700">
+                <div className="shrink-0 flex items-center justify-between border-b border-black/5 bg-navy/95 px-6 py-4 backdrop-blur-md dark:border-white/5">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 border border-white/10">
                             <Shield className="h-5 w-5 text-white" />
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-white">{title}</h2>
-                            <p className="text-xs text-white/70">الشروط والأحكام</p>
+                            <p className="text-xs text-white/70">{t('terms.subtitle')}</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+                        className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="max-h-[60vh] overflow-y-auto px-6 py-5" dir="rtl">
+                <div className="flex-1 overflow-y-auto px-6 py-5" dir="rtl">
                     <div className="space-y-4">
                         {terms.map((term, index) => (
                             <div
                                 key={index}
-                                className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800"
+                                className="rounded-xl border border-black/5 bg-white/50 p-4 dark:border-white/5 dark:bg-black/20"
                             >
                                 <div className="mb-2 flex items-start gap-3">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-navy text-xs font-bold text-white">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-navy/10 text-xs font-bold text-navy-700 dark:bg-white/10 dark:text-navy-300">
                                         {index + 1}
                                     </span>
-                                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                                    <h3 className="text-sm font-bold text-navy-900 dark:text-white">
                                         {term.title}
                                     </h3>
                                 </div>
-                                <p className="mr-10 text-sm leading-7 text-zinc-600 dark:text-zinc-400">
+                                <p className="mr-10 text-sm leading-7 text-navy-700 dark:text-navy-300">
                                     {term.content}
                                 </p>
                             </div>
@@ -116,12 +119,12 @@ export function TermsModal({ isOpen, onClose, role }: TermsModalProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="sticky bottom-0 border-t border-zinc-200 bg-white px-6 py-4 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="shrink-0 border-t border-black/5 bg-white/50 px-6 py-4 backdrop-blur-md dark:border-white/5 dark:bg-black/20">
                     <button
                         onClick={onClose}
-                        className="w-full rounded-xl bg-navy py-3 text-sm font-semibold text-white transition-all hover:bg-navy-light active:scale-[0.98]"
+                        className="btn-3d w-full rounded-xl bg-gradient-to-r from-navy to-emerald py-3 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-[0.98]"
                     >
-                        فهمت وموافق
+                        {t('terms.agree')}
                     </button>
                 </div>
             </div>

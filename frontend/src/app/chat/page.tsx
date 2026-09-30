@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useSocket } from '@/providers/SocketProvider';
 import { api } from '@/lib/api';
 import { ChatBlock, ChatMessage } from '@/types';
@@ -105,7 +106,7 @@ function MessageBubble({ message, isOwn, isAdmin, onAdminClick }: BubbleProps) {
       ? 'bg-gradient-to-br from-red-500 to-rose-600'
       : message.user?.role === 'DRIVER'
       ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
-      : 'bg-gradient-to-br from-teal-500 to-emerald-600';
+      : 'bg-gradient-to-br from-emerald-500 to-emerald-600 btn-3d';
 
   return (
     <div className={`group flex items-end gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
@@ -133,8 +134,8 @@ function MessageBubble({ message, isOwn, isAdmin, onAdminClick }: BubbleProps) {
           <div
             className={`rounded-2xl px-4 py-2.5 shadow-sm ${
               isOwn
-                ? 'rounded-br-md bg-gradient-to-br from-teal-500 to-emerald-600 text-white'
-                : 'rounded-bl-md bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
+                ? 'rounded-br-md bg-gradient-to-br from-emerald-500 to-emerald-600 btn-3d text-white'
+                : 'rounded-bl-md glass text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
             }`}
           >
             <p className="break-words text-sm leading-relaxed">{message.content}</p>
@@ -219,6 +220,7 @@ function ChatSkeleton() {
 export default function ChatPage() {
   const router = useRouter();
   const { user, isAuthenticated, hasHydrated } = useAuthStore();
+  const { t } = useTranslation();
   const { socket } = useSocket();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -515,15 +517,15 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col bg-zinc-50 dark:bg-zinc-950" style={{ height: 'calc(100dvh - 56px)' }}>
       {/* ── Header ── */}
-      <div className="border-b border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
+      <div className="border-b border-zinc-200 glass-card dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 btn-3d shadow-sm">
               <MessageCircle className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-zinc-900 dark:text-white">Group Chat</h1>
-              <p className="text-xs text-zinc-500">Drivers, Passengers &amp; Admins</p>
+              <h1 className="text-sm font-bold text-zinc-900 dark:text-white">{t('chat.title') || 'Group Chat'}</h1>
+              <p className="text-xs text-zinc-500">{t('chat.subtitle') || 'Drivers, Passengers & Admins'}</p>
             </div>
           </div>
 
@@ -593,7 +595,7 @@ export default function ChatPage() {
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-md">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 btn-3d shadow-md">
                 <MessageCircle className="h-8 w-8 text-white" />
               </div>
               <h3 className="mt-4 text-base font-semibold text-zinc-900 dark:text-white">No messages yet</h3>
@@ -617,7 +619,7 @@ export default function ChatPage() {
       </div>
 
       {/* ── Input ── */}
-      <div className="border-t border-zinc-200 bg-white/80 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/80">
+      <div className="border-t border-zinc-200 glass-card dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="mx-auto max-w-3xl p-3">
           {isBlocked ? (
             <div className="flex items-center justify-center rounded-2xl bg-zinc-100 py-3.5 dark:bg-zinc-800">
@@ -632,7 +634,7 @@ export default function ChatPage() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+                  placeholder={t("chat.placeholder") || "Type a message..."}
                   rows={1}
                   maxLength={500}
                   disabled={isSending}
@@ -653,7 +655,7 @@ export default function ChatPage() {
               <button
                 onClick={handleSend}
                 disabled={!inputText.trim() || isSending}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-sm transition-all hover:scale-105 hover:shadow-md active:scale-95 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 btn-3d text-white shadow-sm transition-all hover:scale-105 hover:shadow-md active:scale-95 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api, getImageUrl, downloadImage } from '@/lib/api';
 import { User, AdminAlert, DepositRequest } from '@/types';
@@ -52,6 +53,7 @@ type Tab = 'overview' | 'alerts' | 'users' | 'deposits' | 'drivers' | 'trips' | 
 export default function AdminPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
+    const { t } = useTranslation();
     const [tab, setTab] = useState<Tab>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -356,10 +358,10 @@ export default function AdminPage() {
     const tabs: { key: Tab; label: string; icon: React.ReactNode; iconLarge: React.ReactNode; desc: string; gradient: string; iconBg: string }[] = [
         { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" />, iconLarge: <BarChart3 className="h-10 w-10" />, desc: 'Dashboard stats & summary', gradient: 'from-teal-500 to-emerald-500', iconBg: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' },
         { key: 'alerts', label: 'Alerts', icon: <AlertTriangle className="h-4 w-4" />, iconLarge: <AlertTriangle className="h-10 w-10" />, desc: 'Platform alerts & warnings', gradient: 'from-amber-500 to-orange-500', iconBg: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
-        { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" />, iconLarge: <Users className="h-10 w-10" />, desc: 'Manage all platform users', gradient: 'from-indigo-500 to-violet-500', iconBg: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
-        { key: 'deposits', label: 'Deposits', icon: <CreditCard className="h-4 w-4" />, iconLarge: <CreditCard className="h-10 w-10" />, desc: 'Pending deposit requests', gradient: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' },
-        { key: 'drivers', label: 'Drivers', icon: <Car className="h-4 w-4" />, iconLarge: <Car className="h-10 w-10" />, desc: 'Driver applications & docs', gradient: 'from-emerald-500 to-green-500', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' },
-        { key: 'trips', label: 'Trips', icon: <Ticket className="h-4 w-4" />, iconLarge: <Ticket className="h-10 w-10" />, desc: 'All trips & route management', gradient: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+        { key: 'users', label: t('admin.users') || 'Users', icon: <Users className="h-4 w-4" />, iconLarge: <Users className="h-10 w-10" />, desc: 'Manage all platform users', gradient: 'from-indigo-500 to-violet-500', iconBg: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
+        { key: 'deposits', label: t('admin.deposits') || 'Deposits', icon: <CreditCard className="h-4 w-4" />, iconLarge: <CreditCard className="h-10 w-10" />, desc: 'Pending deposit requests', gradient: 'from-violet-500 to-purple-500', iconBg: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' },
+        { key: 'drivers', label: t('admin.drivers') || 'Drivers', icon: <Car className="h-4 w-4" />, iconLarge: <Car className="h-10 w-10" />, desc: 'Driver applications & docs', gradient: 'from-emerald-500 to-green-500', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' },
+        { key: 'trips', label: t('admin.trips') || 'Trips', icon: <Ticket className="h-4 w-4" />, iconLarge: <Ticket className="h-10 w-10" />, desc: 'All trips & route management', gradient: 'from-blue-500 to-indigo-500', iconBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
         { key: 'financials', label: 'Financials', icon: <DollarSign className="h-4 w-4" />, iconLarge: <DollarSign className="h-10 w-10" />, desc: 'Revenue & financial reports', gradient: 'from-green-500 to-emerald-500', iconBg: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
         { key: 'transactions', label: 'Transactions', icon: <ArrowUpDown className="h-4 w-4" />, iconLarge: <ArrowUpDown className="h-10 w-10" />, desc: 'Platform transaction ledger', gradient: 'from-sky-500 to-blue-500', iconBg: 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400' },
         { key: 'commissionPayments', label: 'Commissions', icon: <Percent className="h-4 w-4" />, iconLarge: <Percent className="h-10 w-10" />, desc: 'Commission payment requests', gradient: 'from-pink-500 to-rose-500', iconBg: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' },
@@ -383,7 +385,7 @@ export default function AdminPage() {
                             <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Admin Panel</h1>
+                            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{t('admin.title') || 'Admin Panel'}</h1>
                             <p className="text-sm text-zinc-600 dark:text-zinc-400">Manage the platform</p>
                         </div>
                     </div>
@@ -391,7 +393,7 @@ export default function AdminPage() {
                         {tab !== null && (
                             <button
                                 onClick={() => setTab(null)}
-                                className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                                className="flex items-center gap-2 rounded-lg glass-card border-emerald-500/20 px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 Back to Dashboard
@@ -414,7 +416,7 @@ export default function AdminPage() {
                             <button
                                 key={t.key}
                                 onClick={() => setTab(t.key)}
-                                className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-2xl"
+                                className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl glass-card border-emerald-500/20 p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-2xl"
                                 style={{ animationDelay: `${i * 60}ms`, animation: 'fadeInUp 0.5s ease-out forwards', opacity: 0 }}
                             >
                                 {/* Gradient glow on hover */}
@@ -471,7 +473,7 @@ export default function AdminPage() {
                                 ) : (
                                     <div className="space-y-3">
                                         {alerts.map((alert) => (
-                                            <div key={alert.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                            <div key={alert.id} className="rounded-xl glass-card border-emerald-500/20 p-4 dark:border-zinc-800 dark:bg-zinc-900">
                                                 <div className="flex items-start justify-between">
                                                     <div>
                                                         <div className="flex items-center gap-2">
@@ -641,7 +643,7 @@ export default function AdminPage() {
                                 )}
                                 {/* Users Pagination */}
                                 {usersMeta && usersMeta.totalPages > 1 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="mt-4 flex items-center justify-between rounded-xl glass-card border-emerald-500/20 p-3 dark:border-zinc-800 dark:bg-zinc-900">
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400">
                                             Page {usersPage} of {usersMeta.totalPages} ({usersMeta.total} total users)
                                         </p>
@@ -674,7 +676,7 @@ export default function AdminPage() {
                                 ) : (
                                     <div className="space-y-3">
                                         {deposits.map((d) => (
-                                            <div key={d.id} className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                            <div key={d.id} className="rounded-xl glass-card border-emerald-500/20 p-4 dark:border-zinc-800 dark:bg-zinc-900">
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <p className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -739,7 +741,7 @@ export default function AdminPage() {
                                         {pendingDrivers.map((d) => {
                                             const driverName = `${d.user?.firstName || 'driver'}_${d.user?.lastName || ''}`.trim();
                                             return (
-                                                <div key={d.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                                <div key={d.id} className="overflow-hidden rounded-xl glass-card border-emerald-500/20 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                                     <div className="p-5">
                                                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                                             <div className="flex items-start gap-4">
@@ -1077,7 +1079,7 @@ export default function AdminPage() {
                                 )}
                                 {/* Trips Pagination */}
                                 {tripsMeta && tripsMeta.totalPages > 1 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="mt-4 flex items-center justify-between rounded-xl glass-card border-emerald-500/20 p-3 dark:border-zinc-800 dark:bg-zinc-900">
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400">
                                             Page {tripsPage} of {tripsMeta.totalPages} ({tripsMeta.total} total trips)
                                         </p>
@@ -1197,7 +1199,7 @@ export default function AdminPage() {
 
                                 {/* Driver Breakdown */}
                                 {financials.driverBreakdown && financials.driverBreakdown.length > 0 && (
-                                    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="rounded-xl glass-card border-emerald-500/20 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                         <div className="border-b border-zinc-200 p-4 dark:border-zinc-800">
                                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Driver Earnings Breakdown</h3>
                                         </div>
@@ -1228,7 +1230,7 @@ export default function AdminPage() {
 
                                 {/* Recent Trip Revenue */}
                                 {financials.recentTrips && financials.recentTrips.length > 0 && (
-                                    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <div className="rounded-xl glass-card border-emerald-500/20 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                         <div className="border-b border-zinc-200 p-4 dark:border-zinc-800">
                                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Recent Trip Revenue</h3>
                                         </div>
@@ -1266,7 +1268,7 @@ export default function AdminPage() {
                 {/* Create User Modal */}
                 {showCreateUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="w-full max-w-md rounded-2xl glass-card border-emerald-500/20 p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Create New User</h2>
                                 <button onClick={() => setShowCreateUser(false)} className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">
@@ -1335,7 +1337,7 @@ export default function AdminPage() {
                 {/* ─── Settings Tab ───────────────────────────────────────── */}
                 {tab === 'settings' && (
                     <div className="space-y-6">
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="rounded-2xl glass-card border-emerald-500/20 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                                 <Settings className="h-5 w-5 text-teal-500" />
                                 Platform Payment Settings
@@ -1417,7 +1419,7 @@ export default function AdminPage() {
                                 ) : (
                                     <div className="space-y-3">
                                         {commissionPayments.map((p: any) => (
-                                            <div key={p.id} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                            <div key={p.id} className="rounded-xl glass-card border-emerald-500/20 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                                     <div className="flex items-start gap-3">
                                                         <div className={`flex h-12 w-12 items-center justify-center rounded-full ${
@@ -1539,7 +1541,7 @@ export default function AdminPage() {
                                             </thead>
                                             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                                 {allTransactions.map((t: any) => (
-                                                    <tr key={t.id} className="bg-white dark:bg-zinc-900">
+                                                    <tr key={t.id} className="glass dark:bg-zinc-900/50">
                                                         <td className="px-4 py-3">
                                                             <div className="font-medium text-zinc-900 dark:text-zinc-100">
                                                                 {t.wallet?.user?.firstName} {t.wallet?.user?.lastName}
@@ -2196,7 +2198,7 @@ export default function AdminPage() {
 
 function StatCard({ icon, label, value, bg }: { icon: React.ReactNode; label: string; value: string | number; bg: string }) {
     return (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl glass-card border-emerald-500/20 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg}`}>
                     {icon}

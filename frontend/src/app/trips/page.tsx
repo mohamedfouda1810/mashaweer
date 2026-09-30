@@ -7,6 +7,7 @@ import { BookingRulesModal } from '@/components/trips/BookingRulesModal';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTripStore } from '@/stores/useTripStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Trip } from '@/types';
 import { MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ export default function TripsPage() {
     const { isAuthenticated, user } = useAuthStore();
     const { bookSeat, isBooking } = useBookingStore();
     const { trips, fetchTrips } = useTripStore();
+    const { t } = useTranslation();
     const isDriverOrAdmin = user?.role === 'DRIVER' || user?.role === 'ADMIN';
 
     // Modal state for booking flow
@@ -78,19 +80,19 @@ export default function TripsPage() {
         : 0;
 
     return (
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 glass-card mt-6 mb-6">
             {/* Page Header */}
             <div className="mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-900/30">
-                        <MapPin className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/50 backdrop-blur-md shadow-sm border border-white/20 dark:bg-zinc-800/50 dark:border-zinc-700/50">
+                        <MapPin className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                            Available Trips
+                        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white drop-shadow-sm">
+                            {t('trips.title')}
                         </h1>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                            {isDriverOrAdmin ? 'Browse available trips' : 'Find and book inter-city rides'}
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                            {isDriverOrAdmin ? t('trips.subtitle.driver') : t('trips.subtitle.passenger')}
                         </p>
                     </div>
                 </div>

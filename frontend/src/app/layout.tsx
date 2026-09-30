@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#1A4270',
+  themeColor: '#0A2E52',
 };
 
 export default function RootLayout({
@@ -43,7 +43,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-surface font-sans antialiased dark:bg-navy-dark">
+      <body className="bg-surface font-sans antialiased dark:bg-midnight">
         <SocketProvider>
           <GoogleAnalytics />
           <Navbar />

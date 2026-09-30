@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback } from 'react';
 import { useTripStore } from '@/stores/useTripStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
     Search,
     CalendarDays,
@@ -27,6 +28,7 @@ const POPULAR_CITIES = [
 
 export function TripFilters() {
     const { filters, setFilters, resetFilters } = useTripStore();
+    const { t } = useTranslation();
     const [showAdvanced, setShowAdvanced] = React.useState(false);
     const [isExpanded, setIsExpanded] = React.useState(false); // collapsed on mobile by default
 
@@ -73,24 +75,26 @@ export function TripFilters() {
         filters.maxPrice;
 
     const inputClass =
-        'w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100';
+        'w-full rounded-xl border border-white/40 bg-white/50 backdrop-blur-sm px-3 py-2 text-sm text-zinc-900 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-100';
 
     return (
-        <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="glass-card rounded-2xl shadow-sm mb-6">
             {/* Header — toggleable on mobile */}
-            <div className="flex w-full items-center justify-between px-4 py-3">
+            <div className="flex w-full items-center justify-between px-5 py-4">
                 <button
                     type="button"
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="flex flex-1 items-center justify-between md:cursor-default"
                 >
                     <div className="flex items-center gap-2">
-                        <SlidersHorizontal className="h-4 w-4 text-teal-600" />
-                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                            Filter Trips
+                        <div className="p-1.5 bg-emerald-100/50 rounded-lg dark:bg-emerald-900/30">
+                            <SlidersHorizontal className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 drop-shadow-sm">
+                            {t('trips.filter.title')}
                         </span>
                         {hasActiveFilters && (
-                            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-[10px] font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                            <span className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm">
                                 !
                             </span>
                         )}
@@ -103,20 +107,20 @@ export function TripFilters() {
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="rounded-md px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-red-500 bg-red-50/50 hover:bg-red-100 transition-colors border border-red-100 dark:border-red-900/30 dark:bg-red-950/30 dark:hover:bg-red-900/50"
                     >
-                        Clear
+                        {t('trips.filter.clear')}
                     </button>
                 )}
             </div>
 
             {/* Filter body — always visible on desktop, toggle on mobile */}
-            <div className={`${isExpanded ? 'block' : 'hidden'} md:block border-t border-zinc-100 px-4 pb-4 pt-3 dark:border-zinc-800`}>
+            <div className={`${isExpanded ? 'block' : 'hidden'} md:block border-t border-zinc-100/50 px-5 pb-5 pt-4 dark:border-zinc-800/50`}>
                 {/* Unified Search Box */}
-                <div className="mb-3">
-                    <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        <Search className="h-3 w-3 text-teal-500" />
-                        Search
+                <div className="mb-4">
+                    <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                        <Search className="h-3.5 w-3.5 text-emerald-500" />
+                        {t('trips.filter.search')}
                     </label>
                     <input
                         type="text"
@@ -125,24 +129,24 @@ export function TripFilters() {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') handleApply();
                         }}
-                        placeholder="Search by city, address, meeting point, driver name..."
+                        placeholder={t('trips.filter.searchPlaceholder')}
                         className={inputClass}
                     />
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {/* From City */}
                     <div>
-                        <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            <MapPin className="h-3 w-3 text-teal-500" />
-                            From
+                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                            <MapPin className="h-3.5 w-3.5 text-emerald-500" />
+                            {t('common.from')}
                         </label>
                         <select
                             value={filters.fromCity || ''}
                             onChange={(e) => setFilters({ fromCity: e.target.value })}
                             className={inputClass}
                         >
-                            <option value="">All Cities</option>
+                            <option value="">{t('trips.filter.allCities')}</option>
                             {POPULAR_CITIES.map((city) => (
                                 <option key={city} value={city}>
                                     {city}
@@ -153,16 +157,16 @@ export function TripFilters() {
 
                     {/* To City */}
                     <div>
-                        <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            <MapPin className="h-3 w-3 text-emerald-500" />
-                            To
+                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                            <MapPin className="h-3.5 w-3.5 text-navy dark:text-blue-400" />
+                            {t('common.to')}
                         </label>
                         <select
                             value={filters.toCity || ''}
                             onChange={(e) => setFilters({ toCity: e.target.value })}
                             className={inputClass}
                         >
-                            <option value="">All Destinations</option>
+                            <option value="">{t('trips.filter.allDestinations')}</option>
                             {POPULAR_CITIES.map((city) => (
                                 <option key={city} value={city}>
                                     {city}
@@ -173,9 +177,9 @@ export function TripFilters() {
 
                     {/* Date */}
                     <div>
-                        <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            <CalendarDays className="h-3 w-3 text-teal-500" />
-                            Date
+                        <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                            <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
+                            {t('common.date')}
                         </label>
                         <input
                             type="date"
@@ -189,10 +193,10 @@ export function TripFilters() {
                     <div className="flex items-end">
                         <button
                             onClick={handleApply}
-                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:from-teal-600 hover:to-indigo-700 hover:shadow-md active:scale-95"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-navy to-emerald px-4 py-2 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg hover:from-navy-light hover:to-emerald-500 active:scale-95"
                         >
                             <Search className="h-4 w-4" />
-                            Search
+                            {t('common.search')}
                         </button>
                     </div>
                 </div>
@@ -200,18 +204,18 @@ export function TripFilters() {
                 {/* Price Toggle */}
                 <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="mt-2 text-xs text-teal-600 hover:text-teal-700 dark:text-teal-400"
+                    className="mt-4 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 transition-colors"
                 >
-                    {showAdvanced ? 'Hide' : 'Show'} Price Filters
+                    {showAdvanced ? t('trips.filter.hidePrice') : t('trips.filter.showPrice')}
                 </button>
 
                 {/* Price Range */}
                 {showAdvanced && (
-                    <div className="mt-2 grid gap-3 border-t border-zinc-100 pt-3 sm:grid-cols-2 dark:border-zinc-800">
+                    <div className="mt-3 grid gap-4 border-t border-zinc-100/50 pt-4 sm:grid-cols-2 dark:border-zinc-800/50">
                         <div>
-                            <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                <DollarSign className="h-3 w-3 text-teal-500" />
-                                Min Price (EGP)
+                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                                {t('trips.filter.minPrice')}
                             </label>
                             <input
                                 type="number"
@@ -227,9 +231,9 @@ export function TripFilters() {
                             />
                         </div>
                         <div>
-                            <label className="mb-1 flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                <DollarSign className="h-3 w-3 text-teal-500" />
-                                Max Price (EGP)
+                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                                {t('trips.filter.maxPrice')}
                             </label>
                             <input
                                 type="number"

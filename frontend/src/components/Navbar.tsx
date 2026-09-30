@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import { useSocket } from '@/providers/SocketProvider';
+import { useTranslation } from '@/hooks/useTranslation';
 
 import {
     MapPin,
@@ -20,24 +21,9 @@ import {
     X,
     Plus,
     MessageCircle,
+    CheckCircle
 } from 'lucide-react';
 import { LanguageToggle } from './LanguageToggle';
-
-const NAV_ITEMS = [
-    { href: '/trips', label: 'Trips', icon: MapPin },
-    { href: '/bookings', label: 'Bookings', icon: Ticket },
-    { href: '/wallet', label: 'Wallet', icon: Wallet },
-    { href: '/chat', label: 'Chat', icon: MessageCircle },
-];
-
-const DRIVER_ITEMS = [
-    { href: '/driver', label: 'Dashboard', icon: Gauge },
-    { href: '/trips/create', label: 'New Trip', icon: Plus },
-];
-
-const ADMIN_ITEMS = [
-    { href: '/admin', label: 'Admin', icon: Shield },
-];
 
 export function Navbar() {
     const pathname = usePathname();
@@ -46,6 +32,23 @@ export function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const { t } = useTranslation();
+
+    const NAV_ITEMS = [
+        { href: '/trips', label: t('nav.trips'), icon: MapPin },
+        { href: '/bookings', label: t('nav.bookings'), icon: Ticket },
+        { href: '/wallet', label: t('nav.wallet'), icon: Wallet },
+        { href: '/chat', label: t('nav.chat'), icon: MessageCircle },
+    ];
+
+    const DRIVER_ITEMS = [
+        { href: '/driver', label: t('nav.dashboard'), icon: Gauge },
+        { href: '/trips/create', label: t('nav.newTrip'), icon: Plus },
+    ];
+
+    const ADMIN_ITEMS = [
+        { href: '/admin', label: t('nav.admin'), icon: Shield },
+    ];
 
     const closeMobileMenu = useCallback(() => {
         if (mobileOpen) {
@@ -105,8 +108,6 @@ export function Navbar() {
         }
     }, [socket, isConnected]);
 
-    // Token sync is now handled by useAuthStore onRehydrateStorage — no manual sync needed
-
     const toggleMobile = () => {
         if (mobileOpen) {
             closeMobileMenu();
@@ -119,7 +120,7 @@ export function Navbar() {
 
     const linkClasses = (href: string, mobile = false) =>
         `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${mobile ? 'w-full' : ''} ${isActive(href)
-            ? 'bg-mint/10 text-mint-dark dark:bg-mint/10 dark:text-mint-light'
+            ? 'bg-emerald-50/80 text-emerald-600 shadow-[inset_0_-2px_0_0_#00C97B] dark:bg-emerald-500/10 dark:text-emerald-400 dark:shadow-[inset_0_-2px_0_0_#00C97B]'
             : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
         }`;
 
@@ -131,22 +132,31 @@ export function Navbar() {
 
     return (
         <>
-            <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 shadow-[0_8px_30px_rgba(15,45,79,0.06)] backdrop-blur-2xl dark:border-white/10 dark:bg-navy-dark/75">
+            <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/70 shadow-[0_8px_30px_rgba(10,46,82,0.06)] dark:border-white/10">
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-                        <Image
-                            src="/mashaweer-logo.png"
-                            alt="Mashaweer"
-                            width={32}
-                            height={32}
-                            className="h-8 w-8 object-contain"
-                            priority
-                        />
-                        <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
-                            Mashaweer
-                        </span>
-                    </Link>
+                    {/* Logo & Trust Badge */}
+                    <div className="flex items-center gap-4">
+                        <Link href="/" className="group flex items-center gap-2 transition-transform duration-300 hover:-translate-y-0.5">
+                            <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:drop-shadow-[0_4px_8px_rgba(0,201,123,0.3)] group-hover:scale-105">
+                                <Image
+                                    src="/mashaweer-logo.png"
+                                    alt={t('common.mashaweer')}
+                                    width={32}
+                                    height={32}
+                                    className="h-8 w-8 object-contain"
+                                    priority
+                                />
+                            </div>
+                            <span className="text-lg font-bold tracking-tight text-zinc-900 transition-colors group-hover:text-navy dark:text-white dark:group-hover:text-emerald-400">
+                                {t('common.mashaweer')}
+                            </span>
+                        </Link>
+                        {/* Trust Badge - Desktop Only */}
+                        <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50/80 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                            <CheckCircle className="h-3 w-3" />
+                            Verified Platform
+                        </div>
+                    </div>
 
                     {/* Desktop Nav Links (hidden on mobile) */}
                     <div className="hidden items-center gap-1 md:flex">
@@ -162,7 +172,7 @@ export function Navbar() {
                         ) : (
                             <Link href="/trips" className={linkClasses('/trips')}>
                                 <MapPin className="h-4 w-4" />
-                                Browse Trips
+                                {t('nav.browseTrips')}
                             </Link>
                         )}
                     </div>
@@ -175,11 +185,12 @@ export function Navbar() {
                                 {/* Notifications */}
                                 <Link
                                     href="/notifications"
-                                    className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-mint/10 hover:text-mint-dark dark:text-zinc-400 dark:hover:bg-mint/10 dark:hover:text-mint"
+                                    className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:text-zinc-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                                    aria-label={t('nav.notifications')}
                                 >
                                     <Bell className="h-5 w-5" />
                                     {unreadCount > 0 && (
-                                        <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                        <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm">
                                             {unreadCount > 9 ? '9+' : unreadCount}
                                         </span>
                                     )}
@@ -187,7 +198,7 @@ export function Navbar() {
 
                                 {/* Desktop user info */}
                                 <div className="hidden items-center gap-2 border-l border-zinc-200 pl-2 md:flex dark:border-zinc-800">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-navy to-mint text-xs font-bold text-white">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-navy to-emerald text-xs font-bold text-white shadow-sm">
                                         {user?.firstName?.[0]}{user?.lastName?.[0]}
                                     </div>
                                     <div className="text-right">
@@ -201,7 +212,7 @@ export function Navbar() {
                                             window.location.href = '/login';
                                         }}
                                         className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                                        title="Logout"
+                                        title={t('common.logout')}
                                     >
                                         <LogOut className="h-4 w-4" />
                                     </button>
@@ -214,13 +225,13 @@ export function Navbar() {
                                     href="/login"
                                     className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
                                 >
-                                    Login
+                                    {t('common.login')}
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="rounded-lg bg-gradient-to-r from-navy to-mint px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-navy-light hover:to-mint-light hover:shadow-md"
+                                    className="rounded-lg bg-gradient-to-r from-navy to-emerald px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-[#0f3c6a] hover:to-[#00df88] hover:shadow-md"
                                 >
-                                    Register
+                                    {t('common.register')}
                                 </Link>
                             </div>
                         )}
@@ -229,7 +240,7 @@ export function Navbar() {
                         <button
                             onClick={toggleMobile}
                             className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 md:hidden dark:text-zinc-400 dark:hover:bg-zinc-800"
-                            aria-label="Toggle menu"
+                            aria-label={t('nav.toggleMenu')}
                         >
                             {mobileOpen && !closing ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                         </button>
@@ -242,30 +253,30 @@ export function Navbar() {
                 <div className="fixed inset-0 z-[60] md:hidden">
                     {/* Backdrop */}
                     <div
-                        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${closing ? 'animate-fade-in opacity-0' : 'animate-backdrop-fade-in'}`}
+                        className={`absolute inset-0 bg-black/40 backdrop-blur-md ${closing ? 'animate-fade-in opacity-0' : 'animate-backdrop-fade-in'}`}
                         onClick={closeMobileMenu}
                     />
                     {/* Panel */}
                     <div
-                        className={`absolute top-0 right-0 h-full w-[280px] max-w-[85vw] bg-white shadow-2xl dark:bg-zinc-950 ${closing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+                        className={`absolute top-0 right-0 h-full w-[280px] max-w-[85vw] bg-white/90 backdrop-blur-xl shadow-2xl dark:bg-zinc-950/90 border-l border-white/20 dark:border-white/5 ${closing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
                     >
                         {/* Panel Header */}
-                        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+                        <div className="flex items-center justify-between border-b border-zinc-200/50 px-5 py-4 dark:border-zinc-800/50">
                             <div className="flex items-center gap-2">
                                 <Image
                                     src="/mashaweer-logo.png"
-                                    alt="Mashaweer"
+                                    alt={t('common.mashaweer')}
                                     width={28}
                                     height={28}
                                     className="h-7 w-7 object-contain"
                                 />
                                 <span className="text-base font-bold text-zinc-900 dark:text-white">
-                                    Mashaweer
+                                    {t('common.mashaweer')}
                                 </span>
                             </div>
                             <button
                                 onClick={closeMobileMenu}
-                                className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80 transition-colors"
                             >
                                 <X className="h-5 w-5" />
                             </button>
@@ -292,9 +303,9 @@ export function Navbar() {
                                             className={linkClasses('/notifications', true)}
                                         >
                                             <Bell className="h-4 w-4" />
-                                            Notifications
+                                            {t('nav.notifications')}
                                             {unreadCount > 0 && (
-                                                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
                                                     {unreadCount > 9 ? '9+' : unreadCount}
                                                 </span>
                                             )}
@@ -304,19 +315,19 @@ export function Navbar() {
                                     <>
                                         <Link href="/trips" className={linkClasses('/trips', true)}>
                                             <MapPin className="h-4 w-4" />
-                                            Browse Trips
+                                            {t('nav.browseTrips')}
                                         </Link>
                                     </>
                                 )}
                             </div>
 
                             {/* Bottom section */}
-                            <div className="border-t border-zinc-100 px-4 py-4 dark:border-zinc-800">
+                            <div className="border-t border-zinc-200/50 px-4 py-4 dark:border-zinc-800/50">
                                 {isAuthenticated ? (
                                     <>
                                         {/* User info */}
-                                        <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-3 py-3 mb-3 dark:bg-zinc-900">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-mint text-sm font-bold text-white">
+                                        <div className="flex items-center gap-3 rounded-xl bg-zinc-50/80 px-3 py-3 mb-3 dark:bg-zinc-900/80 backdrop-blur-sm border border-zinc-200/50 dark:border-zinc-800/50">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-navy to-emerald text-sm font-bold text-white shadow-sm">
                                                 {user?.firstName?.[0]}{user?.lastName?.[0]}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -331,25 +342,25 @@ export function Navbar() {
                                                 logout();
                                                 window.location.href = '/login';
                                             }}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50/80 dark:text-red-400 dark:hover:bg-red-950/30"
                                         >
                                             <LogOut className="h-4 w-4" />
-                                            Logout
+                                            {t('common.logout')}
                                         </button>
                                     </>
                                 ) : (
                                     <div className="space-y-2">
                                         <Link
                                             href="/login"
-                                            className="flex w-full items-center justify-center rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300"
+                                            className="flex w-full items-center justify-center rounded-xl border border-zinc-200/80 px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50/80 dark:border-zinc-700/80 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
                                         >
-                                            Login
+                                            {t('common.login')}
                                         </Link>
                                         <Link
                                             href="/register"
-                                            className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-navy to-mint px-4 py-3 text-sm font-semibold text-white shadow-sm"
+                                            className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-navy to-emerald px-4 py-3 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:opacity-90 transition-all"
                                         >
-                                            Register
+                                            {t('common.register')}
                                         </Link>
                                     </div>
                                 )}

@@ -14,6 +14,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { QRCodeDisplay } from '@/components/passenger/QRCodeDisplay';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface BookingRulesModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export function BookingRulesModal({
   isBooking,
   bookingResult,
 }: BookingRulesModalProps) {
+  const { t, locale } = useTranslation();
   const [step, setStep] = useState<'rules' | 'payment'>('rules');
   const [paymentMethod, setPaymentMethod] = useState<'WALLET' | 'CASH'>('CASH');
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -86,33 +88,34 @@ export function BookingRulesModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-900/40 backdrop-blur-md p-4 transition-all duration-300"
       onClick={handleClose}
+      dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+        className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/70 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-navy-950/70"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className="flex shrink-0 items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/5">
           <div className="flex items-center gap-2">
             {effectiveStep === 'qr' ? (
-              <QrCode className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+              <QrCode className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <ShieldCheck className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+              <ShieldCheck className="h-5 w-5 text-navy-600 dark:text-navy-400" />
             )}
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+            <h2 className="text-lg font-bold text-navy-900 dark:text-white">
               {effectiveStep === 'rules'
-                ? 'شروط الحجز'
+                ? t('booking.rules.title')
                 : effectiveStep === 'payment'
-                  ? 'طريقة الدفع'
-                  : 'رمز QR للركوب'}
+                  ? t('booking.payment.title')
+                  : t('booking.qr.title')}
             </h2>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="rounded-lg p-1.5 text-navy-400 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
           >
             <X className="h-5 w-5" />
           </button>
@@ -121,16 +124,16 @@ export function BookingRulesModal({
         {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto px-5 py-4 overscroll-contain">
           {effectiveStep === 'qr' && bookingResult ? (
-            <div className="space-y-4 text-center" dir="rtl">
-              <div className="rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 p-3 dark:from-teal-900/20 dark:to-emerald-900/20">
+            <div className="space-y-4 text-center">
+              <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-emerald-100 p-3 dark:from-emerald-900/20 dark:to-emerald-800/20">
                 <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
-                <p className="mt-2 font-bold text-zinc-900 dark:text-white">تم الحجز بنجاح! 🎉</p>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mt-2 font-bold text-navy-900 dark:text-white">{t('booking.success')}</p>
+                <p className="text-sm text-navy-600 dark:text-navy-300">
                   {tripFromCity} ← {tripToCity}
                 </p>
               </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                احتفظ بهذا الرمز — سيطلبه منك السائق عند الركوب
+              <p className="text-sm text-navy-600 dark:text-navy-300">
+                {t('booking.success.keepQR')}
               </p>
               <div className="flex justify-center">
                 <QRCodeDisplay
@@ -141,65 +144,65 @@ export function BookingRulesModal({
               </div>
             </div>
           ) : effectiveStep === 'rules' ? (
-            <div className="space-y-4" dir="rtl">
+            <div className="space-y-4">
               {/* Trip Summary */}
-              <div className="rounded-xl bg-gradient-to-r from-teal-50 to-indigo-50 p-3 dark:from-teal-900/20 dark:to-indigo-900/20">
-                <p className="text-sm font-bold text-zinc-900 dark:text-white">
+              <div className="rounded-xl bg-gradient-to-r from-navy-50 to-emerald-50 p-3 dark:from-navy-900/20 dark:to-emerald-900/20">
+                <p className="text-sm font-bold text-navy-900 dark:text-white">
                   {tripFromCity} ← {tripToCity}
                 </p>
-                <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                  {seats} مقعد • {totalPrice} جنيه مصري
+                <p className="mt-0.5 text-xs text-navy-600 dark:text-navy-300">
+                  {seats} {t('booking.payment.totalPrice')} • {totalPrice} {t('common.egp')}
                 </p>
               </div>
 
               {/* Rules */}
               <div className="space-y-3">
-                <div className="flex gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                    ١
+                <div className="flex gap-3 rounded-xl bg-white/50 p-3 dark:bg-black/20">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-100 text-sm font-bold text-navy-700 dark:bg-navy-900/50 dark:text-navy-300">
+                    1
                   </span>
-                  <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    الالتزام بالحضور في نقطة التجمع قبل موعد الرحلة بوقت كافٍ. التأخير قد يؤدي لإلغاء الحجز.
+                  <p className="text-sm leading-relaxed text-navy-700 dark:text-navy-300">
+                    {t('booking.rules.rule1')}
                   </p>
                 </div>
 
-                <div className="flex gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                    ٢
+                <div className="flex gap-3 rounded-xl bg-white/50 p-3 dark:bg-black/20">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-100 text-sm font-bold text-navy-700 dark:bg-navy-900/50 dark:text-navy-300">
+                    2
                   </span>
-                  <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    لا يمكن إلغاء الحجز قبل موعد الرحلة بأقل من ٨ ساعات. يُرجى التأكد من جديّة الحجز.
+                  <p className="text-sm leading-relaxed text-navy-700 dark:text-navy-300">
+                    {t('booking.rules.rule2')}
                   </p>
                 </div>
 
-                <div className="flex gap-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                    ٣
+                <div className="flex gap-3 rounded-xl bg-white/50 p-3 dark:bg-black/20">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy-100 text-sm font-bold text-navy-700 dark:bg-navy-900/50 dark:text-navy-300">
+                    3
                   </span>
-                  <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    الركاب ملزمون بالتعامل باحترام مع السائق والركاب الآخرين طوال الرحلة.
+                  <p className="text-sm leading-relaxed text-navy-700 dark:text-navy-300">
+                    {t('booking.rules.rule3')}
                   </p>
                 </div>
               </div>
 
               {/* Warning */}
-              <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 dark:bg-amber-900/20">
+              <div className="flex items-start gap-2 rounded-xl bg-amber-50/50 p-3 dark:bg-amber-900/20">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-                  <strong>تنبيه هام:</strong> في حالة عدم الحضور (No-Show) بدون إلغاء مسبق، قد يتم تقييد حسابك من الحجز مستقبلاً.
+                  <strong>{t('booking.rules.warning')}</strong>
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Price Summary */}
-              <div className="rounded-xl bg-gradient-to-r from-teal-50 to-indigo-50 p-4 dark:from-teal-900/20 dark:to-indigo-900/20">
+              <div className="rounded-xl bg-gradient-to-r from-navy-50 to-emerald-50 p-4 dark:from-navy-900/20 dark:to-emerald-900/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">Total Price</span>
-                  <span className="text-xl font-bold text-zinc-900 dark:text-white">{totalPrice} EGP</span>
+                  <span className="text-sm text-navy-600 dark:text-navy-300">{t('booking.payment.totalPrice')}</span>
+                  <span className="text-xl font-bold text-navy-900 dark:text-white">{totalPrice} {t('common.egp')}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  {seats} seat(s) × {pricePerSeat} EGP/seat
+                <p className="mt-0.5 text-xs text-navy-500">
+                  {seats} × {pricePerSeat} {t('common.egp')}
                 </p>
               </div>
 
@@ -210,41 +213,41 @@ export function BookingRulesModal({
                   type="button"
                   onClick={() => setPaymentMethod('WALLET')}
                   disabled={insufficientBalance}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3.5 transition-all ${
                     paymentMethod === 'WALLET'
-                      ? 'border-teal-500 bg-teal-50 shadow-sm dark:border-teal-600 dark:bg-teal-900/20'
+                      ? 'border-emerald-500 bg-emerald-50/50 shadow-sm dark:border-emerald-600 dark:bg-emerald-900/20'
                       : insufficientBalance
-                        ? 'cursor-not-allowed border-zinc-200 bg-zinc-50 opacity-50 dark:border-zinc-800 dark:bg-zinc-900'
-                        : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'
+                        ? 'cursor-not-allowed border-black/5 bg-black/5 opacity-50 dark:border-white/5 dark:bg-white/5'
+                        : 'border-black/10 bg-white/50 hover:border-black/20 dark:border-white/10 dark:bg-black/20 dark:hover:border-white/20'
                   }`}
                 >
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                      paymentMethod === 'WALLET' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
+                      paymentMethod === 'WALLET' ? 'bg-emerald-100/50 dark:bg-emerald-900/30' : 'bg-black/5 dark:bg-white/5'
                     }`}
                   >
-                    <Wallet className={`h-5 w-5 ${paymentMethod === 'WALLET' ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`} />
+                    <Wallet className={`h-5 w-5 ${paymentMethod === 'WALLET' ? 'text-emerald-600 dark:text-emerald-400' : 'text-navy-500'}`} />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">المحفظة (Wallet)</p>
-                    <p className="text-xs text-zinc-500">
+                  <div className="flex-1 text-left rtl:text-right">
+                    <p className="text-sm font-semibold text-navy-900 dark:text-white">{t('booking.payment.wallet')}</p>
+                    <p className="text-xs text-navy-500">
                       {loadingBalance ? (
-                        <span className="animate-pulse">Loading balance...</span>
+                        <span className="animate-pulse">...</span>
                       ) : walletBalance !== null ? (
                         <>
-                          الرصيد المتاح:{' '}
+                          {t('booking.payment.walletBalance')}:{' '}
                           <strong className={insufficientBalance ? 'text-red-500' : 'text-emerald-600'}>
-                            {walletBalance} جنيه
+                            {walletBalance} {t('common.egp')}
                           </strong>
-                          {insufficientBalance && <span className="ml-1 text-red-500">(غير كافٍ)</span>}
+                          {insufficientBalance && <span className="mx-1 text-red-500">({t('booking.payment.insufficient')})</span>}
                         </>
                       ) : (
-                        'الدفع من رصيد المحفظة'
+                        t('booking.payment.walletDesc')
                       )}
                     </p>
                   </div>
                   {paymentMethod === 'WALLET' && !insufficientBalance && (
-                    <CheckCircle2 className="h-5 w-5 text-teal-500" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                   )}
                 </button>
 
@@ -252,32 +255,32 @@ export function BookingRulesModal({
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('CASH')}
-                  className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 transition-all ${
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3.5 transition-all ${
                     paymentMethod === 'CASH'
-                      ? 'border-teal-500 bg-teal-50 shadow-sm dark:border-teal-600 dark:bg-teal-900/20'
-                      : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'
+                      ? 'border-emerald-500 bg-emerald-50/50 shadow-sm dark:border-emerald-600 dark:bg-emerald-900/20'
+                      : 'border-black/10 bg-white/50 hover:border-black/20 dark:border-white/10 dark:bg-black/20 dark:hover:border-white/20'
                   }`}
                 >
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                      paymentMethod === 'CASH' ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
+                      paymentMethod === 'CASH' ? 'bg-emerald-100/50 dark:bg-emerald-900/30' : 'bg-black/5 dark:bg-white/5'
                     }`}
                   >
-                    <Banknote className={`h-5 w-5 ${paymentMethod === 'CASH' ? 'text-teal-600 dark:text-teal-400' : 'text-zinc-500'}`} />
+                    <Banknote className={`h-5 w-5 ${paymentMethod === 'CASH' ? 'text-emerald-600 dark:text-emerald-400' : 'text-navy-500'}`} />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">كاش (Cash)</p>
-                    <p className="text-xs text-zinc-500">الدفع للسائق عند الرحلة</p>
+                  <div className="flex-1 text-left rtl:text-right">
+                    <p className="text-sm font-semibold text-navy-900 dark:text-white">{t('booking.payment.cash')}</p>
+                    <p className="text-xs text-navy-500">{t('booking.payment.cashDesc')}</p>
                   </div>
-                  {paymentMethod === 'CASH' && <CheckCircle2 className="h-5 w-5 text-teal-500" />}
+                  {paymentMethod === 'CASH' && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
                 </button>
               </div>
 
               {/* 8-hour notice */}
-              <div className="flex items-start gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  يمكنك إلغاء الحجز حتى ٨ ساعات قبل موعد الرحلة فقط.
+              <div className="flex items-start gap-2 rounded-lg bg-black/5 p-2.5 dark:bg-white/5">
+                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-navy-500" />
+                <p className="text-[11px] text-navy-600 dark:text-navy-400">
+                  {t('booking.payment.cancelNotice')}
                 </p>
               </div>
             </div>
@@ -285,23 +288,23 @@ export function BookingRulesModal({
         </div>
 
         {/* Footer - Pinned at bottom */}
-        <div className="flex shrink-0 gap-2 border-t border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className="flex shrink-0 gap-2 border-t border-black/5 px-5 py-4 dark:border-white/5">
           {effectiveStep === 'qr' ? (
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-indigo-500"
+              className="btn-3d flex-1 rounded-xl bg-gradient-to-r from-navy to-emerald px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90"
             >
-              تم ✓
+              {t('common.close')}
             </button>
           ) : (
             <>
               <button
                 type="button"
                 onClick={effectiveStep === 'payment' ? handleBackToRules : handleClose}
-                className="flex-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="flex-1 rounded-xl border border-black/10 bg-white/50 px-4 py-2.5 text-sm font-medium text-navy-700 transition-colors hover:bg-black/5 dark:border-white/10 dark:bg-black/20 dark:text-white dark:hover:bg-white/5"
               >
-                {effectiveStep === 'payment' ? 'رجوع' : 'إلغاء'}
+                {effectiveStep === 'payment' ? t('common.back') : t('common.close')}
               </button>
               <button
                 type="button"
@@ -313,17 +316,17 @@ export function BookingRulesModal({
                   }
                 }}
                 disabled={isBooking || (effectiveStep === 'payment' && paymentMethod === 'WALLET' && insufficientBalance)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-md active:scale-[0.98] disabled:opacity-50"
+                className="btn-3d flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-navy to-emerald px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90 disabled:opacity-50"
               >
                 {isBooking ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    جاري الحجز...
+                    {t('booking.payment.processing')}
                   </>
                 ) : effectiveStep === 'rules' ? (
-                  'أوافق على الشروط ✓'
+                  t('booking.rules.proceed')
                 ) : (
-                  'تأكيد الحجز ✓'
+                  t('booking.payment.confirmBooking')
                 )}
               </button>
             </>

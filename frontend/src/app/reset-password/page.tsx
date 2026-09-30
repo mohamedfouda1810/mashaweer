@@ -7,11 +7,13 @@ import Image from 'next/image';
 import { api } from '@/lib/api';
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token') || '';
+    const { t } = useTranslation();
 
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,7 +36,7 @@ function ResetPasswordForm() {
         try {
             await api.resetPassword(token, newPassword);
             setSuccess(true);
-            toast.success('Password reset successfully!');
+            toast.success(t('reset.success') || 'Password reset successfully!');
         } catch (err: any) {
             setError(err.message || 'Failed to reset password');
         } finally {
@@ -46,7 +48,7 @@ function ResetPasswordForm() {
         return (
             <div className="text-center py-16">
                 <p className="text-zinc-600 dark:text-zinc-400">Invalid reset link. Please request a new password reset.</p>
-                <Link href="/forgot-password" className="mt-4 inline-block text-mint hover:underline">
+                <Link href="/forgot-password" className="mt-4 inline-block font-medium text-emerald-600 hover:underline">
                     Go to Forgot Password
                 </Link>
             </div>
@@ -54,31 +56,37 @@ function ResetPasswordForm() {
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-12">
-            <div className="w-full max-w-md">
+        <div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 overflow-hidden gradient-hero">
+            {/* Liquid Orbs */}
+            <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-emerald-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob dark:bg-emerald-600/20" />
+            <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-navy/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 dark:bg-blue-600/20" />
+            
+            <div className="relative w-full max-w-md z-10">
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg shadow-navy/10 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
-                        <Image src="/mashaweer-logo.png" alt="Mashaweer" width={40} height={40} className="h-10 w-10 object-contain" />
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl glass shadow-lg shadow-navy/10 border border-white/20 dark:border-zinc-700/50 hover-lift">
+                        <Image src="/mashaweer-logo.png" alt="Mashaweer" width={48} height={48} className="h-12 w-12 object-contain" />
                     </div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                        {success ? 'Password Reset!' : 'Set New Password'}
+                    <h1 className="text-3xl font-bold text-navy dark:text-white drop-shadow-sm">
+                        {success ? t('reset.success') : t('reset.title')}
                     </h1>
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                        {success ? 'Your password has been updated.' : 'Enter your new password below.'}
+                    <p className="mt-2 text-base text-zinc-700 dark:text-zinc-300">
+                        {success ? 'Your password has been updated.' : t('reset.subtitle')}
                     </p>
                 </div>
 
                 {success ? (
-                    <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="space-y-6 rounded-3xl glass-card border border-white/40 p-8 shadow-xl dark:border-zinc-800/50 backdrop-blur-xl">
                         <div className="flex flex-col items-center py-4">
-                            <CheckCircle2 className="h-16 w-16 text-mint mb-4" />
-                            <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+                            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                            </div>
+                            <p className="text-center text-zinc-700 dark:text-zinc-300 font-medium">
                                 You can now sign in with your new password.
                             </p>
                         </div>
                         <Link
                             href="/login"
-                            className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-navy to-mint py-3 text-sm font-semibold text-white shadow-sm"
+                            className="btn-3d flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-navy to-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg transition-all"
                         >
                             Sign In
                         </Link>
@@ -86,20 +94,20 @@ function ResetPasswordForm() {
                 ) : (
                     <form
                         onSubmit={handleSubmit}
-                        className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                        className="space-y-6 rounded-3xl glass-card border border-white/40 p-8 shadow-xl dark:border-zinc-800/50 backdrop-blur-xl"
                     >
                         {error && (
-                            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-400">
+                            <div className="rounded-xl bg-red-50/80 p-4 text-sm font-medium text-red-700 border border-red-200 dark:bg-red-950/50 dark:border-red-900/50 dark:text-red-400">
                                 {error}
                             </div>
                         )}
 
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                New Password
+                            <label className="mb-2 block text-sm font-semibold text-navy dark:text-zinc-200">
+                                {t('reset.newPassword')}
                             </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                            <div className="relative group">
+                                <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-emerald-500" />
                                 <input
                                     type="password"
                                     required
@@ -107,17 +115,17 @@ function ResetPasswordForm() {
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-mint focus:outline-none focus:ring-2 focus:ring-mint/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                    className="w-full rounded-xl border border-zinc-200/50 bg-white/50 py-3.5 pl-11 pr-4 text-sm text-zinc-900 backdrop-blur-sm transition-all focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-white dark:focus:bg-zinc-900"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                Confirm Password
+                            <label className="mb-2 block text-sm font-semibold text-navy dark:text-zinc-200">
+                                {t('reset.confirmPassword')}
                             </label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                            <div className="relative group">
+                                <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-emerald-500" />
                                 <input
                                     type="password"
                                     required
@@ -125,7 +133,7 @@ function ResetPasswordForm() {
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-10 pr-3 text-sm text-zinc-900 transition-colors focus:border-mint focus:outline-none focus:ring-2 focus:ring-mint/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                    className="w-full rounded-xl border border-zinc-200/50 bg-white/50 py-3.5 pl-11 pr-4 text-sm text-zinc-900 backdrop-blur-sm transition-all focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-white dark:focus:bg-zinc-900"
                                 />
                             </div>
                         </div>
@@ -133,15 +141,15 @@ function ResetPasswordForm() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-navy to-mint py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+                            className="btn-3d flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-navy to-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg transition-all disabled:opacity-60"
                         >
                             {isLoading ? (
                                 <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Resetting...
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    {t('reset.resetting')}
                                 </>
                             ) : (
-                                'Reset Password'
+                                t('reset.submit')
                             )}
                         </button>
                     </form>
@@ -153,7 +161,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-mint" /></div>}>
+        <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-200 border-t-emerald-500" /></div>}>
             <ResetPasswordForm />
         </Suspense>
     );

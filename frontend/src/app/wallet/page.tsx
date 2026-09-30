@@ -6,6 +6,7 @@ import { WalletCard } from '@/components/wallet/WalletCard';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api, getImageUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
     TrendingDown,
     DollarSign,
@@ -67,6 +68,7 @@ interface DriverWalletData {
 
 export default function WalletPage() {
     const { user } = useAuthStore();
+    const { t, formatDate, formatNumber } = useTranslation();
     const [walletData, setWalletData] = useState<DriverWalletData | null>(null);
     const [loading, setLoading] = useState(false);
     const [tab, setTab] = useState<'overview' | 'commissions' | 'payments'>('overview');
@@ -118,9 +120,9 @@ export default function WalletPage() {
         try {
             const res = await api.uploadFile(file);
             setPayScreenshot(res.url);
-            toast.success('Screenshot uploaded');
+            toast.success(t('wallet.uploadScreenshot') || 'Screenshot uploaded');
         } catch {
-            toast.error('Failed to upload screenshot');
+            toast.error(t('wallet.removeScreenshot') || 'Failed to upload screenshot');
             setPayScreenshotPreview(null);
         } finally {
             setUploadingScreenshot(false);
@@ -129,7 +131,7 @@ export default function WalletPage() {
 
     const handleSubmitPayment = async () => {
         if (!payAmount || !payRef || !payScreenshot) {
-            toast.error('Please fill all fields and upload a screenshot');
+            toast.error(t('wallet.submitPayment') || 'Please fill all fields and upload a screenshot');
             return;
         }
         setPayLoading(true);
@@ -139,7 +141,7 @@ export default function WalletPage() {
                 instapayReferenceNumber: payRef,
                 screenshotUrl: payScreenshot,
             });
-            toast.success('Payment request submitted! Admin will review it.');
+            toast.success(t('wallet.submitPayment') || 'Payment request submitted! Admin will review it.');
             setShowPaymentForm(false);
             setPayAmount('');
             setPayRef('');
@@ -159,7 +161,7 @@ export default function WalletPage() {
             <ProtectedRoute>
                 <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center py-6 px-3 sm:py-10 sm:px-6">
                     <div className="w-full max-w-lg">
-                        <h1 className="mb-3 text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl">My Wallet</h1>
+                        <h1 className="mb-3 text-xl font-bold text-zinc-900 dark:text-white sm:text-2xl">{t('wallet.title')}</h1>
                         <WalletCard />
                     </div>
                 </div>
@@ -178,59 +180,59 @@ export default function WalletPage() {
                     {/* Header */}
                     <div className="mb-5">
                         <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-2xl">
-                            💰 Commission Wallet
+                            💰 {t('wallet.commissionTitle')}
                         </h1>
                         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                            Track commission debt and submit payments
+                            {t('wallet.commissionSubtitle')}
                         </p>
                     </div>
 
                     {loading ? (
                         <div className="flex justify-center py-16">
-                            <Loader2 className="h-7 w-7 animate-spin text-teal-500" />
+                            <Loader2 className="h-7 w-7 animate-spin text-navy" />
                         </div>
                     ) : (
                         <>
                             {/* ─── Debt Summary Cards ─── */}
                             <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-                                <div className="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 p-3 sm:p-4 shadow-sm dark:border-red-900/30 dark:from-red-900/20 dark:to-red-900/10">
+                                <div className="glass-card rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 p-3 sm:p-4 shadow-sm dark:border-red-900/30 dark:from-red-900/20 dark:to-red-900/10 hover:-translate-y-0.5 transition-transform">
                                     <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
                                         <AlertTriangle className="h-3.5 w-3.5" />
-                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Remaining</span>
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">{t('wallet.remaining')}</span>
                                     </div>
                                     <p className="mt-1.5 text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300">
-                                        {debt?.remainingDebt?.toFixed(0) || 0}
-                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-red-500">EGP</span>
+                                        {formatNumber(debt?.remainingDebt || 0)}
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-red-500">{t('common.egp')}</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                <div className="glass-card rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-0.5 transition-transform">
                                     <div className="flex items-center gap-1.5 text-zinc-500">
-                                        <DollarSign className="h-3.5 w-3.5 text-indigo-500" />
-                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Total Debt</span>
+                                        <DollarSign className="h-3.5 w-3.5 text-navy" />
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">{t('wallet.totalDebt')}</span>
                                     </div>
                                     <p className="mt-1.5 text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
-                                        {debt?.totalDebt?.toFixed(0) || 0}
-                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
+                                        {formatNumber(debt?.totalDebt || 0)}
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">{t('common.egp')}</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                <div className="glass-card rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-0.5 transition-transform">
                                     <div className="flex items-center gap-1.5 text-zinc-500">
                                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Paid</span>
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">{t('wallet.paid')}</span>
                                     </div>
                                     <p className="mt-1.5 text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                                        {debt?.totalPaid?.toFixed(0) || 0}
-                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
+                                        {formatNumber(debt?.totalPaid || 0)}
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">{t('common.egp')}</span>
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                <div className="glass-card rounded-xl border border-zinc-200 bg-white p-3 sm:p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 hover:-translate-y-0.5 transition-transform">
                                     <div className="flex items-center gap-1.5 text-zinc-500">
                                         <Clock className="h-3.5 w-3.5 text-amber-500" />
-                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Pending</span>
+                                        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide">{t('wallet.pending')}</span>
                                     </div>
                                     <p className="mt-1.5 text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400">
-                                        {debt?.totalPending?.toFixed(0) || 0}
-                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">EGP</span>
+                                        {formatNumber(debt?.totalPending || 0)}
+                                        <span className="ml-0.5 text-[10px] sm:text-xs font-normal text-zinc-500">{t('common.egp')}</span>
                                     </p>
                                 </div>
                             </div>
@@ -240,36 +242,41 @@ export default function WalletPage() {
                                 <div className="mb-4">
                                     <button
                                         onClick={() => setShowPaymentForm((v) => !v)}
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-teal-500 hover:to-indigo-500 hover:shadow-lg active:scale-[0.98]"
+                                        className="btn-3d btn-liquid flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-navy to-emerald px-5 py-2.5 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98]"
                                     >
                                         <CreditCard className="h-4 w-4" />
-                                        {showPaymentForm ? 'Cancel Payment' : `Pay Commission (${debt?.remainingDebt?.toFixed(0)} EGP)`}
+                                        {showPaymentForm ? t('wallet.cancelPayment') : `${t('wallet.payCommission')} (${formatNumber(debt?.remainingDebt || 0)} ${t('common.egp')})`}
                                     </button>
                                 </div>
                             )}
 
-                            {/* ─── Payment Form (like passenger deposit) ─── */}
+                            {/* ─── Payment Form ─── */}
                             {showPaymentForm && (
-                                <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-white">
-                                        <Send className="h-4 w-4 text-teal-500" />
-                                        Submit Commission Payment
-                                    </h3>
+                                <div className="glass-card mb-4 rounded-xl border border-zinc-200 bg-white/80 backdrop-blur-md p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-white">
+                                            <Send className="h-4 w-4 text-emerald-500" />
+                                            {t('wallet.submitPayment')}
+                                        </h3>
+                                        <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                            🔒 Secure Payments
+                                        </div>
+                                    </div>
 
                                     {/* Payment Accounts Info */}
                                     {paymentInfo && (paymentInfo.instapayNumber || paymentInfo.vodafoneCashNumber) && (
                                         <div className="mb-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/50">
-                                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Send payment to:</p>
+                                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{t('wallet.sendPaymentTo')}:</p>
                                             <div className="space-y-1.5">
                                                 {paymentInfo.instapayNumber && (
-                                                    <div className="flex items-center justify-between rounded-md bg-teal-50 px-2.5 py-1.5 dark:bg-teal-900/20">
+                                                    <div className="flex items-center justify-between rounded-md bg-emerald-50 px-2.5 py-1.5 dark:bg-emerald-900/20">
                                                         <div className="flex items-center gap-1.5">
-                                                            <CreditCard className="h-3 w-3 text-teal-600" />
-                                                            <span className="text-[10px] text-teal-700 dark:text-teal-300">InstaPay:</span>
-                                                            <span className="font-mono text-xs font-bold text-teal-900 dark:text-teal-100">{paymentInfo.instapayNumber}</span>
+                                                            <CreditCard className="h-3 w-3 text-emerald-600" />
+                                                            <span className="text-[10px] text-emerald-700 dark:text-emerald-300">InstaPay:</span>
+                                                            <span className="font-mono text-xs font-bold text-emerald-900 dark:text-emerald-100">{paymentInfo.instapayNumber}</span>
                                                         </div>
                                                         <button onClick={() => copyToClipboard(paymentInfo.instapayNumber, 'instapay')} className="p-0.5">
-                                                            {copiedField === 'instapay' ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-teal-400" />}
+                                                            {copiedField === 'instapay' ? <CheckCircle2 className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-emerald-400" />}
                                                         </button>
                                                     </div>
                                                 )}
@@ -293,14 +300,14 @@ export default function WalletPage() {
                                         {/* Payment Method */}
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                                Payment Method
+                                                {t('wallet.paymentMethod')}
                                             </label>
                                             <div className="grid grid-cols-2 gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => setPaymentMethod('INSTAPAY')}
                                                     className={`flex items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${paymentMethod === 'INSTAPAY'
-                                                        ? 'border-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400'
+                                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
                                                         : 'border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400'
                                                     }`}
                                                 >
@@ -325,7 +332,7 @@ export default function WalletPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                                    Amount (EGP)
+                                                    {t('wallet.amount')} ({t('common.egp')})
                                                 </label>
                                                 <input
                                                     type="number"
@@ -334,19 +341,19 @@ export default function WalletPage() {
                                                     placeholder={`Max: ${debt?.remainingDebt?.toFixed(0)}`}
                                                     max={debt?.remainingDebt || 0}
                                                     min={1}
-                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                                 />
                                             </div>
                                             <div>
                                                 <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                                    Reference Number
+                                                    {t('wallet.referenceNumber')}
                                                 </label>
                                                 <input
                                                     type="text"
                                                     value={payRef}
                                                     onChange={(e) => setPayRef(e.target.value)}
                                                     placeholder="IP-1234567890"
-                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                                                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                                                 />
                                             </div>
                                         </div>
@@ -354,9 +361,9 @@ export default function WalletPage() {
                                         {/* Screenshot Upload - Large Area */}
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                                                Payment Screenshot
+                                                {t('wallet.paymentScreenshot')}
                                             </label>
-                                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-5 transition-all hover:border-teal-400 hover:bg-teal-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-teal-600">
+                                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 p-5 transition-all hover:border-emerald-400 hover:bg-emerald-50/30 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-emerald-600">
                                                 {payScreenshotPreview ? (
                                                     <img
                                                         src={payScreenshotPreview}
@@ -365,14 +372,14 @@ export default function WalletPage() {
                                                     />
                                                 ) : uploadingScreenshot ? (
                                                     <>
-                                                        <Loader2 className="h-7 w-7 animate-spin text-teal-500" />
-                                                        <p className="text-xs text-teal-600">Uploading...</p>
+                                                        <Loader2 className="h-7 w-7 animate-spin text-emerald-500" />
+                                                        <p className="text-xs text-emerald-600">{t('wallet.submitting')}...</p>
                                                     </>
                                                 ) : (
                                                     <>
                                                         <Upload className="h-7 w-7 text-zinc-400" />
                                                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                            Click to upload payment screenshot
+                                                            {t('wallet.uploadScreenshot')}
                                                         </p>
                                                         <p className="text-[10px] text-zinc-400">JPG, PNG up to 5MB</p>
                                                     </>
@@ -392,7 +399,7 @@ export default function WalletPage() {
                                                     }}
                                                     className="mt-1 text-[10px] text-red-500 hover:text-red-600"
                                                 >
-                                                    Remove screenshot
+                                                    {t('wallet.removeScreenshot')}
                                                 </button>
                                             )}
                                         </div>
@@ -401,28 +408,28 @@ export default function WalletPage() {
                                         <button
                                             onClick={handleSubmitPayment}
                                             disabled={!payAmount || !payRef || !payScreenshot || payLoading}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 active:scale-[0.98]"
+                                            className="btn-3d btn-liquid flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-navy px-4 py-3 text-sm font-bold text-white shadow-md transition-all disabled:opacity-50 active:scale-[0.98]"
                                         >
                                             {payLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                            {payLoading ? 'Submitting...' : 'Submit Payment for Review'}
+                                            {payLoading ? t('wallet.submitting') : t('wallet.submitPayment')}
                                         </button>
                                     </div>
                                 </div>
                             )}
 
                             {/* ─── Tabs ─── */}
-                            <div className="mb-4 flex gap-0.5 rounded-xl bg-zinc-100 p-0.5 dark:bg-zinc-800/60">
-                                {(['overview', 'commissions', 'payments'] as const).map((t) => (
+                            <div className="glass-card mb-4 flex gap-0.5 rounded-xl bg-white/50 p-1 shadow-sm backdrop-blur-sm dark:bg-zinc-800/60">
+                                {(['overview', 'commissions', 'payments'] as const).map((tId) => (
                                     <button
-                                        key={t}
-                                        onClick={() => setTab(t)}
+                                        key={tId}
+                                        onClick={() => setTab(tId)}
                                         className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                                            tab === t
-                                                ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                                            tab === tId
+                                                ? 'bg-white text-navy shadow-sm dark:bg-zinc-700 dark:text-white'
                                                 : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
                                         }`}
                                     >
-                                        {t === 'overview' ? '📊 Overview' : t === 'commissions' ? '📋 Commissions' : '💳 Payments'}
+                                        {tId === 'overview' ? `📊 ${t('wallet.tabs.overview')}` : tId === 'commissions' ? `📋 ${t('wallet.tabs.commissions')}` : `💳 ${t('wallet.tabs.payments')}`}
                                     </button>
                                 ))}
                             </div>
@@ -430,17 +437,17 @@ export default function WalletPage() {
                             {/* ─── Tab: Overview ─── */}
                             {tab === 'overview' && (
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Recent Commissions</h3>
+                                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{t('wallet.recentCommissions')}</h3>
                                     {commissions.length === 0 ? (
                                         <p className="rounded-xl bg-zinc-50 py-6 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
-                                            No commissions yet. Complete trips to see them here.
+                                            {t('wallet.noCommissions')}
                                         </p>
                                     ) : (
                                         <div className="space-y-1.5">
                                             {commissions.slice(0, 5).map((c) => (
                                                 <div
                                                     key={c.id}
-                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                    className="glass-card flex items-center justify-between rounded-xl border border-zinc-200 bg-white/80 px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 hover:-translate-y-0.5 transition-transform"
                                                 >
                                                     <div className="flex items-center gap-2.5">
                                                         <div className={`flex h-8 w-8 items-center justify-center rounded-full ${c.isPaid ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
@@ -451,16 +458,16 @@ export default function WalletPage() {
                                                                 {c.trip?.fromCity} → {c.trip?.toCity}
                                                             </p>
                                                             <p className="text-[10px] text-zinc-500">
-                                                                {new Date(c.createdAt).toLocaleDateString()} • {(c.commissionRate * 100).toFixed(0)}%
+                                                                {formatDate(c.createdAt)} • {(c.commissionRate * 100).toFixed(0)}%
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                                                            {Number(c.amount).toFixed(0)} EGP
+                                                            {formatNumber(Number(c.amount))} {t('common.egp')}
                                                         </p>
                                                         <span className={`text-[10px] font-medium ${c.isPaid ? 'text-emerald-600' : 'text-red-500'}`}>
-                                                            {c.isPaid ? 'Paid' : 'Unpaid'}
+                                                            {c.isPaid ? t('wallet.paid') : t('wallet.unpaid')}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -468,17 +475,17 @@ export default function WalletPage() {
                                         </div>
                                     )}
 
-                                    <h3 className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">Recent Payments</h3>
+                                    <h3 className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">{t('wallet.recentPayments')}</h3>
                                     {payments.length === 0 ? (
                                         <p className="rounded-xl bg-zinc-50 py-6 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
-                                            No payments yet.
+                                            {t('wallet.noPayments')}
                                         </p>
                                     ) : (
                                         <div className="space-y-1.5">
                                             {payments.slice(0, 5).map((p) => (
                                                 <div
                                                     key={p.id}
-                                                    className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                    className="glass-card flex items-center justify-between rounded-xl border border-zinc-200 bg-white/80 px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 hover:-translate-y-0.5 transition-transform"
                                                 >
                                                     <div className="flex items-center gap-2.5">
                                                         <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
@@ -495,14 +502,14 @@ export default function WalletPage() {
                                                                 Ref: {p.instapayReferenceNumber}
                                                             </p>
                                                             <p className="text-[10px] text-zinc-500">
-                                                                {new Date(p.createdAt).toLocaleDateString()}
+                                                                {formatDate(p.createdAt)}
                                                                 {p.adminNote && ` • ${p.adminNote}`}
                                                             </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs font-bold text-zinc-900 dark:text-white">
-                                                            {Number(p.amount).toFixed(0)} EGP
+                                                            {formatNumber(Number(p.amount))} {t('common.egp')}
                                                         </p>
                                                         <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                                                             p.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
@@ -524,40 +531,40 @@ export default function WalletPage() {
                                 <div className="space-y-1.5">
                                     {commissions.length === 0 ? (
                                         <p className="rounded-xl bg-zinc-50 py-8 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
-                                            No commissions recorded yet.
+                                            {t('wallet.noCommissions')}
                                         </p>
                                     ) : (
                                         commissions.map((c) => (
                                             <div
                                                 key={c.id}
-                                                className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                className="glass-card rounded-xl border border-zinc-200 bg-white/80 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 hover:-translate-y-0.5 transition-transform"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <p className="text-xs font-semibold text-zinc-900 dark:text-white">
-                                                            <MapPin className="mr-1 inline h-3 w-3 text-teal-500" />
+                                                            <MapPin className="mr-1 inline h-3 w-3 text-emerald-500" />
                                                             {c.trip?.fromCity} → {c.trip?.toCity}
                                                         </p>
                                                         <p className="mt-0.5 text-[10px] text-zinc-500">
                                                             <Calendar className="mr-0.5 inline h-2.5 w-2.5" />
-                                                            {c.trip?.departureTime ? new Date(c.trip.departureTime).toLocaleString() : 'N/A'}
+                                                            {c.trip?.departureTime ? formatDate(c.trip.departureTime) : 'N/A'}
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                                                            {Number(c.amount).toFixed(0)} EGP
+                                                            {formatNumber(Number(c.amount))} {t('common.egp')}
                                                         </p>
                                                         <p className="text-[10px] text-zinc-500">
-                                                            Earned: {Number(c.tripEarnings).toFixed(0)} EGP
+                                                            {t('wallet.earned')}: {formatNumber(Number(c.tripEarnings))} {t('common.egp')}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div className="mt-1.5 flex items-center justify-between border-t border-zinc-100 pt-1.5 dark:border-zinc-800">
                                                     <span className="text-[10px] text-zinc-500">
-                                                        Rate: {(c.commissionRate * 100).toFixed(0)}%
+                                                        {t('wallet.rate')}: {(c.commissionRate * 100).toFixed(0)}%
                                                     </span>
                                                     <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${c.isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                        {c.isPaid ? '✅ Paid' : '❌ Unpaid'}
+                                                        {c.isPaid ? `✅ ${t('wallet.paid')}` : `❌ ${t('wallet.unpaid')}`}
                                                     </span>
                                                 </div>
                                             </div>
@@ -571,25 +578,25 @@ export default function WalletPage() {
                                 <div className="space-y-1.5">
                                     {payments.length === 0 ? (
                                         <p className="rounded-xl bg-zinc-50 py-8 text-center text-xs text-zinc-500 dark:bg-zinc-800/50">
-                                            No payment requests yet.
+                                            {t('wallet.noPaymentRequests')}
                                         </p>
                                     ) : (
                                         payments.map((p) => (
                                             <div
                                                 key={p.id}
-                                                className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                                                className="glass-card rounded-xl border border-zinc-200 bg-white/80 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80 hover:-translate-y-0.5 transition-transform"
                                             >
                                                 <div className="flex items-start justify-between">
                                                     <div>
                                                         <p className="text-xs font-semibold text-zinc-900 dark:text-white">
-                                                            <Receipt className="mr-1 inline h-3 w-3 text-indigo-500" />
-                                                            Payment: {Number(p.amount).toFixed(0)} EGP
+                                                            <Receipt className="mr-1 inline h-3 w-3 text-navy" />
+                                                            {t('wallet.amount')}: {formatNumber(Number(p.amount))} {t('common.egp')}
                                                         </p>
                                                         <p className="mt-0.5 text-[10px] text-zinc-500">
                                                             Ref: {p.instapayReferenceNumber}
                                                         </p>
                                                         <p className="text-[10px] text-zinc-500">
-                                                            {new Date(p.createdAt).toLocaleString()}
+                                                            {formatDate(p.createdAt)}
                                                         </p>
                                                         {p.adminNote && (
                                                             <p className="mt-0.5 text-[10px] text-red-500">

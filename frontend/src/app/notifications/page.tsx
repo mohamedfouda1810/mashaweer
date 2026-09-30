@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api } from '@/lib/api';
 import { useSocket } from '@/providers/SocketProvider';
 import { Notification } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
     Bell,
     BellOff,
@@ -49,6 +50,7 @@ export default function NotificationsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const isRefreshingRef = useRef(false);
+    const { t } = useTranslation();
 
     const fetchNotifications = useCallback(async () => {
         if (isRefreshingRef.current) return;
@@ -177,74 +179,74 @@ export default function NotificationsPage() {
     return (
         <ProtectedRoute>
             <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-                <div className="mb-8 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-900/30">
-                            <Bell className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                <div className="mb-8 flex items-center justify-between glass-card p-6 rounded-2xl">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                            <Bell className="h-6 w-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Notifications</h1>
-                                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                    {unread > 0 ? `${unread} unread` : 'All caught up!'}
-                                </p>
+                            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{t('notifications.title')}</h1>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                {unread > 0 ? `${unread} ${t('notifications.subtitle')}` : t('notifications.emptyHint')}
+                            </p>
                         </div>
                     </div>
                     {unread > 0 && (
                         <button
                             onClick={handleMarkAll}
-                            className="flex items-center gap-1 rounded-lg bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400"
+                            className="btn-3d flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 transition-colors"
                         >
-                            <CheckCheck className="h-3.5 w-3.5" />
-                            Mark all read
+                            <CheckCheck className="h-4 w-4" />
+                            {t('notifications.markAllRead')}
                         </button>
                     )}
                 </div>
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
                     </div>
                 ) : notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 py-20 dark:border-zinc-800">
-                        <BellOff className="h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-                        <h3 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">No notifications</h3>
-                        <p className="mt-1 text-sm text-zinc-500">You&apos;re all caught up!</p>
+                    <div className="flex flex-col items-center justify-center rounded-2xl glass-card py-20 border border-emerald-500/20">
+                        <BellOff className="h-12 w-12 text-emerald-500/50" />
+                        <h3 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{t('notifications.empty')}</h3>
+                        <p className="mt-1 text-sm text-zinc-500">{t('notifications.emptyHint')}</p>
                     </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {notifications.map((n) => (
                             <div
                                 key={n.id}
                                 onClick={() => handleNotificationClick(n)}
-                                className={`cursor-pointer rounded-xl border p-4 transition-all ${n.isRead
-                                    ? 'border-zinc-100 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/70'
-                                    : 'border-teal-200 bg-teal-50/50 hover:bg-teal-50 dark:border-teal-800/50 dark:bg-teal-950/20 dark:hover:bg-teal-950/30'
+                                className={`cursor-pointer rounded-xl glass-card p-4 transition-all hover-lift ${n.isRead
+                                    ? 'border-zinc-200/50 bg-white/50 dark:border-zinc-800/50 dark:bg-zinc-900/50'
+                                    : 'border-emerald-500/30 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
                                     }`}
                             >
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-0.5">
-                                        {NOTIFICATION_ICONS[n.type] || <Bell className="h-4 w-4 text-zinc-400" />}
+                                <div className="flex items-start gap-4">
+                                    <div className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${n.isRead ? 'bg-zinc-100 dark:bg-zinc-800' : 'bg-emerald-100 dark:bg-emerald-900/50'}`}>
+                                        {NOTIFICATION_ICONS[n.type] || <Bell className={`h-4 w-4 ${n.isRead ? 'text-zinc-400' : 'text-emerald-500'}`} />}
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
                                             <h3 className={`text-sm font-semibold ${n.isRead ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-900 dark:text-zinc-100'}`}>
                                                 {n.title}
                                             </h3>
-                                            <span className="text-xs text-zinc-400">
+                                            <span className="text-xs text-zinc-500 font-medium">
                                                 {new Date(n.createdAt).toLocaleDateString('en-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{n.message}</p>
+                                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{n.message}</p>
                                     </div>
                                     {!n.isRead && (
-                                        <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-teal-500 animate-pulse" />
+                                        <div className="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
                                     )}
                                     <button
                                         onClick={(e) => handleDelete(e, n.id)}
-                                        className="mt-0.5 flex-shrink-0 rounded-lg p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:hover:bg-red-900/20"
+                                        className="mt-1 flex-shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors dark:hover:bg-red-900/20"
                                         title="Delete notification"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 import Link from 'next/link';
 import {
     ShieldCheck,
@@ -47,6 +48,7 @@ function useRevealOnScroll() {
 export default function RidersLandingPage() {
     const sectionRef = useRevealOnScroll();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const { t } = useTranslation();
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index);
@@ -147,7 +149,7 @@ export default function RidersLandingPage() {
             </section>
 
             {/* ══════════ WHY MASHAWEER — light grey ══════════ */}
-            <section id="why-mashaweer" className="py-16 px-4 sm:px-6 lg:px-8" style={{ background: '#f8fafc' }}>
+            <section id="why-mashaweer" className="py-16 px-4 sm:px-6 lg:px-8 glass">
                 <div className="mx-auto max-w-5xl">
                     <div className="text-center max-w-3xl mx-auto mb-12">
                         <span className="inline-block text-sm font-black uppercase tracking-wider mb-2" style={{ color: '#038A48' }}>
@@ -182,8 +184,7 @@ export default function RidersLandingPage() {
                                 desc: 'اختار مشوارك واحجز مكانك في ثواني. وقت التحرك محدد مسبقاً — مفيش استنا في محطات ولا ضياع وقت.',
                             },
                         ].map((card, i) => (
-                            <div key={i} className="reveal-on-scroll rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-                                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <div key={i} className="reveal-on-scroll rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 glass-card" style={{ border: '1px solid #e2e8f0' }}>
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-6"
                                     style={{ background: card.iconBg }}>
                                     {card.icon}
@@ -251,7 +252,7 @@ export default function RidersLandingPage() {
             </section>
 
             {/* ══════════ HOW IT WORKS — light grey ══════════ */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ background: '#f8fafc' }}>
+            <section className="py-16 px-4 sm:px-6 lg:px-8 glass">
                 <div className="mx-auto max-w-5xl">
                     <div className="text-center max-w-3xl mx-auto mb-14">
                         <span className="text-sm font-black uppercase tracking-wider" style={{ color: '#038A48' }}>سهل وسريع</span>
@@ -266,8 +267,7 @@ export default function RidersLandingPage() {
                             { num: '2', bg: '#04A056', title: 'دوّر على مشوارك', desc: 'اختار وجهتك (الجامعة أو البلد) وشوف المشاوير المتاحة مع الأسعار والمواعيد.' },
                             { num: '3', bg: '#059669', title: 'احجز مكانك وانطلق', desc: 'احجز كرسيك بضغطة واحدة واتواصل مع السائق مباشرة — وصولك مضمون.' },
                         ].map((step, i) => (
-                            <div key={i} className="reveal-on-scroll flex flex-col items-center text-center p-6 rounded-2xl shadow-sm"
-                                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <div key={i} className="reveal-on-scroll flex flex-col items-center text-center p-6 rounded-2xl shadow-sm glass-card" style={{ border: '1px solid #e2e8f0' }}>
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full text-white font-black text-lg mb-4 shadow-md"
                                     style={{ background: step.bg }}>
                                     {step.num}
@@ -327,7 +327,7 @@ export default function RidersLandingPage() {
             </section>
 
             {/* ══════════ FAQ — light grey ══════════ */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ background: '#f8fafc' }}>
+            <section className="py-16 px-4 sm:px-6 lg:px-8 glass">
                 <div className="mx-auto max-w-3xl">
                     <div className="text-center mb-10">
                         <h2 className="text-2xl sm:text-3xl font-black" style={{ color: '#0f172a' }}>أسئلة بتدور في بالك؟</h2>
@@ -342,8 +342,7 @@ export default function RidersLandingPage() {
                             { q: 'لو المشوار اتلغى أعمل إيه؟', a: 'لو السائق لغى المشوار، بيتم إبلاغك فوراً وتقدر تحجز مشوار بديل. ولو أنت لغيت قبل الموعد بوقت كافي مفيش أي مشكلة.' },
                             { q: 'هل لازم أكون طالب جامعي؟', a: 'المنصة متاحة لطلاب وأعضاء الجامعات في المقام الأول — لكن أي حد يقدر يسجّل ويستخدم الخدمة بعد التحقق من هويته.' },
                         ].map((faq, index) => (
-                            <div key={index} className="rounded-2xl overflow-hidden shadow-sm transition-all"
-                                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <div key={index} className="rounded-2xl overflow-hidden shadow-sm transition-all glass-card" style={{ border: '1px solid #e2e8f0' }}>
                                 <button
                                     onClick={() => toggleFaq(index)}
                                     className="w-full flex items-center justify-between p-4 sm:p-5 text-right font-black transition-colors"

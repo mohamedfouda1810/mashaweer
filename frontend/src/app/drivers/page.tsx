@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 import Link from 'next/link';
 import {
     ShieldCheck,
@@ -43,6 +44,7 @@ function useRevealOnScroll() {
 export default function DriversLandingPage() {
     const sectionRef = useRevealOnScroll();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const { t } = useTranslation();
     const [seatsCount, setSeatsCount] = useState<number>(3);
     const [tripsPerWeek, setTripsPerWeek] = useState<number>(5);
 
@@ -147,7 +149,7 @@ export default function DriversLandingPage() {
             </section>
 
             {/* ══════════ TRUST & SAFETY — light grey background ══════════ */}
-            <section id="trust-safety" className="py-16 px-4 sm:px-6 lg:px-8" style={{ background: '#f8fafc' }}>
+            <section id="trust-safety" className="py-16 px-4 sm:px-6 lg:px-8 glass">
                 <div className="mx-auto max-w-5xl">
                     <div className="text-center max-w-3xl mx-auto mb-12">
                         <span className="inline-block text-sm font-black uppercase tracking-wider mb-2" style={{ color: '#038A48' }}>
@@ -182,8 +184,8 @@ export default function DriversLandingPage() {
                                 desc: 'استلم قيمة الكراسي كاش في يدك أثناء المشوار أو تحويل فوري عبر المحفظة الإلكترونية (فودافون كاش / إنستا باي) مباشرة.',
                             },
                         ].map((card, i) => (
-                            <div key={i} className="reveal-on-scroll rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-                                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <div key={i} className="reveal-on-scroll rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 glass-card"
+                                style={{ border: '1px solid #e2e8f0' }}>
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-6"
                                     style={{ background: card.iconBg }}>
                                     {card.icon}
@@ -265,7 +267,7 @@ export default function DriversLandingPage() {
             </section>
 
             {/* ══════════ HOW IT WORKS — light grey background ══════════ */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8" style={{ background: '#f8fafc' }}>
+            <section className="py-16 px-4 sm:px-6 lg:px-8 glass">
                 <div className="mx-auto max-w-5xl">
                     <div className="text-center max-w-3xl mx-auto mb-14">
                         <span className="text-sm font-black uppercase tracking-wider" style={{ color: '#038A48' }}>خطوات بسيطة وسريعة</span>
@@ -280,8 +282,7 @@ export default function DriversLandingPage() {
                             { num: '2', bg: '#04A056', title: 'حدد خط سيرك ومواعيدك', desc: 'حدد موعد تحركك اليومي ونقطة الانطلاق والوصول للجامعة وعدد الكراسي المتاحة.' },
                             { num: '3', bg: '#059669', title: 'انطلق واكسب فوراً', desc: 'استقبل طلبات الحجز من طلاب مدينتك أو جامعتك واستلم تحصيلك كاش أو محفظة فورياً.' },
                         ].map((step, i) => (
-                            <div key={i} className="reveal-on-scroll flex flex-col items-center text-center p-6 rounded-2xl shadow-sm"
-                                style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <div key={i} className="reveal-on-scroll flex flex-col items-center text-center p-6 rounded-2xl shadow-sm glass-card" style={{ border: '1px solid #e2e8f0' }}>
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full text-white font-black text-lg mb-4 shadow-md"
                                     style={{ background: step.bg }}>
                                     {step.num}

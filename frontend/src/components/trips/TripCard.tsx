@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Trip } from '@/types';
 import { getImageUrl } from '@/lib/api';
 import { useBookingStore } from '@/stores/useBookingStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
     Clock,
     Users,
@@ -28,17 +29,10 @@ interface TripCardProps {
 
 export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }: TripCardProps) {
     const { isBooking } = useBookingStore();
+    const { t, formatDate, formatTime } = useTranslation();
 
-    const departureDate = new Date(trip.departureTime);
-    const formattedDate = departureDate.toLocaleDateString('en-EG', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-    });
-    const formattedTime = departureDate.toLocaleTimeString('en-EG', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const formattedDateStr = formatDate(trip.departureTime);
+    const formattedTimeStr = formatTime(trip.departureTime);
 
     const isFull = trip.availableSeats <= 0;
     const isConfirmed = trip.status === 'DRIVER_CONFIRMED';
@@ -47,7 +41,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
         (trip.destinationLatitude && trip.destinationLongitude);
 
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-teal-200 hover:-translate-y-1 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-teal-800">
+        <div className="group relative overflow-hidden rounded-2xl glass-card hover-lift shadow-sm transition-all duration-300">
             {/* Mini Map */}
             {hasMapData && (
                 <TripMap
@@ -65,17 +59,17 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
 
             {/* Status Badge */}
             {isConfirmed && (
-                <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-emerald-100/90 backdrop-blur-sm px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 shadow-sm">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Driver Ready
+                    {t('trips.driverReady')}
                 </div>
             )}
 
             {/* Driver Section */}
-            <div className="flex items-center gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800">
+            <div className="flex items-center gap-3 border-b border-zinc-100/50 p-4 dark:border-zinc-800/50">
                 <div className="relative h-12 w-12 flex-shrink-0">
                     {/* Initials fallback (always rendered behind the image) */}
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white font-bold text-lg">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-navy text-white font-bold text-lg shadow-inner">
                         {trip.driver?.firstName?.[0]}
                         {trip.driver?.lastName?.[0]}
                     </div>
@@ -94,7 +88,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                         {trip.driver?.firstName} {trip.driver?.lastName}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 truncate">
-                        <Car className="h-3.5 w-3.5 shrink-0" />
+                        <Car className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
                         <span className="truncate">
                             {trip.driver?.driverProfile?.carModel}
                             {trip.driver?.driverProfile?.carColor
@@ -104,7 +98,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
                     </div>
                 </div>
                 <div className="text-right shrink-0">
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-mono font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-white/60 backdrop-blur-sm px-2 py-1 text-xs font-mono font-medium text-zinc-600 shadow-sm border border-zinc-200/50 dark:bg-zinc-800/60 dark:border-zinc-700/50 dark:text-zinc-400">
                         {trip.driver?.driverProfile?.plateNumber}
                     </span>
                 </div>
@@ -114,9 +108,9 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
             <div className="p-4">
                 <div className="flex items-start gap-3">
                     <div className="flex flex-col items-center gap-0.5 pt-1">
-                        <div className="h-2.5 w-2.5 rounded-full border-2 border-teal-500 bg-teal-100" />
-                        <div className="h-8 w-0.5 bg-gradient-to-b from-teal-500 to-indigo-500 opacity-40" />
-                        <div className="h-2.5 w-2.5 rounded-full border-2 border-indigo-500 bg-indigo-100" />
+                        <div className="h-2.5 w-2.5 rounded-full border-2 border-emerald-500 bg-emerald-100 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                        <div className="h-8 w-0.5 bg-gradient-to-b from-emerald-500 to-navy opacity-60" />
+                        <div className="h-2.5 w-2.5 rounded-full border-2 border-navy bg-indigo-100 shadow-[0_0_8px_rgba(30,58,138,0.4)]" />
                     </div>
                     <div className="flex-1 space-y-3">
                         <div>
@@ -144,48 +138,48 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
 
                 {/* Details Grid */}
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <CalendarDays className="h-4 w-4 text-teal-500" />
+                    <div className="flex items-center gap-2 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20 p-2.5 shadow-sm dark:bg-zinc-800/50 dark:border-zinc-700/50">
+                        <CalendarDays className="h-4 w-4 text-emerald-600" />
                         <div>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">Date</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('common.date')}</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                {formattedDate}
+                                {formattedDateStr}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
-                        <Clock className="h-4 w-4 text-indigo-500" />
+                    <div className="flex items-center gap-2 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20 p-2.5 shadow-sm dark:bg-zinc-800/50 dark:border-zinc-700/50">
+                        <Clock className="h-4 w-4 text-navy" />
                         <div>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">Time</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('common.time')}</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                {formattedTime}
+                                {formattedTimeStr}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 min-w-0 dark:bg-zinc-800/50">
-                        <Navigation className="h-4 w-4 shrink-0 text-pink-500" />
+                    <div className="flex items-center gap-2 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20 p-2.5 min-w-0 shadow-sm dark:bg-zinc-800/50 dark:border-zinc-700/50">
+                        <Navigation className="h-4 w-4 shrink-0 text-emerald-500" />
                         <div className="min-w-0 flex-1">
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                Meeting Point
+                                {t('trips.meetingPoint')}
                             </p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate" title={trip.gatheringLocation}>
                                 {trip.gatheringLocation}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg bg-zinc-50 p-2.5 min-w-0 dark:bg-zinc-800/50">
-                        <Users className="h-4 w-4 shrink-0 text-teal-500" />
+                    <div className="flex items-center gap-2 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20 p-2.5 min-w-0 shadow-sm dark:bg-zinc-800/50 dark:border-zinc-700/50">
+                        <Users className="h-4 w-4 shrink-0 text-navy" />
                         <div className="min-w-0 flex-1">
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">Seats</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('common.seats')}</p>
                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                                 <span
                                     className={
-                                        isFull ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'
+                                        isFull ? 'text-red-500 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'
                                     }
                                 >
                                     {trip.availableSeats}
                                 </span>
-                                /{trip.totalSeats} available
+                                /{trip.totalSeats}
                             </p>
                         </div>
                     </div>
@@ -193,46 +187,44 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
             </div>
 
             {/* Footer: Price + Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 p-4 dark:border-zinc-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100/50 bg-zinc-50/30 p-4 dark:border-zinc-800/50 dark:bg-zinc-900/30">
                 <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    <span className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-navy to-emerald-600 dark:from-blue-400 dark:to-emerald-400 drop-shadow-sm">
                         {trip.pricePerSeat ? Math.round(Number(trip.pricePerSeat)) : Math.round(Number(trip.price) / trip.totalSeats)}
                     </span>
                     <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                        EGP/seat
+                        {t('common.perSeat')}
                     </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => onViewDetails?.(trip.id)}
-                        className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        className="rounded-xl border border-zinc-200/80 bg-white/50 px-4 py-2 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-100 shadow-sm hover:shadow dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80"
                     >
-                        Details
+                        {t('common.details')}
                     </button>
                     {!hideBooking && (
                         isBooked ? (
-                            <span className="rounded-lg bg-mint/10 px-4 py-2 text-sm font-semibold text-mint dark:bg-mint/20">
-                                ✓ Already Booked
+                            <span className="rounded-xl bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-600 border border-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                ✓ {t('trips.alreadyBooked')}
                             </span>
                         ) : (
                             <button
                                 type="button"
                                 onClick={() => onBook?.(trip.id)}
                                 disabled={isFull || isBooking}
-                                className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
-                                    ? 'bg-zinc-300 cursor-not-allowed dark:bg-zinc-700'
-                                    : 'bg-gradient-to-r from-navy to-mint hover:from-navy-light hover:to-mint-light shadow-sm hover:shadow-md active:scale-95'
+                                className={`btn-3d btn-liquid rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all ${isFull
+                                    ? 'bg-zinc-400 cursor-not-allowed dark:bg-zinc-600'
+                                    : 'bg-gradient-to-r from-navy to-emerald shadow-lg hover:shadow-xl active:scale-95 hover:from-navy-light hover:to-emerald-500'
                                     }`}
                             >
-                                {isFull ? 'Join Waitlist' : isBooking ? 'Booking...' : 'Book Seat'}
+                                {isFull ? t('trips.joinWaitlist') : isBooking ? t('trips.booking') : t('trips.bookSeat')}
                             </button>
                         )
                     )}
                 </div>
             </div>
-
-       
         </div>
     );
 }

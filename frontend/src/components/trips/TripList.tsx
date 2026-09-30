@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTripStore } from '@/stores/useTripStore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { api, isAbortError } from '@/lib/api';
 import { TripCard } from './TripCard';
 import { TripFilters } from './TripFilters';
@@ -18,6 +19,7 @@ interface TripListProps {
 export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) {
     const { trips, isLoading, error, errorKind, meta, fetchTrips, setPage, cancelPendingRequest } = useTripStore();
     const { isAuthenticated } = useAuthStore();
+    const { t } = useTranslation();
     const [bookedTripIds, setBookedTripIds] = useState<Set<string>>(new Set());
     const hasFetched = useRef(false);
 
@@ -64,29 +66,29 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
         const isServerError = errorKind === 'server';
 
         return (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950/30">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+            <div className="rounded-2xl glass-card border border-red-200/50 bg-red-50/50 backdrop-blur-md p-8 text-center shadow-sm dark:border-red-900/30 dark:bg-red-950/30">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm border border-red-100 dark:bg-red-900/40 dark:border-red-800/50">
                     {isNetworkError ? (
-                        <WifiOff className="h-6 w-6 text-red-500" />
+                        <WifiOff className="h-7 w-7 text-red-500" />
                     ) : isServerError ? (
-                        <ServerCrash className="h-6 w-6 text-red-500" />
+                        <ServerCrash className="h-7 w-7 text-red-500" />
                     ) : (
-                        <ServerCrash className="h-6 w-6 text-red-500" />
+                        <ServerCrash className="h-7 w-7 text-red-500" />
                     )}
                 </div>
-                <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-300">
                     {isNetworkError
-                        ? 'Unable to connect. Please check your internet connection.'
+                        ? t('trips.networkError')
                         : isServerError
-                            ? 'Server is temporarily unavailable. Please try again.'
+                            ? t('trips.serverError')
                             : error}
                 </p>
                 <button
                     onClick={fetchTrips}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-red-100 px-5 py-2.5 text-sm font-bold text-red-700 shadow-sm transition-all hover:bg-red-200 hover:shadow-md active:scale-95 dark:bg-red-900/60 dark:text-red-200 dark:hover:bg-red-800"
                 >
                     <RefreshCw className="h-4 w-4" />
-                    Try Again
+                    {t('common.tryAgain')}
                 </button>
             </div>
         );
@@ -101,15 +103,15 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             {meta && !isLoading && !error && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                        Showing{' '}
-                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {t('trips.showing')}{' '}
+                        <span className="font-bold text-navy dark:text-blue-400">
                             {trips.length}
                         </span>{' '}
-                        of{' '}
-                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {t('trips.of')}{' '}
+                        <span className="font-bold text-navy dark:text-blue-400">
                             {meta.total}
                         </span>{' '}
-                        trips
+                        {t('trips.tripsCount')}
                     </p>
                 </div>
             )}
@@ -117,9 +119,9 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
             {/* Loading State */}
             {isLoading && (
                 <div className="flex flex-col items-center justify-center py-20">
-                    <Loader2 className="h-10 w-10 animate-spin text-navy" />
-                    <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-                        Finding trips for you...
+                    <Loader2 className="h-12 w-12 animate-spin text-emerald-500" />
+                    <p className="mt-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                        {t('trips.finding')}
                     </p>
                 </div>
             )}
@@ -129,20 +131,22 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
 
             {/* Empty State */}
             {!isLoading && !error && trips.length === 0 && (
-                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-200 py-20 dark:border-zinc-800">
-                    <MapPinOff className="h-12 w-12 text-zinc-300 dark:text-zinc-700" />
-                    <h3 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                        No trips found
+                <div className="flex flex-col items-center justify-center rounded-3xl glass-card border-2 border-dashed border-zinc-200/60 py-24 shadow-sm dark:border-zinc-800/60">
+                    <div className="p-4 rounded-full bg-zinc-100/50 dark:bg-zinc-800/50 mb-4">
+                        <MapPinOff className="h-12 w-12 text-zinc-400 dark:text-zinc-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                        {t('trips.noTrips')}
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        Try adjusting your filters or check back later
+                    <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                        {t('trips.noTripsHint')}
                     </p>
                 </div>
             )}
 
             {/* Trip Cards Grid */}
             {!isLoading && !error && trips.length > 0 && (
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {trips.map((trip) => (
                         <TripCard
                             key={trip.id}
@@ -158,16 +162,16 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
 
             {/* Pagination */}
             {meta && meta.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-4">
+                <div className="flex items-center justify-center gap-2 pt-6 pb-4">
                     <button
                         onClick={() => setPage(meta.page - 1)}
                         disabled={meta.page <= 1}
-                        className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        className="flex items-center gap-1 rounded-xl border border-zinc-200/80 bg-white/50 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 hover:shadow disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80"
                     >
                         <ChevronLeft className="h-4 w-4" />
-                        Previous
+                        {t('common.previous')}
                     </button>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 mx-2">
                         {Array.from({ length: meta.totalPages }, (_, i) => i + 1)
                             .filter(
                                 (page) =>
@@ -182,9 +186,9 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
                                     )}
                                     <button
                                         onClick={() => setPage(page)}
-                                        className={`h-9 w-9 rounded-lg text-sm font-medium transition-all ${page === meta.page
-                                            ? 'bg-navy text-white shadow-sm'
-                                            : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                                        className={`h-10 w-10 rounded-xl text-sm font-bold transition-all shadow-sm ${page === meta.page
+                                            ? 'bg-navy text-white scale-110 shadow-md ring-2 ring-navy/20 dark:ring-navy/40'
+                                            : 'bg-white/50 text-zinc-700 border border-zinc-200/80 hover:bg-zinc-100 hover:scale-105 dark:bg-zinc-800/50 dark:border-zinc-700/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80'
                                             }`}
                                     >
                                         {page}
@@ -195,9 +199,9 @@ export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) 
                     <button
                         onClick={() => setPage(meta.page + 1)}
                         disabled={meta.page >= meta.totalPages}
-                        className="flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        className="flex items-center gap-1 rounded-xl border border-zinc-200/80 bg-white/50 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition-all hover:bg-zinc-50 hover:shadow disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-300 dark:hover:bg-zinc-700/80"
                     >
-                        Next
+                        {t('common.next')}
                         <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>
