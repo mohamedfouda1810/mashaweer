@@ -81,9 +81,7 @@ export default function Home() {
                 className="object-cover"
               />
               <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#061d36]/55 via-transparent to-transparent" />
-              <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/35 bg-white/95 p-4 text-start shadow-xl backdrop-blur sm:inset-x-6 sm:bottom-6 sm:p-5">
-                
-              </div>
+              
             </div>
             <div aria-hidden="true" className="absolute -bottom-5 -left-4 -z-10 h-28 w-28 rounded-full border border-emerald-300/20 sm:-left-7 sm:h-40 sm:w-40" />
           </div>
@@ -123,7 +121,7 @@ export default function Home() {
             <Image src="/verified-driver.png" alt="A Mashaweer driver beside a car" width={1024} height={1024} sizes="(max-width: 1024px) 90vw, 42vw" className="aspect-[1.25/1] w-full object-cover" />
           </div>
           <div className="order-1 lg:order-2">
-            <span className="home-kicker"><ShieldCheck className="h-4 w-4" />{t('home.whyUs.badge')}</span>
+            {/* <span className="home-kicker"><ShieldCheck className="h-4 w-4" />{t('home.whyUs.badge')}</span> */}
             <h2 id="trust-title" className="mt-4 whitespace-pre-line text-3xl font-bold leading-tight tracking-tight text-[#0a2e52] sm:text-4xl">{t('home.whyUs.title')}</h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">{t('home.whyUs.subtitle')}</p>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -169,6 +167,8 @@ export default function Home() {
             <Link className="transition hover:text-emerald-800" href="/trips">{t('nav.browseTrips')}</Link>
             <Link className="transition hover:text-emerald-800" href="/help">{t('home.footer.helpCenter')}</Link>
             {!isAuthenticated && <Link className="transition hover:text-emerald-800" href="/login">{t('common.login')}</Link>}
+<p className="text-xs text-slate-500">Developed By Eng.Mohamed Fouda </p>
+
           </nav>
           <p className="text-xs text-slate-500">© {new Date().getFullYear()} {t('common.mashaweer')}</p>
         </div>
