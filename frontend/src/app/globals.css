@@ -120,6 +120,39 @@ body {
     --glass-bg: rgba(255, 255, 255, 0.04);
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+
+  body {
+    color: #e2eaf3;
+  }
+
+  /* The dark theme uses midnight and blue-teal surfaces rather than washed-out gray. */
+  .glass-card {
+    background: linear-gradient(145deg, rgba(17, 36, 57, 0.97), rgba(13, 29, 47, 0.97));
+    border-color: rgba(148, 190, 211, 0.14);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(208, 235, 245, 0.035);
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(208, 235, 245, 0.05);
+  }
+
+  .glass-nav {
+    background: rgba(8, 21, 37, 0.96);
+    border-color: rgba(148, 190, 211, 0.14);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+  }
+
+  .glass-dark {
+    background: rgba(15, 34, 53, 0.88);
+    border-color: rgba(148, 190, 211, 0.14);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  ::selection {
+    background: rgba(16, 185, 129, 0.4);
+    color: #f8fafc;
   }
 }
 
@@ -201,6 +234,37 @@ body {
 .dark .glass-nav {
   background: rgba(11, 20, 38, 0.88);
   border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Reapply dark surfaces after the base glass component rules so they win over
+   light glass styling regardless of the active browser theme preference. */
+.dark .glass-card {
+  background: linear-gradient(145deg, rgba(17, 36, 57, 0.97), rgba(13, 29, 47, 0.97));
+  border-color: rgba(148, 190, 211, 0.14);
+}
+
+.dark .glass-nav {
+  background: rgba(8, 21, 37, 0.96);
+  border-color: rgba(148, 190, 211, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-card {
+    background: linear-gradient(145deg, rgba(17, 36, 57, 0.97), rgba(13, 29, 47, 0.97));
+    border-color: rgba(148, 190, 211, 0.14);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(208, 235, 245, 0.035);
+  }
+
+  .glass-nav {
+    background: rgba(8, 21, 37, 0.96);
+    border-color: rgba(148, 190, 211, 0.14);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
+  }
+
+  .glass-dark {
+    background: rgba(15, 34, 53, 0.88);
+    border-color: rgba(148, 190, 211, 0.14);
+  }
 }
 
 /* ─══════════════════════════════════════════════════════════════════════════
