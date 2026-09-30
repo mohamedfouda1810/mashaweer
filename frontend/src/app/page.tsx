@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect, useRef, useState } from "react";
-import { ShieldCheck, MapPin, Wallet, Star, Users, Zap, ArrowRight, CheckCircle, Clock, Route, Sparkles, ChevronRight, Car, Globe, Award, HeartHandshake } from "lucide-react";
+import { ShieldCheck, MapPin, Wallet, Star, Users, Zap, ArrowRight, CheckCircle, Route, Sparkles, ChevronRight, Car, Globe, Award, HeartHandshake } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 function useRevealOnScroll() {
@@ -69,25 +69,27 @@ export default function Home() {
   return (
     <div ref={sectionRef} className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-zinc-50 overflow-hidden">
       {/* 1. Hero Section */}
-      <section className="relative flex flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6 lg:px-8 overflow-hidden min-h-[90vh] sm:min-h-[700px]">
+      <section className="isolate relative flex min-h-[min(760px,calc(100svh-3.5rem))] flex-1 flex-col items-center justify-center overflow-hidden px-4 py-20 text-center sm:px-6 sm:py-24 lg:px-8">
         {/* Background */}
         <div
-          className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat scale-105 transition-transform duration-[20s] hover:scale-110"
+          aria-hidden="true"
+          className="absolute inset-0 z-0 scale-105 bg-cover bg-center bg-no-repeat transition-transform duration-[20s]"
           style={{ backgroundImage: "url('/egypt-highway.png')" }}
         />
-        <div className="absolute inset-0 -z-10 bg-navy/90 backdrop-blur-[2px]" />
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-gradient-to-b from-[#061d36]/80 via-[#0a2e52]/85 to-[#061d36]/95" />
+        <div aria-hidden="true" className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(0,201,123,0.14),transparent_54%)]" />
         
         {/* Liquid Orbs */}
-        <div className="liquid-orb bg-emerald/30 -left-20 top-24 blur-[80px]" />
-        <div className="liquid-orb-1 bg-amber-500/20 right-[-5rem] top-1/3 blur-[80px]" />
-        <div className="liquid-orb-2 bg-emerald/20 left-1/4 bottom-10 blur-[80px]" />
+        <div aria-hidden="true" className="liquid-orb z-0 bg-emerald/20 -left-20 top-24 blur-[80px]" />
+        <div aria-hidden="true" className="liquid-orb-1 z-0 bg-amber-500/15 right-[-5rem] top-1/3 blur-[80px]" />
+        <div aria-hidden="true" className="liquid-orb-2 z-0 bg-emerald/15 left-1/4 bottom-10 blur-[80px]" />
 
         {/* Glass Logo */}
-        <div className="animate-fade-in-up mb-8">
+        <div className="relative z-10 animate-fade-in-up mb-7">
           <div className="glass mx-auto flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center rounded-[2rem] shadow-2xl shadow-emerald/20">
             <Image
               src="/mashaweer-logo.png"
-              alt={t('common.mashaweer' as any)}
+              alt={t('common.mashaweer')}
               width={96}
               height={96}
               className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-lg"
@@ -96,36 +98,36 @@ export default function Home() {
           </div>
         </div>
 
-        <h1 className="animate-fade-in-up max-w-4xl text-5xl font-extrabold tracking-tight text-white sm:text-7xl leading-tight">
-          {t('home.hero.title1' as any)} <br className="hidden sm:block" />
+        <h1 className="relative z-10 animate-fade-in-up max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl leading-tight">
+          {t('home.hero.title1')} <br className="hidden sm:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald to-teal-400">
-            {t('home.hero.title2' as any)}
+            {t('home.hero.title2')}
           </span>
         </h1>
 
-        <p className="animate-fade-in-up delay-100 mx-auto mt-6 max-w-2xl text-base leading-7 text-zinc-300 sm:text-xl">
-          {t('home.hero.subtitle' as any)}
+        <p className="relative z-10 animate-fade-in-up delay-100 mx-auto mt-6 max-w-2xl text-base leading-7 text-slate-100/90 sm:text-xl">
+          {t('home.hero.subtitle')}
         </p>
 
         {/* Trust Badge Row */}
-        <div className="animate-fade-in-up delay-200 mt-6 flex flex-wrap justify-center gap-4 text-sm font-medium text-emerald">
+        <div className="relative z-10 animate-fade-in-up delay-200 mt-6 flex flex-wrap justify-center gap-2.5 text-sm font-medium text-emerald sm:gap-4">
           <span className="flex items-center gap-1 bg-emerald/10 px-3 py-1 rounded-full border border-emerald/20 backdrop-blur-md">
-            {t('common.verifiedDriver' as any)}
+            {t('common.verifiedDriver')}
           </span>
           <span className="flex items-center gap-1 bg-emerald/10 px-3 py-1 rounded-full border border-emerald/20 backdrop-blur-md">
-            🛡️ {t('home.whyUs.wallet.title' as any)}
+            🛡️ {t('home.whyUs.wallet.title')}
           </span>
           <span className="flex items-center gap-1 bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full border border-amber-500/20 backdrop-blur-md">
-            ⭐ 4.9 {t('home.stats.rating' as any)}
+            ⭐ 4.9 {t('home.stats.rating')}
           </span>
         </div>
 
-        <div className="animate-fade-in-up delay-300 mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4 w-full px-4 sm:px-0">
+        <div className="relative z-10 animate-fade-in-up delay-300 mt-9 flex w-full flex-col items-center justify-center gap-3 px-4 sm:mt-10 sm:w-auto sm:flex-row sm:gap-4 sm:px-0">
           <Link
             href="/trips"
             className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-emerald px-10 py-4 text-lg font-bold text-navy shadow-xl shadow-emerald/30 transition-all duration-300 hover:-translate-y-1 hover:scale-105"
           >
-            {t('home.hero.findRide' as any)}
+            {t('home.hero.findRide')}
             <ArrowRight className="h-5 w-5 rtl:rotate-180" />
           </Link>
           {!isAuthenticated && (
@@ -133,7 +135,7 @@ export default function Home() {
               href="/register"
               className="glass flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl px-10 py-4 text-lg font-bold text-white transition-all duration-300 hover:bg-white/10"
             >
-              {t('home.hero.becomeDriver' as any)}
+              {t('home.hero.becomeDriver')}
               <Car className="h-5 w-5" />
             </Link>
           )}
@@ -152,10 +154,10 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-8">
             {[
-              { icon: Users, label: t('home.stats.activeRiders' as any), value: '10K+', color: 'text-emerald' },
-              { icon: Star, label: t('home.stats.rating' as any), value: '4.9', color: 'text-amber-500' },
-              { icon: Globe, label: t('home.stats.cities' as any), value: '25+', color: 'text-emerald' },
-              { icon: Route, label: t('home.stats.tripsCompleted' as any), value: '50K+', color: 'text-emerald' },
+              { icon: Users, label: t('home.stats.activeRiders'), value: '10K+', color: 'text-emerald' },
+              { icon: Star, label: t('home.stats.rating'), value: '4.9', color: 'text-amber-500' },
+              { icon: Globe, label: t('home.stats.cities'), value: '25+', color: 'text-emerald' },
+              { icon: Route, label: t('home.stats.tripsCompleted'), value: '50K+', color: 'text-emerald' },
             ].map((stat, i) => (
               <div key={i} className="glass-card hover-lift flex flex-col items-center gap-2 rounded-3xl bg-zinc-50 p-6 text-center border border-zinc-100 shadow-sm">
                 <div className={`p-3 rounded-2xl bg-white shadow-sm ${stat.color}`}>
@@ -177,13 +179,13 @@ export default function Home() {
           <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/10 px-4 py-1.5 text-sm font-semibold text-emerald">
               <Zap className="h-4 w-4" />
-              {t('home.howItWorks.badge' as any)}
+              {t('home.howItWorks.badge')}
             </span>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-navy sm:text-5xl">
-              {t('home.howItWorks.title' as any)}
+              {t('home.howItWorks.title')}
             </h2>
             <p className="mt-4 text-base text-zinc-500">
-              {t('home.howItWorks.subtitle' as any)}
+              {t('home.howItWorks.subtitle')}
             </p>
           </div>
 
@@ -193,22 +195,22 @@ export default function Home() {
             {[
               {
                 step: '1',
-                title: t('home.howItWorks.step1.title' as any),
-                description: t('home.howItWorks.step1.desc' as any),
+                title: t('home.howItWorks.step1.title'),
+                description: t('home.howItWorks.step1.desc'),
                 icon: MapPin,
                 delay: 'delay-100',
               },
               {
                 step: '2',
-                title: t('home.howItWorks.step2.title' as any),
-                description: t('home.howItWorks.step2.desc' as any),
+                title: t('home.howItWorks.step2.title'),
+                description: t('home.howItWorks.step2.desc'),
                 icon: CheckCircle,
                 delay: 'delay-200',
               },
               {
                 step: '3',
-                title: t('home.howItWorks.step3.title' as any),
-                description: t('home.howItWorks.step3.desc' as any),
+                title: t('home.howItWorks.step3.title'),
+                description: t('home.howItWorks.step3.desc'),
                 icon: Route,
                 delay: 'delay-300',
               },
@@ -244,21 +246,21 @@ export default function Home() {
             <div className="reveal-on-scroll">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-navy/10 px-4 py-1.5 text-sm font-semibold text-navy">
                 <Award className="h-4 w-4" />
-                {t('home.whyUs.badge' as any)}
+                {t('home.whyUs.badge')}
               </span>
               <h2 className="mt-4 text-3xl font-bold tracking-tight text-navy sm:text-5xl whitespace-pre-line">
-                {t('home.whyUs.title' as any)}
+                {t('home.whyUs.title')}
               </h2>
               <p className="mt-4 text-base text-zinc-600 leading-relaxed">
-                {t('home.whyUs.subtitle' as any)}
+                {t('home.whyUs.subtitle')}
               </p>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 {[
-                  { icon: ShieldCheck, title: t('home.whyUs.verified.title' as any), desc: t('home.whyUs.verified.desc' as any), bg: 'bg-emerald/10', color: 'text-emerald', border: 'border-emerald/20' },
-                  { icon: Zap, title: t('home.whyUs.instant.title' as any), desc: t('home.whyUs.instant.desc' as any), bg: 'bg-amber-500/10', color: 'text-amber-500', border: 'border-amber-500/20' },
-                  { icon: Wallet, title: t('home.whyUs.wallet.title' as any), desc: t('home.whyUs.wallet.desc' as any), bg: 'bg-emerald/10', color: 'text-emerald', border: 'border-emerald/20' },
-                  { icon: HeartHandshake, title: t('home.whyUs.commission.title' as any), desc: t('home.whyUs.commission.desc' as any), bg: 'bg-navy/10', color: 'text-navy', border: 'border-navy/20' },
+                  { icon: ShieldCheck, title: t('home.whyUs.verified.title'), desc: t('home.whyUs.verified.desc'), bg: 'bg-emerald/10', color: 'text-emerald', border: 'border-emerald/20' },
+                  { icon: Zap, title: t('home.whyUs.instant.title'), desc: t('home.whyUs.instant.desc'), bg: 'bg-amber-500/10', color: 'text-amber-500', border: 'border-amber-500/20' },
+                  { icon: Wallet, title: t('home.whyUs.wallet.title'), desc: t('home.whyUs.wallet.desc'), bg: 'bg-emerald/10', color: 'text-emerald', border: 'border-emerald/20' },
+                  { icon: HeartHandshake, title: t('home.whyUs.commission.title'), desc: t('home.whyUs.commission.desc'), bg: 'bg-navy/10', color: 'text-navy', border: 'border-navy/20' },
                 ].map((feature, idx) => (
                   <div key={idx} className={`glass-card p-5 rounded-2xl border ${feature.border} hover:shadow-md transition-shadow bg-white`}>
                     <div className={`mb-4 inline-flex p-3 rounded-xl ${feature.bg} ${feature.color}`}>
@@ -289,7 +291,7 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-xl font-extrabold text-navy">100%</p>
-                  <p className="text-sm font-medium text-zinc-500">{t('home.whyUs.verifiedBadge' as any)}</p>
+                  <p className="text-sm font-medium text-zinc-500">{t('home.whyUs.verifiedBadge')}</p>
                 </div>
               </div>
             </div>
@@ -303,13 +305,13 @@ export default function Home() {
           <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/10 px-4 py-1.5 text-sm font-semibold text-emerald">
               <Route className="h-4 w-4" />
-              {t('home.routes.badge' as any)}
+              {t('home.routes.badge')}
             </span>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-navy sm:text-4xl">
-              {t('home.routes.title' as any)}
+              {t('home.routes.title')}
             </h2>
             <p className="mt-3 text-base text-zinc-500">
-              {t('home.routes.subtitle' as any)}
+              {t('home.routes.subtitle')}
             </p>
           </div>
 
@@ -321,8 +323,17 @@ export default function Home() {
                 className="hover-lift glass-card group flex items-center justify-between rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm hover:border-emerald/30"
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-4xl transition-transform duration-300 group-hover:scale-110">
-                    {route.emoji}
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-sm transition-transform duration-300 group-hover:scale-105">
+                    <Image
+                      src={route.img}
+                      alt={`${route.from} to ${route.to}`}
+                      width={112}
+                      height={112}
+                      className="h-full w-full object-cover"
+                    />
+                    <span aria-hidden="true" className="absolute bottom-1 right-1 rounded-full bg-white/95 px-1.5 py-0.5 text-sm shadow-sm">
+                      {route.emoji}
+                    </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -331,7 +342,7 @@ export default function Home() {
                       <p className="font-bold text-navy">{route.to}</p>
                     </div>
                     <p className="text-sm text-zinc-500 mt-1">
-                      {t('home.routes.from' as any)} <span className="font-bold text-emerald">{route.price} {t('common.egp' as any)}</span>
+                      {t('home.routes.from')} <span className="font-bold text-emerald">{route.price} {t('common.egp')}</span>
                     </p>
                   </div>
                 </div>
@@ -367,8 +378,8 @@ export default function Home() {
                       <Wallet className="h-8 w-8 text-amber-500" />
                     </div>
                     <div>
-                      <p className="text-2xl font-extrabold text-navy">+5K {t('common.egp' as any)}</p>
-                      <p className="text-sm text-zinc-500">{t('home.driver.avgEarning' as any)}</p>
+                      <p className="text-2xl font-extrabold text-navy">+5K {t('common.egp')}</p>
+                      <p className="text-sm text-zinc-500">{t('home.driver.avgEarning')}</p>
                     </div>
                   </div>
                 </div>
@@ -377,20 +388,20 @@ export default function Home() {
               <div className="reveal-on-scroll delay-200 order-1 lg:order-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/20 px-4 py-1.5 text-sm font-semibold text-emerald border border-emerald/30">
                   <Car className="h-4 w-4" />
-                  {t('home.driver.badge' as any)}
+                  {t('home.driver.badge')}
                 </span>
                 <h2 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-5xl whitespace-pre-line leading-tight">
-                  {t('home.driver.title' as any)}
+                  {t('home.driver.title')}
                 </h2>
                 <p className="mt-6 text-lg text-zinc-300 leading-relaxed">
-                  {t('home.driver.subtitle' as any)}
+                  {t('home.driver.subtitle')}
                 </p>
                 <ul className="mt-8 space-y-4">
                   {[
-                    t('home.driver.point1' as any),
-                    t('home.driver.point2' as any),
-                    t('home.driver.point3' as any),
-                    t('home.driver.point4' as any),
+                    t('home.driver.point1'),
+                    t('home.driver.point2'),
+                    t('home.driver.point3'),
+                    t('home.driver.point4'),
                   ].map((item, idx) => (
                     <li key={idx} className="flex items-center gap-3 text-base text-zinc-200">
                       <CheckCircle className="h-6 w-6 flex-shrink-0 text-emerald" />
@@ -402,7 +413,7 @@ export default function Home() {
                   href="/register"
                   className="mt-10 inline-flex items-center gap-2 rounded-2xl bg-emerald px-8 py-4 text-lg font-bold text-navy shadow-lg transition-all hover:scale-105 hover:bg-emerald/90"
                 >
-                  {t('home.driver.cta' as any)}
+                  {t('home.driver.cta')}
                   <ArrowRight className="h-5 w-5 rtl:rotate-180" />
                 </Link>
               </div>
@@ -419,13 +430,13 @@ export default function Home() {
           <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-4 py-1.5 text-sm font-semibold text-amber-500">
               <Sparkles className="h-4 w-4" />
-              {t('home.testimonials.badge' as any)}
+              {t('home.testimonials.badge')}
             </span>
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-navy sm:text-4xl">
-              {t('home.testimonials.title' as any)}
+              {t('home.testimonials.title')}
             </h2>
             <p className="mt-3 text-base text-zinc-500">
-              {t('home.testimonials.subtitle' as any)}
+              {t('home.testimonials.subtitle')}
             </p>
           </div>
 
@@ -483,10 +494,10 @@ export default function Home() {
         
         <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 text-center lg:px-8">
           <h2 className="reveal-on-scroll text-4xl font-extrabold tracking-tight text-white sm:text-6xl">
-            {t('home.cta.title' as any)}
+            {t('home.cta.title')}
           </h2>
           <p className="reveal-on-scroll delay-100 mx-auto mt-6 max-w-xl text-lg text-zinc-200">
-            {t('home.cta.subtitle' as any)}
+            {t('home.cta.subtitle')}
           </p>
           <div className="reveal-on-scroll delay-200 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             {isAuthenticated ? (
@@ -494,21 +505,21 @@ export default function Home() {
                 href="/trips"
                 className="flex w-full sm:w-auto items-center justify-center rounded-2xl bg-emerald px-10 py-4 text-lg font-bold text-navy shadow-xl shadow-emerald/30 transition-transform hover:scale-105"
               >
-                {t('home.cta.browseTrips' as any)}
+                {t('home.cta.browseTrips')}
               </Link>
             ) : (
               <Link
                 href="/register"
                 className="flex w-full sm:w-auto items-center justify-center rounded-2xl bg-emerald px-10 py-4 text-lg font-bold text-navy shadow-xl shadow-emerald/30 transition-transform hover:scale-105"
               >
-                {t('home.cta.getStarted' as any)}
+                {t('home.cta.getStarted')}
               </Link>
             )}
             <Link
               href="/trips"
               className="glass flex w-full sm:w-auto items-center justify-center rounded-2xl px-10 py-4 text-lg font-bold text-white transition-colors hover:bg-white/10 border border-white/20"
             >
-              {t('home.cta.browseTrips' as any)}
+              {t('home.cta.browseTrips')}
             </Link>
           </div>
         </div>
@@ -522,38 +533,38 @@ export default function Home() {
               <div className="flex items-center gap-3 mb-6">
                 <Image
                   src="/mashaweer-logo.png"
-                  alt={t('common.mashaweer' as any)}
+                  alt={t('common.mashaweer')}
                   width={40}
                   height={40}
                   className="h-10 w-10 object-contain drop-shadow-sm"
                 />
-                <span className="text-2xl font-extrabold text-navy">{t('common.mashaweer' as any)}</span>
+                <span className="text-2xl font-extrabold text-navy">{t('common.mashaweer')}</span>
               </div>
               <p className="text-sm text-zinc-500 max-w-sm mb-6 leading-relaxed">
-                {t('home.footer.desc' as any)}
+                {t('home.footer.desc')}
               </p>
               <div className="flex gap-3 text-xs font-semibold text-emerald">
                 <span className="bg-emerald/10 px-3 py-1.5 rounded-full border border-emerald/20">
-                  {t('common.secureEncrypted' as any)}
+                  {t('common.secureEncrypted')}
                 </span>
                 <span className="bg-emerald/10 px-3 py-1.5 rounded-full border border-emerald/20">
-                  {t('common.support247' as any)}
+                  {t('common.support247')}
                 </span>
               </div>
             </div>
             
             <div className="flex flex-col gap-4">
-              <h3 className="text-base font-bold text-navy uppercase tracking-wider">{t('home.footer.quickLinks' as any)}</h3>
+              <h3 className="text-base font-bold text-navy uppercase tracking-wider">{t('home.footer.quickLinks')}</h3>
               <nav className="flex flex-col gap-3">
-                <Link href="/trips" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('nav.browseTrips' as any)}</Link>
-                <Link href="/register" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('common.register' as any)}</Link>
-                <Link href="/login" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('common.login' as any)}</Link>
-                <Link href="/help" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('home.footer.helpCenter' as any)}</Link>
+                <Link href="/trips" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('nav.browseTrips')}</Link>
+                <Link href="/register" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('common.register')}</Link>
+                <Link href="/login" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('common.login')}</Link>
+                <Link href="/help" className="text-sm font-medium text-zinc-500 hover:text-emerald transition-colors">{t('home.footer.helpCenter')}</Link>
               </nav>
             </div>
             
             <div className="flex flex-col gap-4">
-              <h3 className="text-base font-bold text-navy uppercase tracking-wider">{t('home.footer.contact' as any)}</h3>
+              <h3 className="text-base font-bold text-navy uppercase tracking-wider">{t('home.footer.contact')}</h3>
               <div className="flex flex-col gap-3 text-sm font-medium text-zinc-500">
                 <p>support@mashaweer.com</p>
                 <p>Cairo, Egypt</p>
@@ -562,7 +573,7 @@ export default function Home() {
           </div>
           <div className="mt-12 border-t border-zinc-200 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm font-medium text-zinc-400">
-              © {new Date().getFullYear()} {t('common.mashaweer' as any)}. {t('home.footer.rights' as any)}
+              © {new Date().getFullYear()} {t('common.mashaweer')}. {t('home.footer.rights')}
             </p>
           </div>
         </div>

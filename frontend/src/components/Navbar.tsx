@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -32,7 +32,9 @@ export function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+    const localeLabel = locale === 'ar' ? 'اللغة' : 'Language';
+    const previousPathname = useRef(pathname);
 
     const NAV_ITEMS = [
         { href: '/trips', label: t('nav.trips'), icon: MapPin },
@@ -60,11 +62,18 @@ export function Navbar() {
         }
     }, [mobileOpen]);
 
-    // Close mobile menu on route change
+    // A route change closes the drawer. Keep this effect independent of the
+    // drawer callback so opening the drawer cannot immediately close it.
     useEffect(() => {
-        const timer = window.setTimeout(closeMobileMenu, 0);
-        return () => window.clearTimeout(timer);
-    }, [pathname, closeMobileMenu]);
+        if (previousPathname.current !== pathname) {
+            previousPathname.current = pathname;
+            const timer = window.setTimeout(() => {
+                setMobileOpen(false);
+                setClosing(false);
+            }, 0);
+            return () => window.clearTimeout(timer);
+        }
+    }, [pathname]);
 
     // Prevent body scroll when menu is open
     useEffect(() => {
@@ -75,6 +84,15 @@ export function Navbar() {
         }
         return () => { document.body.style.overflow = ''; };
     }, [mobileOpen]);
+
+    useEffect(() => {
+        if (!mobileOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeMobileMenu();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [mobileOpen, closeMobileMenu]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -135,19 +153,19 @@ export function Navbar() {
             <nav className="sticky top-0 z-50 glass-nav border-b border-slate-200/70 shadow-[0_8px_30px_rgba(10,46,82,0.06)] dark:border-white/10">
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
                     {/* Logo & Trust Badge */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                         <Link href="/" className="group flex items-center gap-2 transition-transform duration-300 hover:-translate-y-0.5">
-                            <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:drop-shadow-[0_4px_8px_rgba(0,201,123,0.3)] group-hover:scale-105">
+                            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200 shadow-sm transition-transform duration-300 group-hover:scale-105 sm:h-10 sm:w-10">
                                 <Image
                                     src="/mashaweer-logo.png"
                                     alt={t('common.mashaweer')}
-                                    width={32}
-                                    height={32}
-                                    className="h-8 w-8 object-contain"
+                                    width={40}
+                                    height={40}
+                                    className="h-full w-full object-contain"
                                     priority
                                 />
                             </div>
-                            <span className="text-lg font-bold tracking-tight text-zinc-900 transition-colors group-hover:text-navy dark:text-white dark:group-hover:text-emerald-400">
+                            <span className="truncate text-base font-bold tracking-tight text-zinc-900 transition-colors group-hover:text-navy dark:text-white dark:group-hover:text-emerald-400 sm:text-lg">
                                 {t('common.mashaweer')}
                             </span>
                         </Link>
@@ -179,13 +197,13 @@ export function Navbar() {
 
                     {/* Right Side */}
                     <div className="flex items-center gap-2">
-                        <div className="hidden sm:block"><LanguageToggle /></div>
+                        <LanguageToggle />
                         {isAuthenticated ? (
                             <>
                                 {/* Notifications */}
                                 <Link
                                     href="/notifications"
-                                    className="relative rounded-lg p-2 text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:text-zinc-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
+                                    className="relative hidden rounded-lg p-2 text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:text-zinc-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400 md:inline-flex"
                                     aria-label={t('nav.notifications')}
                                 >
                                     <Bell className="h-5 w-5" />
@@ -238,9 +256,12 @@ export function Navbar() {
 
                         {/* Hamburger toggle — ALWAYS visible on mobile */}
                         <button
+                            type="button"
                             onClick={toggleMobile}
                             className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 md:hidden dark:text-zinc-400 dark:hover:bg-zinc-800"
                             aria-label={t('nav.toggleMenu')}
+                            aria-expanded={mobileOpen}
+                            aria-controls="mobile-navigation"
                         >
                             {mobileOpen && !closing ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                         </button>
@@ -250,15 +271,18 @@ export function Navbar() {
 
             {/* Mobile Slide-from-Right Overlay */}
             {(mobileOpen) && (
-                <div className="fixed inset-0 z-[60] md:hidden">
+                <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label={t('nav.toggleMenu')}>
                     {/* Backdrop */}
-                    <div
-                        className={`absolute inset-0 bg-black/40 backdrop-blur-md ${closing ? 'animate-fade-in opacity-0' : 'animate-backdrop-fade-in'}`}
+                    <button
+                        type="button"
+                        aria-label={t('nav.toggleMenu')}
+                        className={`absolute inset-0 w-full border-0 bg-black/50 backdrop-blur-sm ${closing ? 'opacity-0' : 'animate-backdrop-fade-in'}`}
                         onClick={closeMobileMenu}
                     />
                     {/* Panel */}
                     <div
-                        className={`absolute top-0 right-0 h-full w-[280px] max-w-[85vw] bg-white/90 backdrop-blur-xl shadow-2xl dark:bg-zinc-950/90 border-l border-white/20 dark:border-white/5 ${closing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+                        id="mobile-navigation"
+                        className={`absolute inset-y-0 right-0 flex h-full w-[min(21rem,88vw)] flex-col bg-white shadow-2xl dark:bg-zinc-950 ${closing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
                     >
                         {/* Panel Header */}
                         <div className="flex items-center justify-between border-b border-zinc-200/50 px-5 py-4 dark:border-zinc-800/50">
@@ -268,14 +292,16 @@ export function Navbar() {
                                     alt={t('common.mashaweer')}
                                     width={28}
                                     height={28}
-                                    className="h-7 w-7 object-contain"
+                                    className="h-7 w-7 rounded-full bg-white object-contain ring-1 ring-slate-200"
                                 />
                                 <span className="text-base font-bold text-zinc-900 dark:text-white">
                                     {t('common.mashaweer')}
                                 </span>
                             </div>
                             <button
+                                type="button"
                                 onClick={closeMobileMenu}
+                                aria-label={t('nav.toggleMenu')}
                                 className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80 transition-colors"
                             >
                                 <X className="h-5 w-5" />
@@ -283,7 +309,7 @@ export function Navbar() {
                         </div>
 
                         {/* Panel Content */}
-                        <div className="flex flex-col h-[calc(100%-65px)] overflow-y-auto">
+                        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                             <div className="flex-1 px-4 py-4 space-y-1">
                                 {isAuthenticated ? (
                                     <>
@@ -322,7 +348,11 @@ export function Navbar() {
                             </div>
 
                             {/* Bottom section */}
-                            <div className="border-t border-zinc-200/50 px-4 py-4 dark:border-zinc-800/50">
+                            <div className="space-y-3 border-t border-zinc-200/70 px-4 py-4 dark:border-zinc-800/70">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-sm font-medium text-zinc-500">{localeLabel}</span>
+                                    <LanguageToggle />
+                                </div>
                                 {isAuthenticated ? (
                                     <>
                                         {/* User info */}

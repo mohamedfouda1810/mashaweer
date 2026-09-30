@@ -4,7 +4,7 @@ import { TripFilters, ApiResponse, Trip, Booking, Wallet, Notification, Rating, 
 // NEVER fall back to localhost in production builds.
 const API_BASE = (() => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (envUrl) return envUrl;
+  if (envUrl) return envUrl.replace(/\/+$/, '');
   // Only allow localhost fallback in development
   if (process.env.NODE_ENV === 'development') return 'http://localhost:3001/api';
   // In production without env var, use empty string — requests will fail visibly
@@ -287,7 +287,7 @@ class ApiClient {
     });
   }
 
-  async register(data: any) {
+  async register(data: Record<string, unknown>) {
     return this.request<{ message: string; user: User }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -480,7 +480,7 @@ class ApiClient {
     return this.request('/driver/dashboard');
   }
 
-  async editTrip(tripId: string, data: any) {
+  async editTrip(tripId: string, data: Record<string, unknown>) {
     return this.request(`/trips/${tripId}/edit`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -517,7 +517,7 @@ class ApiClient {
   }
 
   async getDriverRatings(driverId: string) {
-    return this.request<{ averageScore: number; totalRatings: number; recentReviews: any[] }>(`/ratings/user/${driverId}`);
+    return this.request<{ averageScore: number; totalRatings: number; recentReviews: Rating[] }>(`/ratings/user/${driverId}`);
   }
 
   // ─── Notifications ──────────────────────────────────────────────

@@ -12,13 +12,15 @@ export function LanguageToggle() {
 
     return (
         <button
+            type="button"
             onClick={toggleLanguage}
-            className="fixed bottom-20 left-4 z-50 flex h-10 items-center justify-center gap-2 rounded-full bg-white/70 px-4 shadow-lg ring-1 ring-black/5 backdrop-blur-md transition-all duration-300 hover:scale-110 hover:bg-white/90 hover:shadow-xl active:scale-95 dark:bg-zinc-800/70 dark:ring-white/10 dark:hover:bg-zinc-800/90 sm:bottom-6"
+            className="group inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 text-slate-700 shadow-sm transition hover:border-emerald/40 hover:bg-emerald-50 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 active:scale-[0.98] dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
             title={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+            aria-label={locale === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
         >
-            <Globe className="h-4 w-4 text-zinc-600 transition-transform duration-300 group-hover:rotate-12 dark:text-zinc-300" />
-            <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
-                {locale === 'ar' ? 'EN 🇬🇧' : 'عربي 🇪🇬'}
+            <Globe className="h-4 w-4 text-emerald-700 transition-transform duration-300 group-hover:rotate-12 dark:text-emerald-400" />
+            <span className="text-sm font-semibold">
+                {locale === 'ar' ? 'EN' : 'عربي'}
             </span>
         </button>
     );

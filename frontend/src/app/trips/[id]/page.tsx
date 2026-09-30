@@ -56,7 +56,7 @@ export default function TripDetailPage() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [bookingResult, setBookingResult] = useState<{ bookingId: string; tripId: string; boardingToken: string } | null>(null);
 
-    const [driverRatings, setDriverRatings] = useState<{ averageScore: number; totalRatings: number; recentReviews: any[] } | null>(null);
+    const [driverRatings, setDriverRatings] = useState<{ averageScore: number; totalRatings: number; recentReviews: Rating[] } | null>(null);
 
     const [showRating, setShowRating] = useState(false);
     const [ratingScore, setRatingScore] = useState(5);
@@ -83,7 +83,7 @@ export default function TripDetailPage() {
     useEffect(() => {
         if (trip?.driverId) {
             api.getDriverRatings(trip.driverId)
-                .then((res) => setDriverRatings(res.data as any))
+                .then((res) => setDriverRatings(res.data as { averageScore: number; totalRatings: number; recentReviews: Rating[] }))
                 .catch(() => { });
         }
     }, [trip?.driverId]);

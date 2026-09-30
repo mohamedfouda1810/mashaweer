@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useCallback, useSyncExternalStore } from 'react';
 import { translations, type Locale, type TranslationKey } from '@/lib/i18n';
 
 // ─── External Store for Locale ──────────────────────────────────────────────
@@ -71,6 +71,12 @@ export function setLocale(locale: Locale) {
 
 export function useTranslation() {
   const locale = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+    html.setAttribute('lang', locale);
+  }, [locale]);
 
   /**
    * Translate a key to the current locale.
