@@ -82,18 +82,7 @@ export default function Home() {
               />
               <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#061d36]/55 via-transparent to-transparent" />
               <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/35 bg-white/95 p-4 text-start shadow-xl backdrop-blur sm:inset-x-6 sm:bottom-6 sm:p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                    <ShieldCheck className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('home.whyUs.verified.title')}</p>
-                    <p className="mt-0.5 truncate text-sm font-bold text-[#0a2e52] sm:text-base">{t('home.whyUs.verified.desc')}</p>
-                  </div>
-                  <Link href="/trips" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0a2e52] text-white transition hover:bg-emerald-700" aria-label={t('home.cta.browseTrips')}>
-                    <ChevronRight className="h-5 w-5 rtl:rotate-180" />
-                  </Link>
-                </div>
+                
               </div>
             </div>
             <div aria-hidden="true" className="absolute -bottom-5 -left-4 -z-10 h-28 w-28 rounded-full border border-emerald-300/20 sm:-left-7 sm:h-40 sm:w-40" />
