@@ -15,6 +15,7 @@ import { Rating, Booking } from '@/types';
 import { ClipboardList } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useTranslation } from '@/hooks/useTranslation';
+import type { TranslationKey } from '@/lib/i18n';
 import toast from 'react-hot-toast';
 
 const TripMap = dynamic(() => import('@/components/TripMap'), {
@@ -48,6 +49,13 @@ export default function TripDetailPage() {
     const { user, isAuthenticated } = useAuthStore();
     const { socket } = useSocket();
     const { t } = useTranslation();
+    const formatStatus = (group: 'tripStatus' | 'bookingStatus', status: string) => {
+        const key = `${group}.${status}`;
+        const translated = t(key as TranslationKey);
+        return translated === key
+            ? status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+            : translated;
+    };
 
     const [seats, setSeats] = useState(1);
     const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -256,7 +264,7 @@ export default function TripDetailPage() {
                                 trip.status === 'COMPLETED' ? 'bg-zinc-100/50 text-zinc-600 border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700' :
                                 'bg-red-100/50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
                             }`}>
-                                {t(`tripStatus.${trip.status}` as any) || trip.status.replace('_', ' ')}
+                                {formatStatus('tripStatus', trip.status)}
                             </span>
                         </div>
 
@@ -429,7 +437,7 @@ export default function TripDetailPage() {
                                                 b.status === 'PENDING' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                                                 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                                             }`}>
-                                                {t(`bookingStatus.${b.status}` as any) || b.status}
+                                                {formatStatus('bookingStatus', b.status)}
                                             </span>
                                             <span className={`text-xs font-semibold flex items-center gap-1 ${b.paymentMethod === 'WALLET' ? 'text-navy-600 dark:text-navy-400' : 'text-zinc-500'}`}>
                                                 {b.paymentMethod === 'WALLET' ? '💳 Wallet' : '💵 Cash'}

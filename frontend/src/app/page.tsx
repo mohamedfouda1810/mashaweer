@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
-  ChevronRight,
   Compass,
   MapPin,
   Route,
@@ -31,11 +30,6 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto grid min-h-[min(760px,calc(100svh-3.5rem))] max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
           <div className="home-enter max-w-2xl text-center lg:text-start">
-            {/* <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-100 shadow-sm backdrop-blur">
-              <ShieldCheck className="h-4 w-4 text-emerald-300" />
-              {t('common.verifiedDriver')}
-            </div> */}
-
             <h1 className="text-balance text-4xl font-extrabold leading-[1.2] tracking-tight text-white drop-shadow-sm sm:text-5xl lg:text-6xl xl:text-7xl">
               {t('home.hero.title1')}
               <span className="mt-1 block text-emerald-300">{t('home.hero.title2')}</span>
@@ -63,32 +57,32 @@ export default function Home() {
               )}
             </div>
 
-            {/* <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-100/90 lg:justify-start">
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300" />{t('home.whyUs.verified.title')}</span>
-              <span className="inline-flex items-center gap-2"><Wallet className="h-4 w-4 text-emerald-300" />{t('home.whyUs.wallet.title')}</span>
-              <span className="inline-flex items-center gap-2"><Zap className="h-4 w-4 text-emerald-300" />{t('home.whyUs.instant.title')}</span>
-            </div> */}
           </div>
 
           <div className="home-enter home-enter--delayed relative mx-auto w-full max-w-xl lg:max-w-none">
-            <div className="home-photo-frame relative aspect-[1.12/1] overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 shadow-2xl shadow-black/30 sm:aspect-[1.2/1]">
-              <Image
-                src="/happy-passengers.png"
-                alt="Passengers sharing a comfortable ride"
-                fill
-                priority
-                sizes="(max-width: 1024px) 90vw, 46vw"
-                className="object-cover"
-              />
-              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#061d36]/55 via-transparent to-transparent" />
-              
+            <div className="home-map-panel relative aspect-[1.12/1] overflow-hidden rounded-[2rem] border border-white/20 shadow-2xl shadow-black/30 sm:aspect-[1.2/1]">
+              <div aria-hidden="true" className="home-map-grid absolute inset-0" />
+              <div aria-hidden="true" className="home-map-glow home-map-glow--start" />
+              <div aria-hidden="true" className="home-map-glow home-map-glow--end" />
+              <svg aria-hidden="true" viewBox="0 0 600 460" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid meet">
+                <path className="home-map-route-glow" d="M82 350 C130 338 150 278 224 294 S318 354 354 269 S433 206 518 118" />
+                <path className="home-map-route" d="M82 350 C130 338 150 278 224 294 S318 354 354 269 S433 206 518 118" />
+              </svg>
+              <span aria-hidden="true" className="home-map-pin home-map-pin--start"><MapPin className="h-5 w-5" /></span>
+              <span aria-hidden="true" className="home-map-pin home-map-pin--end"><MapPin className="h-5 w-5" /></span>
+              <div className="home-map-label home-map-label--start">{t('common.from')}</div>
+              <div className="home-map-label home-map-label--end">{t('common.to')}</div>
+              <div className="home-map-caption">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/15 text-emerald-200"><Route className="h-5 w-5" /></span>
+                <div><p className="text-sm font-bold text-white">{t('home.hero.title2')}</p><p className="mt-1 text-xs leading-5 text-slate-200">{t('home.whyUs.verified.desc')}</p></div>
+              </div>
             </div>
             <div aria-hidden="true" className="absolute -bottom-5 -left-4 -z-10 h-28 w-28 rounded-full border border-emerald-300/20 sm:-left-7 sm:h-40 sm:w-40" />
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-16 sm:py-20" aria-labelledby="how-it-works-title">
+      <section className="home-section home-section--plain bg-white py-16 sm:py-20" aria-labelledby="how-it-works-title">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="mx-auto max-w-2xl text-center">
             <span className="home-kicker"><Compass className="h-4 w-4" />{t('home.howItWorks.badge')}</span>
@@ -115,13 +109,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#f4f7fa] py-16 sm:py-20" aria-labelledby="trust-title">
+      <section className="home-section home-section--muted bg-[#f4f7fa] py-16 sm:py-20" aria-labelledby="trust-title">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-2 lg:gap-16 lg:px-10">
           <div className="order-2 overflow-hidden rounded-[1.75rem] shadow-xl lg:order-1">
             <Image src="/verified-driver.png" alt="A Mashaweer driver beside a car" width={1024} height={1024} sizes="(max-width: 1024px) 90vw, 42vw" className="aspect-[1.25/1] w-full object-cover" />
           </div>
           <div className="order-1 lg:order-2">
-            {/* <span className="home-kicker"><ShieldCheck className="h-4 w-4" />{t('home.whyUs.badge')}</span> */}
             <h2 id="trust-title" className="mt-4 whitespace-pre-line text-3xl font-bold leading-tight tracking-tight text-[#0a2e52] sm:text-4xl">{t('home.whyUs.title')}</h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">{t('home.whyUs.subtitle')}</p>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -131,7 +124,7 @@ export default function Home() {
                 { icon: Wallet, title: t('home.whyUs.wallet.title'), body: t('home.whyUs.wallet.desc') },
                 { icon: Users, title: t('home.whyUs.commission.title'), body: t('home.whyUs.commission.desc') },
               ].map(({ icon: Icon, title, body }) => (
-                <div key={title} className="flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                <div key={title} className="home-feature-card flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Icon className="h-4 w-4" /></span>
                   <div><h3 className="text-sm font-bold text-[#0a2e52]">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-600">{body}</p></div>
                 </div>
@@ -157,7 +150,7 @@ export default function Home() {
         </section>
       )}
 
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="home-footer border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
           <Link href="/" className="flex items-center gap-3 text-[#0a2e52]">
             <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-slate-200"><Image src="/mashaweer-logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" /></span>

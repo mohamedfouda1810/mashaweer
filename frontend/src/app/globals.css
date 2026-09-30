@@ -810,8 +810,123 @@ input[type="checkbox"] {
 
 /* ─── Responsive home page ──────────────────────────────────────────────── */
 .home-page {
+  --home-surface: #ffffff;
+  --home-muted-surface: #f4f7fa;
+  --home-card: #ffffff;
+  --home-heading: #0a2e52;
+  --home-copy: #475569;
+  --home-border: #e2e8f0;
+  --home-kicker-bg: #eaf8f2;
+  --home-kicker-text: #08754e;
   padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   background: #f7f9fc;
+}
+
+.home-page .home-section--plain { background: var(--home-surface); }
+.home-page .home-section--muted { background: var(--home-muted-surface); }
+.home-page :is(h2, h3) { color: var(--home-heading); }
+.home-page :is(.home-section p, .home-footer p) { color: var(--home-copy); }
+.home-page .home-step-card,
+.home-page .home-feature-card { background-color: var(--home-card); border-color: var(--home-border); }
+.home-page .home-kicker { background: var(--home-kicker-bg); color: var(--home-kicker-text); }
+.home-page .home-footer { background: var(--home-surface); border-color: var(--home-border); }
+.home-page .home-footer a { color: var(--home-copy); }
+.home-page .home-footer a:first-child { color: var(--home-heading); }
+
+@media (prefers-color-scheme: dark) {
+  .home-page {
+    --home-surface: #0c1928;
+    --home-muted-surface: #101f30;
+    --home-card: #172a3d;
+    --home-heading: #f1f5f9;
+    --home-copy: #c2cfdd;
+    --home-border: #2c4055;
+    --home-kicker-bg: #12372f;
+    --home-kicker-text: #8de5bc;
+    background: #0c1928;
+  }
+  .home-page .home-step-card .text-slate-300 { color: #71849a; }
+}
+
+.home-map-panel {
+  isolation: isolate;
+  background: linear-gradient(145deg, #0c3554 0%, #09253e 58%, #0b493f 100%);
+}
+
+.home-map-grid {
+  opacity: 0.26;
+  background-image: linear-gradient(rgba(194, 236, 224, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(194, 236, 224, 0.12) 1px, transparent 1px), radial-gradient(ellipse at 50% 48%, rgba(33, 195, 139, 0.17), transparent 62%);
+  background-size: 34px 34px, 34px 34px, 100% 100%;
+  mask-image: linear-gradient(to bottom, black, transparent 92%);
+}
+
+.home-map-glow {
+  position: absolute;
+  width: 10rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(42px);
+  pointer-events: none;
+  opacity: 0.4;
+}
+.home-map-glow--start { left: 8%; bottom: 13%; background: #16b981; }
+.home-map-glow--end { right: 5%; top: 7%; background: #38bdf8; }
+.home-map-route-glow,
+.home-map-route {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.home-map-route-glow { stroke: rgba(52, 211, 153, 0.22); stroke-width: 20; filter: blur(9px); }
+.home-map-route { stroke: #9bf2ce; stroke-width: 4; stroke-dasharray: 12 13; animation: home-route-flow 18s linear infinite; }
+.home-map-pin {
+  position: absolute;
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 50% 50% 50% 0;
+  background: #10b981;
+  color: #062541;
+  box-shadow: 0 0 0 8px rgba(16,185,129,.15), 0 10px 28px rgba(0,0,0,.28);
+  transform: rotate(-45deg);
+}
+.home-map-pin svg { transform: rotate(45deg); }
+.home-map-pin--start { left: 12%; bottom: 18%; }
+.home-map-pin--end { right: 10%; top: 16%; background: #a7f3d0; }
+.home-map-label {
+  position: absolute;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  background: rgba(5, 24, 42, .55);
+  padding: .3rem .7rem;
+  color: #f1f5f9;
+  font-size: .75rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+.home-map-label--start { left: 24%; bottom: 18%; }
+.home-map-label--end { right: 24%; top: 17%; }
+.home-map-caption {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  border: 1px solid rgba(255,255,255,.17);
+  border-radius: 1.25rem;
+  background: rgba(5, 24, 42, .65);
+  padding: .9rem 1rem;
+  backdrop-filter: blur(16px);
+}
+
+@keyframes home-route-flow { to { stroke-dashoffset: -500; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-map-route { animation: none !important; }
 }
 
 .home-hero {
