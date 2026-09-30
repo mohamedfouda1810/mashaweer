@@ -41,7 +41,7 @@ export function TripCard({ trip, onBook, onViewDetails, hideBooking, isBooked }:
         (trip.destinationLatitude && trip.destinationLongitude);
 
     return (
-        <div className="group relative overflow-hidden rounded-2xl glass-card hover-lift shadow-sm transition-all duration-300">
+        <div className="group relative overflow-hidden rounded-2xl glass-card hover-lift shadow-sm transition-all duration-300 text-zinc-800 dark:text-zinc-100">
             {/* Mini Map */}
             {hasMapData && (
                 <TripMap

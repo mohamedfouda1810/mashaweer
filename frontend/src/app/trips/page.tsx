@@ -78,7 +78,7 @@ export default function TripsPage() {
         : 0;
 
     return (
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 glass-card mt-6 mb-6">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 glass-card mt-6 mb-6 text-zinc-800 dark:text-zinc-100">
             {/* Page Header */}
             <div className="mb-8">
                 <div className="flex items-center gap-3">

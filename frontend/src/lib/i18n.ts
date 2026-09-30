@@ -71,14 +71,18 @@ export const translations = {
   'nav.toggleMenu': { ar: 'القائمة', en: 'Toggle menu' },
 
   // ══════════ Home Page ══════════
-  'home.hero.title1': { ar: 'مشوارك', en: 'Your Ride' },
-  'home.hero.title2': { ar: 'و ناسك', en: '& Your People' },
+  'home.hero.title1': { ar: 'مشوار أسهل،', en: 'City to city,' },
+  'home.hero.title2': { ar: 'وثقة أكبر', en: 'with confidence.' },
   'home.hero.subtitle': {
-    ar: 'المنصة الأولى لمشاركة الرحلات بين المدن في مصر. تواصل مع سائقين موثقين، احجز مقعدك فوراً، وسافر بأمان.',
-    en: "Egypt's #1 inter-city ride-sharing platform. Connect with verified drivers, book seats instantly, and travel safely between cities.",
+    ar: 'شارك رحلتك بين المدن بثقة. اختر سائقاً موثوقاً، احجز مقعدك، وتابع تفاصيل رحلتك بسهولة.',
+    en: 'Share the journey between cities with confidence. Choose a verified driver, book your seat, and keep your trip details close.',
   },
   'home.hero.findRide': { ar: 'ابحث عن رحلة', en: 'Find a Ride' },
   'home.hero.becomeDriver': { ar: 'كن سائقاً', en: 'Become a Driver' },
+  'home.hero.departure': { ar: 'نقطة الانطلاق', en: 'Departure' },
+  'home.hero.destination': { ar: 'الوجهة', en: 'Destination' },
+  'home.hero.mapTitle': { ar: 'رحلات بين المدن بثقة', en: 'Confident inter-city travel' },
+  'home.hero.mapDescription': { ar: 'تفاصيل واضحة ورحلة أكثر اطمئناناً.', en: 'Clear trip details for a more confident journey.' },
   'home.stats.activeRiders': { ar: 'راكب نشط', en: 'Active Riders' },
   'home.stats.rating': { ar: 'التقييم', en: 'Rating' },
   'home.stats.cities': { ar: 'مدينة', en: 'Cities' },

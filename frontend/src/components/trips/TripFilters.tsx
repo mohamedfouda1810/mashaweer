@@ -78,7 +78,7 @@ export function TripFilters() {
         'w-full rounded-xl border border-white/40 bg-white/50 backdrop-blur-sm px-3 py-2 text-sm text-zinc-900 shadow-sm transition-colors focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-700/50 dark:bg-zinc-800/50 dark:text-zinc-100';
 
     return (
-        <div className="glass-card rounded-2xl shadow-sm mb-6">
+        <div className="glass-card rounded-2xl shadow-sm mb-6 text-zinc-800 dark:text-zinc-100">
             {/* Header — toggleable on mobile */}
             <div className="flex w-full items-center justify-between px-5 py-4">
                 <button

@@ -59,8 +59,8 @@ export default function Home() {
 
           </div>
 
-          <div className="home-enter home-enter--delayed relative mx-auto w-full max-w-xl lg:max-w-none">
-            <div className="home-map-panel relative aspect-[1.12/1] overflow-hidden rounded-[2rem] border border-white/20 shadow-2xl shadow-black/30 sm:aspect-[1.2/1]">
+          <div className="home-enter home-enter--delayed relative mx-auto w-full max-w-2xl lg:max-w-none">
+            <div className="home-map-panel relative aspect-[1.42/1] overflow-hidden rounded-[1.5rem] border border-white/20 shadow-2xl shadow-black/30 sm:aspect-[1.48/1] sm:rounded-[2rem] lg:aspect-[1.12/1]">
               <div aria-hidden="true" className="home-map-grid absolute inset-0" />
               <div aria-hidden="true" className="home-map-glow home-map-glow--start" />
               <div aria-hidden="true" className="home-map-glow home-map-glow--end" />
@@ -70,11 +70,11 @@ export default function Home() {
               </svg>
               <span aria-hidden="true" className="home-map-pin home-map-pin--start"><MapPin className="h-5 w-5" /></span>
               <span aria-hidden="true" className="home-map-pin home-map-pin--end"><MapPin className="h-5 w-5" /></span>
-              <div className="home-map-label home-map-label--start">{t('common.from')}</div>
-              <div className="home-map-label home-map-label--end">{t('common.to')}</div>
+              <div className="home-map-label home-map-label--start">{t('home.hero.departure')}</div>
+              <div className="home-map-label home-map-label--end">{t('home.hero.destination')}</div>
               <div className="home-map-caption">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/15 text-emerald-200"><Route className="h-5 w-5" /></span>
-                <div><p className="text-sm font-bold text-white">{t('home.hero.title2')}</p><p className="mt-1 text-xs leading-5 text-slate-200">{t('home.whyUs.verified.desc')}</p></div>
+                <div><p className="text-sm font-bold text-white">{t('home.hero.mapTitle')}</p><p className="mt-1 text-xs leading-5 text-slate-200">{t('home.hero.mapDescription')}</p></div>
               </div>
             </div>
             <div aria-hidden="true" className="absolute -bottom-5 -left-4 -z-10 h-28 w-28 rounded-full border border-emerald-300/20 sm:-left-7 sm:h-40 sm:w-40" />
