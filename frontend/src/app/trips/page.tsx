@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { TripList } from '@/components/trips';
 import { BookingRulesModal } from '@/components/trips/BookingRulesModal';
 import { useBookingStore } from '@/stores/useBookingStore';
@@ -14,16 +14,18 @@ import toast from 'react-hot-toast';
 
 export default function TripsPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { isAuthenticated, user } = useAuthStore();
     const { bookSeat, isBooking } = useBookingStore();
     const { trips, fetchTrips } = useTripStore();
     const { t } = useTranslation();
     const isDriverOrAdmin = user?.role === 'DRIVER' || user?.role === 'ADMIN';
+    const initialFromCity = searchParams.get('fromCity') || '';
+    const initialToCity = searchParams.get('toCity') || '';
 
     // Modal state for booking flow
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-    const [bookingError, setBookingError] = useState<string | null>(null);
 
     const handleBook = (tripId: string) => {
         if (!isAuthenticated) {
@@ -37,14 +39,11 @@ export default function TripsPage() {
             return;
         }
         setSelectedTrip(trip);
-        setBookingError(null);
         setShowBookingModal(true);
     };
 
     const handleConfirmBooking = async (paymentMethod: 'WALLET' | 'CASH') => {
         if (!selectedTrip) return;
-        setBookingError(null);
-
         const success = await bookSeat(selectedTrip.id, 1, paymentMethod, {
             fromCity: selectedTrip.fromCity,
             toCity: selectedTrip.toCity,
@@ -63,7 +62,6 @@ export default function TripsPage() {
             router.push('/bookings');
         } else {
             const storeError = useBookingStore.getState().error;
-            setBookingError(storeError || 'Booking failed. Please try again.');
             toast.error(storeError || 'Booking failed. Please try again.');
         }
     };
@@ -99,7 +97,12 @@ export default function TripsPage() {
             </div>
 
             {/* Trip List with Filters */}
-            <TripList onBook={handleBook} onViewDetails={handleViewDetails} hideBooking={isDriverOrAdmin} />
+            <TripList
+                onBook={handleBook}
+                onViewDetails={handleViewDetails}
+                hideBooking={isDriverOrAdmin}
+                initialFilters={initialFromCity || initialToCity ? { fromCity: initialFromCity, toCity: initialToCity } : undefined}
+            />
 
             {/* Booking Rules Modal — enforces the Instructions → Payment → Confirm flow */}
             {selectedTrip && (

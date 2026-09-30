@@ -48,6 +48,7 @@
   /* ── Font Families ── */
   --font-cairo: 'Cairo', 'Segoe UI', sans-serif;
   --font-inter: 'Inter', 'Segoe UI', sans-serif;
+  --font-sans: 'Cairo', 'Inter', system-ui, sans-serif;
 }
 
 /* ─── CSS Custom Properties ──────────────────────────────────────────────── */
@@ -92,6 +93,14 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+html[lang="en"] {
+  --font-sans: 'Inter', 'Cairo', system-ui, sans-serif;
+}
+
+html[lang="ar"] {
+  --font-sans: 'Cairo', 'Inter', system-ui, sans-serif;
 }
 
 body {
@@ -797,6 +806,129 @@ input[type="checkbox"] {
 
 .wave-divider-tall svg {
   height: 100px;
+}
+
+/* ─── Responsive home page ──────────────────────────────────────────────── */
+.home-page {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  background: #f7f9fc;
+}
+
+.home-hero {
+  background: #071e35;
+}
+
+.home-hero::before,
+.home-hero::after,
+.home-driver-cta::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.home-hero::before {
+  background-image: linear-gradient(105deg, rgba(5, 25, 45, 0.96) 0%, rgba(5, 35, 58, 0.86) 54%, rgba(5, 35, 58, 0.68) 100%), url('/egypt-highway.png');
+  background-position: center;
+  background-size: cover;
+  animation: home-background-drift 36s ease-in-out infinite alternate;
+}
+
+.home-hero::after {
+  background: radial-gradient(ellipse at 78% 22%, rgba(0, 201, 123, 0.2), transparent 38%), linear-gradient(180deg, transparent 70%, rgba(4, 21, 40, 0.35));
+}
+
+.home-orb {
+  position: absolute;
+  z-index: 1;
+  width: clamp(12rem, 25vw, 24rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(143, 255, 210, 0.12);
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, rgba(45, 223, 160, 0.22), rgba(45, 223, 160, 0.025) 62%, transparent 72%);
+  pointer-events: none;
+  animation: home-orbit 18s ease-in-out infinite alternate;
+}
+
+.home-orb--one {
+  top: -9rem;
+  right: 5%;
+}
+
+.home-orb--two {
+  right: -7rem;
+  bottom: -11rem;
+  animation-delay: -7s;
+}
+
+.home-orb--three {
+  top: 38%;
+  left: -12rem;
+  width: clamp(10rem, 20vw, 19rem);
+  animation-delay: -12s;
+}
+
+.home-driver-cta {
+  background: linear-gradient(115deg, #071e35, #0a2e52 64%, #0b4263);
+}
+
+.home-driver-cta::before {
+  background: radial-gradient(ellipse at 88% 10%, rgba(0, 201, 123, 0.18), transparent 42%);
+}
+
+.home-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(0, 168, 101, 0.14);
+  border-radius: 9999px;
+  background: #eaf8f2;
+  padding: 0.45rem 0.85rem;
+  color: #08754e;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.home-enter {
+  animation: home-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.home-enter--delayed {
+  animation-delay: 120ms;
+}
+
+@keyframes home-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes home-background-drift {
+  from { background-position: 48% 50%; }
+  to { background-position: 55% 46%; }
+}
+
+@keyframes home-orbit {
+  from { transform: translate3d(0, 0, 0) scale(0.94); }
+  to { transform: translate3d(-16px, 18px, 0) scale(1.04); }
+}
+
+@media (min-width: 768px) {
+  .home-page { padding-bottom: 0; }
+}
+
+@media (max-width: 640px) {
+  .home-hero::before {
+    background-image: linear-gradient(180deg, rgba(5, 25, 45, 0.93), rgba(5, 35, 58, 0.88)), url('/egypt-highway.png');
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-enter,
+  .home-orb,
+  .home-hero::before {
+    animation: none !important;
+  }
 }
 
 /* ─══════════════════════════════════════════════════════════════════════════

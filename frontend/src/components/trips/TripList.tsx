@@ -7,34 +7,46 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { api, isAbortError } from '@/lib/api';
 import { TripCard } from './TripCard';
 import { TripFilters } from './TripFilters';
-import { Booking } from '@/types';
+import { Booking, TripFilters as TripFilterValues } from '@/types';
 import { Loader2, MapPinOff, ChevronLeft, ChevronRight, WifiOff, ServerCrash, RefreshCw } from 'lucide-react';
 
 interface TripListProps {
     onBook?: (tripId: string) => void;
     onViewDetails?: (tripId: string) => void;
     hideBooking?: boolean;
+    initialFilters?: Pick<TripFilterValues, 'fromCity' | 'toCity'>;
 }
 
-export function TripList({ onBook, onViewDetails, hideBooking }: TripListProps) {
+export function TripList({ onBook, onViewDetails, hideBooking, initialFilters }: TripListProps) {
     const { trips, isLoading, error, errorKind, meta, fetchTrips, setPage, cancelPendingRequest } = useTripStore();
     const { isAuthenticated } = useAuthStore();
     const { t } = useTranslation();
     const [bookedTripIds, setBookedTripIds] = useState<Set<string>>(new Set());
-    const hasFetched = useRef(false);
+    const lastFilterKey = useRef<string | null>(null);
+    const initialFromCity = initialFilters?.fromCity;
+    const initialToCity = initialFilters?.toCity;
 
-    // Fetch trips once on mount — stable ref prevents duplicate calls
+    // Apply a route shortcut before the initial request so direct links filter
+    // the first result set instead of briefly fetching every trip.
     useEffect(() => {
-        if (!hasFetched.current) {
-            hasFetched.current = true;
+        const filterKey = `${initialFromCity || ''}\u0000${initialToCity || ''}`;
+        if (lastFilterKey.current !== filterKey) {
+            lastFilterKey.current = filterKey;
+            useTripStore.setState((state) => ({
+                filters: {
+                    ...state.filters,
+                    fromCity: initialFromCity || '',
+                    toCity: initialToCity || '',
+                    page: 1,
+                },
+            }));
             fetchTrips();
         }
         // Cancel any pending request when unmounting
         return () => {
             cancelPendingRequest();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchTrips, initialFromCity, initialToCity, cancelPendingRequest]);
 
     // Fetch user's bookings to determine which trips are already booked
     useEffect(() => {
