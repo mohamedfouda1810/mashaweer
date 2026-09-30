@@ -31,10 +31,10 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto grid min-h-[min(760px,calc(100svh-3.5rem))] max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
           <div className="home-enter max-w-2xl text-center lg:text-start">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-100 shadow-sm backdrop-blur">
+            {/* <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200/20 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-100 shadow-sm backdrop-blur">
               <ShieldCheck className="h-4 w-4 text-emerald-300" />
               {t('common.verifiedDriver')}
-            </div>
+            </div> */}
 
             <h1 className="text-balance text-4xl font-extrabold leading-[1.2] tracking-tight text-white drop-shadow-sm sm:text-5xl lg:text-6xl xl:text-7xl">
               {t('home.hero.title1')}
@@ -63,11 +63,11 @@ export default function Home() {
               )}
             </div>
 
-            <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-100/90 lg:justify-start">
+            {/* <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-100/90 lg:justify-start">
               <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-300" />{t('home.whyUs.verified.title')}</span>
               <span className="inline-flex items-center gap-2"><Wallet className="h-4 w-4 text-emerald-300" />{t('home.whyUs.wallet.title')}</span>
               <span className="inline-flex items-center gap-2"><Zap className="h-4 w-4 text-emerald-300" />{t('home.whyUs.instant.title')}</span>
-            </div>
+            </div> */}
           </div>
 
           <div className="home-enter home-enter--delayed relative mx-auto w-full max-w-xl lg:max-w-none">

@@ -170,10 +170,10 @@ export function Navbar() {
                             </span>
                         </Link>
                         {/* Trust Badge - Desktop Only */}
-                        <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50/80 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                        {/* <div className="hidden md:flex items-center gap-1 rounded-full bg-emerald-50/80 px-2 py-0.5 text-[10px] font-medium text-emerald-700 border border-emerald-200/50 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
                             <CheckCircle className="h-3 w-3" />
                             Verified Platform
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Desktop Nav Links (hidden on mobile) */}
