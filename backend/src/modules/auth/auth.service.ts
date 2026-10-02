@@ -111,13 +111,22 @@ export class AuthService {
     const existingEmail = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
-    if (existingEmail) throw new ConflictException('Email already in use');
+    if (existingEmail) {
+      if (!existingEmail.deletedAt) {
+        throw new ConflictException('Email already in use');
+      }
+      await this.releaseDeletedUserIdentifiers(existingEmail.id);
+    }
 
     const existingPhone = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
-    if (existingPhone)
-      throw new ConflictException('Phone number already in use');
+    if (existingPhone) {
+      if (!existingPhone.deletedAt) {
+        throw new ConflictException('Phone number already in use');
+      }
+      await this.releaseDeletedUserIdentifiers(existingPhone.id);
+    }
 
     if (
       dto.role === Role.DRIVER &&
@@ -220,6 +229,16 @@ export class AuthService {
       message,
       user: userWithoutSensitive,
     };
+  }
+
+  private async releaseDeletedUserIdentifiers(userId: string) {
+    await this.prisma.user.updateMany({
+      where: { id: userId, deletedAt: { not: null } },
+      data: {
+        email: `deleted-${userId}@deleted.invalid`,
+        phone: `deleted-${userId}`,
+      },
+    });
   }
 
   /**
