@@ -161,6 +161,8 @@ export class AdminService {
   /**
    * Deactivate a user account without deleting historical records.
    * Relations are intentionally preserved so past trips retain their driver.
+   * Replace unique login identifiers so a deleted account cannot block a new
+   * registration with the same email address or phone number.
    */
   async deleteUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -173,6 +175,8 @@ export class AdminService {
       where: { id: userId, deletedAt: null },
       data: {
         deletedAt: new Date(),
+        email: `deleted-${user.id}@deleted.invalid`,
+        phone: `deleted-${user.id}`,
         isBanned: true,
         banReason: 'Account deactivated by an administrator',
         banUntil: null,
