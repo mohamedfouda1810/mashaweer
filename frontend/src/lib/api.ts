@@ -340,6 +340,7 @@ class ApiClient {
     gatheringLongitude?: number;
     destinationLatitude?: number;
     destinationLongitude?: number;
+    distanceKm?: number;
   }) {
     return this.request<Trip>('/trips', {
       method: 'POST',

@@ -71,11 +71,6 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(50)
-  licenseNumber?: string;
-
-  @IsString()
-  @IsOptional()
   personalPhotoUrl?: string;
 
   @IsArray()

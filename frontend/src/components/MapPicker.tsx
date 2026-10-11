@@ -153,9 +153,9 @@ export default function MapPicker({
   const defaultCenter: [number, number] = [30.04, 31.24];
 
   const gatheringPos: [number, number] | undefined =
-    gatheringLat && gatheringLng ? [gatheringLat, gatheringLng] : undefined;
+    gatheringLat !== undefined && gatheringLng !== undefined ? [gatheringLat, gatheringLng] : undefined;
   const destinationPos: [number, number] | undefined =
-    destinationLat && destinationLng ? [destinationLat, destinationLng] : undefined;
+    destinationLat !== undefined && destinationLng !== undefined ? [destinationLat, destinationLng] : undefined;
 
   // GPS Detection — auto-detect user location on mount
   const detectLocation = useCallback(async () => {

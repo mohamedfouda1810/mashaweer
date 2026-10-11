@@ -79,20 +79,16 @@ export class TripService {
   /**
    * SINGLE SOURCE OF TRUTH for pricing calculation.
    * Used by both trip creation validation AND the public calculate-pricing endpoint.
-   * Formula: suggestedPricePerSeat = distance_km × 5, clamped to [20, 85]
-   * Allowed range: ±20% of suggested, clamped to [20, 85]
+   * Formula: suggestedPricePerSeat = distance_km × 5 / seats
+   * Allowed range: ±20% of the calculated per-seat price.
    */
   calculatePricing(distanceKm: number, seats: number = 4) {
     const r2 = (v: number) => Math.round(v * 100) / 100;
 
-    // Formula: distance × 5 EGP per km
-    const rawSuggested = distanceKm * 5;
-    // Clamp to [20, 85] range
-    const suggestedPricePerSeat = Math.max(20, Math.min(85, r2(rawSuggested)));
-
-    // ±20% range, clamped to [20, 85]
-    const minPricePerSeat = Math.max(20, r2(suggestedPricePerSeat * 0.8));
-    const maxPricePerSeat = Math.min(85, r2(suggestedPricePerSeat * 1.2));
+    const safeSeats = Number.isInteger(seats) && seats > 0 ? seats : 1;
+    const suggestedPricePerSeat = r2((distanceKm * 5) / safeSeats);
+    const minPricePerSeat = r2(suggestedPricePerSeat * 0.8);
+    const maxPricePerSeat = r2(suggestedPricePerSeat * 1.2);
 
     const suggestedTripPrice = r2(suggestedPricePerSeat * seats);
 
@@ -111,10 +107,29 @@ export class TripService {
 
   /**
    * Create a new trip (Driver only)
-   * Dynamic pricing: suggestedPrice = distance_km × 5, clamped to [20, 85]
-   * Driver can set within ±20% of suggested price
+   * Dynamic pricing: suggested price per seat = distance_km × 5 / selected seats.
+   * Driver can set within ±20% of the suggested per-seat price.
    */
   async create(driverId: string, dto: CreateTripDto) {
+    const requiredText: Record<string, unknown> = {
+      'Starting city': dto.fromCity,
+      'Destination city': dto.toCity,
+      'Gathering point name': dto.gatheringLocation,
+    };
+    const missing = Object.entries(requiredText)
+      .filter(([, value]) => typeof value !== 'string' || !value.trim())
+      .map(([label]) => label);
+    if (missing.length) throw new BadRequestException(`Complete required fields: ${missing.join(', ')}.`);
+    const coords = [dto.gatheringLatitude, dto.gatheringLongitude, dto.destinationLatitude, dto.destinationLongitude];
+    if (coords.some((value) => typeof value !== 'number' || !Number.isFinite(value))) {
+      throw new BadRequestException('Choose both the gathering point and destination on the map.');
+    }
+    if (dto.gatheringLatitude! < -90 || dto.gatheringLatitude! > 90 || dto.destinationLatitude! < -90 || dto.destinationLatitude! > 90 || dto.gatheringLongitude! < -180 || dto.gatheringLongitude! > 180 || dto.destinationLongitude! < -180 || dto.destinationLongitude! > 180) {
+      throw new BadRequestException('Map coordinates are invalid. Select both trip points again.');
+    }
+    if (!Number.isInteger(dto.totalSeats) || dto.totalSeats < 1 || dto.totalSeats > 20) throw new BadRequestException('Choose between 1 and 20 seats.');
+    if (!dto.departureTime || !Number.isFinite(new Date(dto.departureTime).getTime()) || new Date(dto.departureTime) <= new Date()) throw new BadRequestException('Choose a valid departure time in the future.');
+
     // ── Idempotency guard: prevent duplicate trip creation ──
     const sixtySecondsAgo = new Date(Date.now() - 60_000);
     const duplicate = await this.prisma.trip.findFirst({
@@ -141,14 +156,10 @@ export class TripService {
 
     // ── Distance: prefer frontend OSRM road-distance, fallback to Haversine ──
     let distanceKm: number | undefined = dto.distanceKm;
-    if (
-      !distanceKm &&
-      dto.gatheringLatitude && dto.gatheringLongitude &&
-      dto.destinationLatitude && dto.destinationLongitude
-    ) {
+    if (!distanceKm || !Number.isFinite(distanceKm) || distanceKm <= 0) {
       distanceKm = this.calculateHaversineDistance(
-        dto.gatheringLatitude, dto.gatheringLongitude,
-        dto.destinationLatitude, dto.destinationLongitude,
+        dto.gatheringLatitude!, dto.gatheringLongitude!,
+        dto.destinationLatitude!, dto.destinationLongitude!,
       );
     }
 
@@ -174,8 +185,8 @@ export class TripService {
       }
     }
 
-    // Ensure pricePerSeat is within absolute bounds
-    pricePerSeat = Math.max(20, Math.min(85, pricePerSeat));
+    if (!Number.isFinite(pricePerSeat) || pricePerSeat <= 0) throw new BadRequestException('Enter a valid price per seat.');
+    if (!suggestedPricePerSeat) throw new BadRequestException('A valid route distance is required to calculate trip pricing. Select both map points.');
 
     // Round to 2 decimals consistently
     pricePerSeat = Math.round(pricePerSeat * 100) / 100;

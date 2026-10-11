@@ -56,8 +56,7 @@ export class CreateTripDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(20)
-  @Max(85)
+  @Min(0)
   pricePerSeat?: number;
 
   @IsInt()

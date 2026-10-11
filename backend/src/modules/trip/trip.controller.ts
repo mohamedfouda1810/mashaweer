@@ -69,11 +69,11 @@ export class TripController {
         distanceKm: 0,
         suggestedTripPrice: 0,
         seats,
-        suggestedPricePerSeat: 20,
-        minPricePerSeat: 20,
-        maxPricePerSeat: 85,
-        clampedMin: 20,
-        clampedMax: 85,
+        suggestedPricePerSeat: 0,
+        minPricePerSeat: 0,
+        maxPricePerSeat: 0,
+        clampedMin: 0,
+        clampedMax: 0,
       });
     }
     const pricing = this.tripService.calculatePricing(distanceKm, seats);

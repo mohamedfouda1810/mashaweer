@@ -137,6 +137,19 @@ export default function CreateTripPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const missing: string[] = [];
+        if (!form.fromCity.trim()) missing.push(t('createTrip.fromCity'));
+        if (!form.toCity.trim()) missing.push(t('createTrip.toCity'));
+        if (!form.gatheringLocation.trim()) missing.push(t('createTrip.gatheringLocation'));
+        if (form.gatheringLatitude === undefined || form.gatheringLongitude === undefined) missing.push(t('createTrip.gatheringMapRequired'));
+        if (form.destinationLatitude === undefined || form.destinationLongitude === undefined) missing.push(t('createTrip.destinationMapRequired'));
+        if (!form.departureTime || new Date(form.departureTime) <= new Date()) missing.push(t('createTrip.departureTime'));
+        if (!routeDistance || !pricingInfo) missing.push(t('createTrip.routeDistanceRequired'));
+        if (!form.pricePerSeat || !isPriceValid) missing.push(t('createTrip.priceRangeError'));
+        if (missing.length) {
+            setError(`${t('createTrip.validationTitle')}: ${missing.join('، ')}`);
+            return;
+        }
         setIsLoading(true);
         setError(null);
 
@@ -163,7 +176,12 @@ export default function CreateTripPage() {
                 router.push(`/trips/${response.data.id}`);
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to create trip');
+            const message = String(err.message || '');
+            setError(message.toLowerCase().includes('map') || message.toLowerCase().includes('coordinates')
+                ? t('createTrip.mapError')
+                : message.toLowerCase().includes('price per seat')
+                    ? t('createTrip.priceRangeError')
+                : message || t('createTrip.submitError'));
         } finally {
             setIsLoading(false);
         }
@@ -421,7 +439,7 @@ export default function CreateTripPage() {
 
                     <button
                         type="submit"
-                        disabled={isLoading || (!isPriceValid && !!form.pricePerSeat)}
+                        disabled={isLoading || pricingLoading}
                         className="btn-3d btn-liquid flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-navy to-emerald py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-60 overflow-hidden relative"
                     >
                         <span className="relative z-10 flex items-center gap-2">

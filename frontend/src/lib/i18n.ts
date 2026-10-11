@@ -71,8 +71,8 @@ export const translations = {
   'nav.toggleMenu': { ar: 'القائمة', en: 'Toggle menu' },
 
   // ══════════ Home Page ══════════
-  'home.hero.title1': { ar: 'مشوار أسهل،', en: 'City to city,' },
-  'home.hero.title2': { ar: 'وثقة أكبر', en: 'with confidence.' },
+  'home.hero.title1': { ar: 'مشوارك،', en: 'Your trip,' },
+  'home.hero.title2': { ar: 'وناسك', en: 'your people.' },
   'home.hero.subtitle': {
     ar: 'شارك رحلتك بين المدن بثقة. اختر سائقاً موثوقاً، احجز مقعدك، وتابع تفاصيل رحلتك بسهولة.',
     en: 'Share the journey between cities with confidence. Choose a verified driver, book your seat, and keep your trip details close.',
@@ -469,6 +469,13 @@ export const translations = {
   // ══════════ Create Trip (extra keys) ══════════
   'createTrip.destinationPoint': { ar: 'نقطة الوصول', en: 'Destination Point' },
   'createTrip.pickLocationsOnMap': { ar: 'حدد المواقع على الخريطة', en: 'Pick locations on the map' },
+  'createTrip.gatheringMapRequired': { ar: 'حدد نقطة التجمع على الخريطة', en: 'Select the gathering point on the map' },
+  'createTrip.destinationMapRequired': { ar: 'حدد الوجهة على الخريطة', en: 'Select the destination on the map' },
+  'createTrip.routeDistanceRequired': { ar: 'تعذر حساب مسافة المسار؛ اختر النقطتين على الخريطة مجدداً', en: 'Route distance is unavailable; select both map points again' },
+  'createTrip.validationTitle': { ar: 'يرجى استكمال وتصحيح الحقول التالية', en: 'Please complete or correct these fields' },
+  'createTrip.priceRangeError': { ar: 'أدخل سعر المقعد ضمن النطاق المعروض', en: 'Enter a per-seat price within the displayed range' },
+  'createTrip.mapError': { ar: 'تعذر إنشاء الرحلة بسبب بيانات الخريطة. حدد نقطة التجمع والوجهة مجدداً.', en: 'Could not create the trip because of map data. Select the gathering point and destination again.' },
+  'createTrip.submitError': { ar: 'تعذر إنشاء الرحلة. يرجى مراجعة البيانات والمحاولة مجدداً.', en: 'Could not create the trip. Check the details and try again.' },
 } as const;
 
 // ─── Helper Functions ────────────────────────────────────────────────────────

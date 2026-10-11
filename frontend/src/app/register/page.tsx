@@ -43,7 +43,6 @@ function RegisterFormContent() {
         role: 'PASSENGER' as 'PASSENGER' | 'DRIVER',
         carModel: '',
         plateNumber: '',
-        licenseNumber: '',
     });
 
     useEffect(() => {
@@ -87,7 +86,7 @@ function RegisterFormContent() {
             return form.firstName && form.lastName && form.email && form.phone && form.password && form.confirmPassword && form.password === form.confirmPassword && agreedToTerms;
         }
         if (step === 1 && form.role === 'DRIVER') {
-            return form.carModel && form.plateNumber && form.licenseNumber;
+            return form.carModel && form.plateNumber;
         }
         if (step === 2 && form.role === 'DRIVER') {
             return files.personalPhoto && files.identityPhotos.length >= 2 && files.drivingLicensePhotos.length >= 2 && files.carLicensePhotos.length >= 2;
@@ -139,7 +138,6 @@ function RegisterFormContent() {
                     ? {
                         carModel: form.carModel,
                         plateNumber: form.plateNumber,
-                        licenseNumber: form.licenseNumber,
                         ...photoUrls,
                     }
                     : {}),
@@ -378,14 +376,10 @@ function RegisterFormContent() {
                                     <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('register.carModel')}</label>
                                     <input required value={form.carModel} onChange={(e) => update('carModel', e.target.value)} placeholder="e.g. Toyota Corolla 2022" className={inputClass} />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div>
                                     <div>
                                         <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('register.plateNumber')}</label>
                                         <input required value={form.plateNumber} onChange={(e) => update('plateNumber', e.target.value)} placeholder="ABC 1234" className={inputClass} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('register.licenseNumber')}</label>
-                                        <input required value={form.licenseNumber} onChange={(e) => update('licenseNumber', e.target.value)} placeholder="License #" className={inputClass} />
                                     </div>
                                 </div>
                             </div>

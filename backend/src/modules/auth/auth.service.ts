@@ -130,10 +130,10 @@ export class AuthService {
 
     if (
       dto.role === Role.DRIVER &&
-      (!dto.carModel || !dto.plateNumber || !dto.licenseNumber)
+      (!dto.carModel || !dto.plateNumber)
     ) {
       throw new BadRequestException(
-        'Driver requires car model, plate number, and license number',
+        'Driver requires car model and plate number',
       );
     }
 
@@ -161,7 +161,7 @@ export class AuthService {
                 create: {
                   carModel: dto.carModel!,
                   plateNumber: dto.plateNumber!,
-                  licenseNumber: dto.licenseNumber!,
+                  licenseNumber: '',
                   personalPhotoUrl: dto.personalPhotoUrl,
                   identityPhotos: dto.identityPhotos || [],
                   drivingLicensePhotos: dto.drivingLicensePhotos || [],
